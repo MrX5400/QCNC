@@ -1,0 +1,6 @@
+{
+  "name": "PlotterCNC Studio",
+  "description": "CNC Stift-, Laser- und Schneideplotter Steuerung mit 2D/3D Echtzeit-Visualisierung, WebSerial Hardware-Anbindung, Vektor- & Bild-Pfaderkennung, Laser-Materialdatenbank und NC-Export/Import.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
