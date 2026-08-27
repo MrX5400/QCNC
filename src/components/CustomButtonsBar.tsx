@@ -189,15 +189,15 @@ export const CustomButtonsBar: React.FC<CustomButtonsBarProps> = ({
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors touch-none"
+            className="min-h-[40px] md:min-h-[44px] min-w-[40px] md:min-w-[44px] flex items-center justify-center p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors touch-none"
             title={isCollapsed ? 'Makroleiste aufklappen' : 'Makroleiste minimieren'}
           >
-            {isCollapsed ? <ChevronRight className="w-5 h-5 text-amber-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+            {isCollapsed ? <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-amber-400" /> : <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-slate-400" />}
           </button>
 
           <div 
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="flex items-center gap-1 cursor-pointer font-semibold text-[11px] text-slate-300 hover:text-white transition-colors min-h-[44px] select-none touch-none"
+            className="flex items-center gap-1 cursor-pointer font-semibold text-[11px] text-slate-300 hover:text-white transition-colors min-h-[40px] md:min-h-[44px] select-none touch-none"
             title="Klicken zum Ein-/Ausklappen"
           >
             <Zap className="w-3.5 h-3.5 text-amber-400" />
@@ -244,7 +244,7 @@ export const CustomButtonsBar: React.FC<CustomButtonsBarProps> = ({
                   key={btn.id}
                   onClick={() => handleButtonClick(btn)}
                   disabled={!!executingMacroId}
-                  className={`min-h-[44px] px-4 rounded text-[11px] font-medium border flex items-center gap-1.5 shrink-0 transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer touch-none ${getColorClasses(
+                  className={`min-h-[40px] md:min-h-[44px] px-3 md:px-4 rounded text-[11px] font-medium border flex items-center gap-1.5 shrink-0 transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer touch-none ${getColorClasses(
                     btn.color,
                     isRunning
                   )}`}

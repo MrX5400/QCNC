@@ -1937,16 +1937,16 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
       {/* Top Floating Control Bar */}
       <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
         {/* Left: 2D/3D Mode, Undo/Redo, Layer Toggles, Measurement */}
-        <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-lg border border-slate-800 pointer-events-auto shadow-lg text-xs">
+        <div className="flex items-center gap-1 md:gap-2 pointer-events-auto text-xs drop-shadow-md">
           {/* 2D / 3D Mode */}
-          <div className="flex items-center bg-slate-950 rounded-md p-0.5 border border-slate-800">
+          <div className="flex items-center gap-0.5">
             <button
               onClick={() => {
                 setViewMode('2d');
                 fitToView('2d');
               }}
-              className={`px-3 py-1 rounded font-medium transition-colors ${
-                viewMode === '2d' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              className={`px-2.5 py-1.5 rounded font-medium transition-all ${
+                viewMode === '2d' ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.6)]' : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
               }`}
             >
               2D Plan
@@ -1956,36 +1956,34 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
                 setViewMode('3d');
                 fitToView('3d');
               }}
-              className={`px-3 py-1 rounded font-medium flex items-center gap-1 transition-colors ${
-                viewMode === '3d' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
+              className={`px-2.5 py-1.5 rounded font-medium flex items-center gap-1.5 transition-all ${
+                viewMode === '3d' ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.6)]' : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
               }`}
             >
-              <Box className="w-3 h-3" />
+              <Box className="w-3.5 h-3.5" />
               <span>3D Iso</span>
             </button>
           </div>
 
-          {/* Undo / Redo Arrow Buttons (User Request) */}
-          <div className="flex items-center bg-slate-950 rounded-md p-0.5 border border-slate-800">
+          {/* Undo / Redo Arrow Buttons */}
+          <div className="flex items-center gap-0.5 ml-1">
             <button
               onClick={handleUndo}
               disabled={undoStack.length === 0}
-              className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="p-1.5 rounded text-slate-400/70 hover:text-slate-200 hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
               title="Rückgängig (Strg+Z)"
             >
-              <Undo2 className="w-3.5 h-3.5" />
+              <Undo2 className="w-4 h-4" />
             </button>
             <button
               onClick={handleRedo}
               disabled={redoStack.length === 0}
-              className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="p-1.5 rounded text-slate-400/70 hover:text-slate-200 hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
               title="Wiederholen (Strg+Y / Strg+Shift+Z)"
             >
-              <Redo2 className="w-3.5 h-3.5" />
+              <Redo2 className="w-4 h-4" />
             </button>
           </div>
-
-          <div className="h-4 w-px bg-slate-800" />
 
           {/* Quick 3D Reset in 3D Mode */}
           {viewMode === '3d' && (
@@ -1995,36 +1993,36 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
                 setOrbitPitch(55);
                 fitToView('3d');
               }}
-              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px] transition-colors"
+              className="px-2.5 py-1.5 ml-1 text-slate-400/70 hover:text-slate-200 hover:bg-white/5 rounded text-[11px] transition-colors"
               title="3D Ansicht zurücksetzen"
             >
               3D Reset
             </button>
           )}
 
-          {/* Messen (Measure) Toggle Button (User Request: must remain in both windows) */}
+          {/* Messen (Measure) Toggle Button */}
           <button
             onClick={() => {
               setIsMeasureActive(!isMeasureActive);
               setMeasureStart(null);
               setMeasureEnd(null);
             }}
-            className={`px-2.5 py-1 rounded text-[11px] font-semibold flex items-center gap-1.5 transition-all ${
+            className={`px-2.5 py-1.5 ml-1 rounded text-[11px] font-semibold flex items-center gap-1.5 transition-all ${
               isMeasureActive
-                ? 'bg-cyan-600 text-white shadow-md shadow-cyan-900/40'
-                : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-800'
+                ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]'
+                : 'text-slate-400/70 hover:text-cyan-300 hover:bg-white/5'
             }`}
             title="Abstand auf der Arbeitsfläche messen"
           >
-            <Ruler className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Messen</span>
+            <Ruler className="w-4 h-4" />
+            <span className="hidden md:inline">Messen</span>
           </button>
 
           {/* Layer toggles */}
           <button
             onClick={() => setShowGrid(!showGrid)}
-            className={`p-1.5 rounded transition-colors ${
-              showGrid ? 'bg-slate-800 text-cyan-400' : 'text-slate-500 hover:text-slate-300'
+            className={`p-1.5 ml-1 rounded transition-colors ${
+              showGrid ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]' : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
             }`}
             title="Gitter anzeigen / verbergen"
           >
@@ -2033,19 +2031,19 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           <button
             onClick={() => setShowRapid(!showRapid)}
-            className={`px-2 py-1 rounded text-[11px] font-mono transition-colors ${
-              showRapid ? 'bg-slate-800 text-cyan-400' : 'text-slate-500'
+            className={`px-2.5 py-1.5 rounded text-[11px] font-mono transition-colors ${
+              showRapid ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]' : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
             }`}
             title="Leerfahrten (G0 Rapid) anzeigen"
           >
-            Eilgang (G0)
+            Eilgang
           </button>
 
           {currentProfile.dragKnife?.enabled && (
             <button
               onClick={() => setShowSwivelArcs(!showSwivelArcs)}
-              className={`px-2 py-1 rounded text-[11px] font-mono transition-colors ${
-                showSwivelArcs ? 'bg-amber-950/60 text-amber-400 border border-amber-800/40' : 'text-slate-500'
+              className={`px-2.5 py-1.5 rounded text-[11px] font-mono transition-colors ${
+                showSwivelArcs ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]' : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
               }`}
               title="Schleppmesser-Drehbögen (Swivel Arcs) hervorheben"
             >
@@ -2053,18 +2051,18 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
             </button>
           )}
 
-          {/* Farb-Legende Toggle Button (User Request) */}
+          {/* Farb-Legende Toggle Button */}
           <button
             onClick={() => setShowLegend(prev => !prev)}
-            className={`px-2 py-1 rounded text-[11px] font-semibold flex items-center gap-1 transition-all ${
+            className={`px-2.5 py-1.5 ml-1 rounded text-[11px] font-semibold flex items-center gap-1.5 transition-all ${
               showLegend
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.6)]'
+                : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
             }`}
             title="Farb-Legende anzeigen / ausblenden"
           >
-            <Info className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Legende</span>
+            <Info className="w-4 h-4" />
+            <span className="hidden md:inline">Legende</span>
           </button>
         </div>
 
@@ -2073,16 +2071,16 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
           {parsedGcode && parsedGcode.segments.length > 0 && (
             <button
               onClick={() => setIsInspectorOpen(!isInspectorOpen)}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition-all shadow-md text-xs border ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all text-xs ${
                 isInspectorOpen
-                  ? 'bg-indigo-600 border-indigo-500 text-white shadow-indigo-950/60'
-                  : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700 text-indigo-300 hover:text-white'
+                  ? 'text-white bg-indigo-600/20 backdrop-blur-sm shadow-[0_0_15px_rgba(99,102,241,0.4)]'
+                  : 'text-indigo-300/80 hover:text-white bg-slate-900/10 backdrop-blur-sm hover:bg-white/10'
               }`}
               title="Inspektor-Panel mit Ebenen, Position, Skalierung & Drehung öffnen/schließen"
             >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Inspektor &amp; Ebenen</span>
-              <span className="bg-indigo-950/80 border border-indigo-800/60 px-1.5 py-0.2 rounded text-[10px] text-indigo-300 font-mono">
+              <Sliders className="w-4 h-4" />
+              <span className="hidden sm:inline">Inspektor</span>
+              <span className="bg-indigo-950/50 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] text-indigo-200 font-mono">
                 {gcodeObjects.length}
               </span>
             </button>
@@ -2090,17 +2088,58 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
         </div>
       </div>
 
+      {/* Measurement Active Floating Banner */}
+      {isMeasureActive && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 bg-black/10 backdrop-blur-md px-4 py-2 rounded-full drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] text-xs text-slate-100 pointer-events-auto animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-1.5 font-semibold text-cyan-300 drop-shadow-[0_0_6px_rgba(34,211,238,0.8)]">
+            <Ruler className="w-4 h-4 text-cyan-400 animate-pulse" />
+            <span>Messwerkzeug:</span>
+          </div>
+
+          {measureStart && measureEnd ? (
+            <div className="flex items-center gap-3 font-mono">
+              <span className="text-cyan-200 font-bold bg-cyan-950/40 backdrop-blur-sm px-2 py-0.5 rounded-md drop-shadow-sm">
+                {Math.hypot(measureEnd.x - measureStart.x, measureEnd.y - measureStart.y).toFixed(2)} mm
+              </span>
+              <span className="text-slate-300 drop-shadow-md text-[11px]">
+                ΔX: {(measureEnd.x - measureStart.x).toFixed(2)} mm | ΔY: {(measureEnd.y - measureStart.y).toFixed(2)} mm ({(Math.atan2(measureEnd.y - measureStart.y, measureEnd.x - measureStart.x) * 180 / Math.PI).toFixed(1)}°)
+              </span>
+            </div>
+          ) : (
+            <span className="text-slate-300 drop-shadow-md">Klicke &amp; ziehe mit der Maus, um Distanzen zu messen</span>
+          )}
+
+          <div className="flex items-center gap-1.5 ml-2 border-l border-white/20 pl-2">
+            {measureStart && (
+              <button
+                onClick={() => { setMeasureStart(null); setMeasureEnd(null); }}
+                className="px-2 py-0.5 bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-200 rounded-md text-[11px] font-medium transition-colors"
+              >
+                Messung löschen
+              </button>
+            )}
+            <button
+              onClick={() => { setIsMeasureActive(false); setMeasureStart(null); setMeasureEnd(null); }}
+              className="px-2 py-0.5 bg-black/20 hover:bg-black/40 text-slate-300 rounded-md text-[11px] transition-colors"
+              title="Messmodus beenden"
+            >
+              Beenden
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Multi-Selection Active Floating Action Bar */}
       {selectedObjectIds.length > 0 && !isInspectorOpen && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-slate-900/95 backdrop-blur-md px-3.5 py-2 rounded-xl border border-indigo-500/50 shadow-2xl text-xs text-slate-200 pointer-events-auto animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center gap-1.5 font-semibold text-indigo-300 pr-2 border-r border-slate-700">
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-black/10 backdrop-blur-md px-3.5 py-1.5 rounded-full drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] text-xs text-slate-100 pointer-events-auto animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-1.5 font-semibold text-indigo-300 drop-shadow-[0_0_6px_rgba(99,102,241,0.8)] pr-2 border-r border-white/20">
             <Layers className="w-3.5 h-3.5 text-indigo-400" />
             <span>{selectedObjectIds.length} gewählt</span>
           </div>
 
           <button
             onClick={() => handleCenterOnBed()}
-            className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 hover:bg-white/10 rounded transition-colors"
             title="Auf Bettmitte zentrieren"
           >
             <AlignCenter className="w-3 h-3 text-indigo-400" />
@@ -2109,7 +2148,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           <button
             onClick={() => handleMoveToOrigin()}
-            className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 hover:bg-white/10 rounded transition-colors"
             title="Zu Nullpunkt (0,0)"
           >
             <CornerDownLeft className="w-3 h-3 text-cyan-400" />
@@ -2118,7 +2157,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           <button
             onClick={() => handleDuplicateObjects()}
-            className="flex items-center gap-1 px-2 py-1 bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-800/50 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 hover:bg-white/10 text-indigo-200 rounded transition-colors"
             title="Duplizieren"
           >
             <Copy className="w-3 h-3 text-indigo-400" />
@@ -2127,7 +2166,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           <button
             onClick={handleDeleteSelected}
-            className="flex items-center gap-1 px-2 py-1 bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/50 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 hover:bg-white/10 text-red-300 rounded transition-colors"
             title="Löschen"
           >
             <Trash2 className="w-3 h-3 text-red-400" />
@@ -2136,7 +2175,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           <button
             onClick={() => setIsInspectorOpen(true)}
-            className="flex items-center gap-1 px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-medium transition-colors ml-1"
+            className="flex items-center gap-1 px-2 py-1 bg-indigo-600/50 hover:bg-indigo-600 text-white rounded-md font-medium transition-colors ml-1"
           >
             <Sliders className="w-3 h-3" />
             <span>Inspektor</span>
@@ -2144,52 +2183,11 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           <button
             onClick={() => setSelectedObjectIds([])}
-            className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors ml-1"
+            className="p-1 hover:bg-white/10 rounded transition-colors ml-1"
             title="Auswahl aufheben"
           >
             <X className="w-3.5 h-3.5" />
           </button>
-        </div>
-      )}
-
-      {/* Measurement Active Floating Banner (Matching Generator Window) */}
-      {isMeasureActive && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 bg-slate-900/95 backdrop-blur-md px-4 py-2 rounded-xl border border-cyan-500/50 shadow-2xl text-xs text-slate-200 pointer-events-auto animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center gap-1.5 font-semibold text-cyan-300">
-            <Ruler className="w-4 h-4 text-cyan-400 animate-pulse" />
-            <span>Messwerkzeug:</span>
-          </div>
-
-          {measureStart && measureEnd ? (
-            <div className="flex items-center gap-3 font-mono">
-              <span className="text-cyan-200 font-bold bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800/60">
-                {Math.hypot(measureEnd.x - measureStart.x, measureEnd.y - measureStart.y).toFixed(2)} mm
-              </span>
-              <span className="text-slate-400 text-[11px]">
-                ΔX: {(measureEnd.x - measureStart.x).toFixed(2)} mm | ΔY: {(measureEnd.y - measureStart.y).toFixed(2)} mm ({(Math.atan2(measureEnd.y - measureStart.y, measureEnd.x - measureStart.x) * 180 / Math.PI).toFixed(1)}°)
-              </span>
-            </div>
-          ) : (
-            <span className="text-slate-400">Klicke &amp; ziehe mit der Maus, um Distanzen und Abstände zu messen</span>
-          )}
-
-          <div className="flex items-center gap-1.5 ml-2 border-l border-slate-700 pl-2">
-            {measureStart && (
-              <button
-                onClick={() => { setMeasureStart(null); setMeasureEnd(null); }}
-                className="px-2 py-0.5 bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 rounded border border-cyan-700/60 text-[11px] font-medium"
-              >
-                Messung löschen
-              </button>
-            )}
-            <button
-              onClick={() => { setIsMeasureActive(false); setMeasureStart(null); setMeasureEnd(null); }}
-              className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 text-[11px]"
-              title="Messmodus beenden"
-            >
-              Beenden
-            </button>
-          </div>
         </div>
       )}
 
@@ -2270,64 +2268,64 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
         {/* Interactive Live Color Legend Overlay */}
         {showLegend && (
-          <div className="absolute bottom-11 left-3 bg-slate-950/90 backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2 shadow-xl pointer-events-auto z-10 animate-in fade-in select-none">
+          <div className="absolute bottom-10 left-3 flex items-center gap-2.5 z-10 animate-in fade-in select-none text-[11px] pointer-events-auto bg-black/5 backdrop-blur-[2px] rounded-full px-2 py-1">
             <button
               onClick={() => setShowCutPaths(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
                 showCutPaths
-                  ? 'bg-emerald-950/70 border border-emerald-500/50 text-emerald-300 font-semibold'
-                  : 'bg-slate-900/60 border border-slate-800 text-slate-500 line-through opacity-60 hover:opacity-100'
+                  ? 'text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.8)] font-medium'
+                  : 'text-slate-500/70 line-through hover:text-slate-400'
               }`}
               title="Klicken: Bearbeitungs- und Schnittlinien ein-/ausblenden"
             >
-              <span className={`w-3 h-1 rounded-full ${showCutPaths ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-slate-600'}`} />
-              <span>Bearbeitung (Schnitt / Stift / Laser)</span>
+              <span className={`w-2.5 h-1 rounded-full ${showCutPaths ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+              <span>Bearbeitung</span>
             </button>
 
             <button
               onClick={() => setShowRapid(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
                 showRapid
-                  ? 'bg-rose-950/70 border border-rose-500/50 text-rose-300 font-semibold'
-                  : 'bg-slate-900/60 border border-slate-800 text-slate-500 line-through opacity-60 hover:opacity-100'
+                  ? 'text-rose-400 drop-shadow-[0_0_6px_rgba(251,113,133,0.8)] font-medium'
+                  : 'text-slate-500/70 line-through hover:text-slate-400'
               }`}
               title="Klicken: Leerfahrten / Eilgang (G0) ein-/ausblenden"
             >
-              <span className={`w-3 border-b-2 border-dashed ${showRapid ? 'border-rose-500' : 'border-slate-600'}`} />
-              <span>Leerfahrt / Eilgang (G0)</span>
+              <span className={`w-2.5 border-b-2 border-dashed ${showRapid ? 'border-rose-400' : 'border-slate-600'}`} />
+              <span>Leerfahrt (G0)</span>
             </button>
 
             {currentProfile.dragKnife?.enabled && (
               <button
                 onClick={() => setShowSwivelArcs(prev => !prev)}
-                className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
                   showSwivelArcs
-                    ? 'bg-amber-950/70 border border-amber-500/50 text-amber-300 font-semibold'
-                    : 'bg-slate-900/60 border border-slate-800 text-slate-500 line-through opacity-60 hover:opacity-100'
+                    ? 'text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)] font-medium'
+                    : 'text-slate-500/70 line-through hover:text-slate-400'
                 }`}
                 title="Klicken: Messer-Schwenkbögen ein-/ausblenden"
               >
-                <span className={`w-3 h-1 rounded-full ${showSwivelArcs ? 'bg-amber-500' : 'bg-slate-600'}`} />
-                <span>Messer-Schwenkbögen</span>
+                <span className={`w-2.5 h-1 rounded-full ${showSwivelArcs ? 'bg-amber-400' : 'bg-slate-600'}`} />
+                <span>Messerbögen</span>
               </button>
             )}
 
             <button
               onClick={() => setShowOriginMarker(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
                 showOriginMarker
-                  ? 'bg-cyan-950/70 border border-cyan-500/50 text-cyan-300 font-semibold'
-                  : 'bg-slate-900/60 border border-slate-800 text-slate-500 line-through opacity-60 hover:opacity-100'
+                  ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.8)] font-medium'
+                  : 'text-slate-500/70 line-through hover:text-slate-400'
               }`}
               title="Klicken: Nullpunkt / Start-Achsen ein-/ausblenden"
             >
-              <span className={`w-2 h-2 rounded-full ${showOriginMarker ? 'bg-cyan-400' : 'bg-slate-600'}`} />
-              <span>Nullpunkt / Start</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${showOriginMarker ? 'bg-cyan-400' : 'bg-slate-600'}`} />
+              <span>Start</span>
             </button>
 
             <button
               onClick={() => setShowLegend(false)}
-              className="text-slate-500 hover:text-slate-300 text-[10px] pl-1 border-l border-slate-800 cursor-pointer"
+              className="text-slate-400 hover:text-slate-200 text-[10px] pl-1.5 border-l border-slate-700/50 cursor-pointer"
               title="Legende minimieren"
             >
               ✕
@@ -2336,20 +2334,20 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
         )}
 
         {/* Bottom Left Coordinate & Nav HUD */}
-        <div className="absolute bottom-3 left-3 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-md border border-slate-800 text-[11px] font-mono text-slate-300 flex items-center gap-3 pointer-events-none shadow-md z-10">
-          <div className="flex items-center gap-1">
-            <span className="text-slate-500">Maus:</span>
-            <span className="text-slate-200">{cursorPosMm.x.toFixed(1)}mm, {cursorPosMm.y.toFixed(1)}mm</span>
+        <div className="absolute bottom-3 left-4 flex items-center gap-4 text-[11px] font-mono pointer-events-none z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-black/5 backdrop-blur-[2px] rounded-full px-2 py-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-400/80">Maus:</span>
+            <span className="text-slate-200">{cursorPosMm.x.toFixed(1)}, {cursorPosMm.y.toFixed(1)}</span>
           </div>
-          <div className="h-3 w-px bg-slate-800" />
-          <div className="flex items-center gap-1">
-            <span className="text-slate-500">Kopf:</span>
-            <span className="text-cyan-400 font-semibold">{(liveState?.wpos?.x ?? 0).toFixed(1)}, {(liveState?.wpos?.y ?? 0).toFixed(1)}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-400/80">Kopf:</span>
+            <span className="text-cyan-300 drop-shadow-[0_0_5px_rgba(34,211,238,0.8)] font-semibold">
+              {(liveState?.wpos?.x ?? 0).toFixed(1)}, {(liveState?.wpos?.y ?? 0).toFixed(1)}
+            </span>
           </div>
-          <div className="h-3 w-px bg-slate-800" />
-          <div className="hidden sm:flex items-center gap-1 text-[10px] text-emerald-400/90">
-            <MousePointerClick className="w-3 h-3 text-emerald-400" />
-            <span>Doppelklick = Kopf fahren</span>
+          <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-emerald-400/90 ml-2 border-l border-slate-700/50 pl-3">
+            <MousePointerClick className="w-3 h-3 text-emerald-400 drop-shadow-[0_0_3px_rgba(52,211,153,0.8)]" />
+            <span>Doppelklick = Fahren</span>
           </div>
         </div>
 

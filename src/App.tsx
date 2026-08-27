@@ -149,11 +149,11 @@ G0 X0.000 Y0.000
       />
 
       {/* Main Workspace Body */}
-      <main className="flex-1 flex overflow-hidden p-3 gap-3 relative">
+      <main className="flex-1 flex overflow-hidden p-2 md:p-3 gap-2 md:gap-3 relative">
         {/* Visualizer Tab (Persistent) */}
-        <div className={`flex-1 grid-cols-1 lg:grid-cols-12 gap-3 h-full overflow-hidden ${activeTab === 'visualizer' ? 'grid' : 'hidden'}`}>
+        <div className={`flex-1 grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 h-full overflow-hidden ${activeTab === 'visualizer' ? 'grid' : 'hidden'}`}>
           {/* Left: 2D/3D Real-time Path Visualizer + Custom Action Buttons Bar */}
-          <div className="lg:col-span-8 flex flex-col gap-2 h-full overflow-hidden">
+          <div className="md:col-span-7 xl:col-span-8 flex flex-col gap-2 h-full overflow-hidden">
             {/* Custom Macro Toolbar (Fully hideable to maximize workspace area) */}
             {showMacroBar && (
               <div className="shrink-0">
@@ -180,7 +180,7 @@ G0 X0.000 Y0.000
           </div>
 
           {/* Right: Jog Controller + G-Code Execution Streamer */}
-          <div className="lg:col-span-4 flex flex-col gap-3 h-full overflow-y-auto pr-1">
+          <div className="md:col-span-5 xl:col-span-4 flex flex-col gap-2 md:gap-3 h-full overflow-y-auto pr-1 pb-2">
             <JogController
               currentProfile={currentProfile}
               liveState={liveState}
@@ -213,9 +213,9 @@ G0 X0.000 Y0.000
         </div>
 
         {/* Console View: Constrained to max 1/3 width with workspace visualizer visible in remaining 2/3 */}
-        <div className={`flex-1 grid-cols-1 lg:grid-cols-12 gap-3 h-full overflow-hidden ${activeTab === 'console' ? 'grid' : 'hidden'}`}>
+        <div className={`flex-1 grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 h-full overflow-hidden ${activeTab === 'console' ? 'grid' : 'hidden'}`}>
           {/* Left 2/3: Live 2D/3D Workspace Surface is fully visible */}
-          <div className="lg:col-span-8 flex flex-col gap-2 h-full overflow-hidden">
+          <div className="md:col-span-7 xl:col-span-8 flex flex-col gap-2 h-full overflow-hidden">
             {showMacroBar && (
               <div className="shrink-0">
                 <CustomButtonsBar
@@ -238,8 +238,8 @@ G0 X0.000 Y0.000
             </div>
           </div>
 
-          {/* Right 1/3 (max 33% width): GRBL Terminal & Command Console */}
-          <div className="lg:col-span-4 h-full overflow-hidden border border-slate-800 rounded-xl bg-slate-900 shadow-xl">
+          {/* Right 1/3: GRBL Terminal & Command Console */}
+          <div className="md:col-span-5 xl:col-span-4 h-full overflow-hidden border border-slate-800 rounded-xl bg-slate-900 shadow-xl">
             <GrblConsole />
           </div>
         </div>
