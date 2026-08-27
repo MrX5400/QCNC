@@ -6203,36 +6203,6 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               <span>Generator-Fläche</span>
             </span>
 
-            {/* 2D / 3D Mode Toggle Switch */}
-            <div className="flex items-center p-0.5 bg-slate-900 border border-slate-800 rounded-lg">
-              <button
-                onClick={() => {
-                  setViewMode('2d');
-                  fitToView('2d');
-                }}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold flex items-center gap-1 transition-all ${
-                  viewMode === '2d'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <span>2D</span>
-              </button>
-              <button
-                onClick={() => {
-                  setViewMode('3d');
-                  fitToView('3d');
-                }}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold flex items-center gap-1 transition-all ${
-                  viewMode === '3d'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Box className="w-3 h-3" />
-                <span>3D</span>
-              </button>
-            </div>
 
             {/* 3 MENUS / SWITCHES (USER REQUEST) */}
             {/* Menu 1: Position / Größe */}
@@ -7060,14 +7030,13 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
           {/* Floating Action Bar for Selected Objects */}
           {selectedElementIds.length > 0 && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900/95 border border-indigo-500/50 shadow-2xl backdrop-blur-md rounded-xl px-4 py-2 flex items-center gap-3 z-30 animate-in fade-in slide-in-from-top-2">
-              <span className="text-xs font-semibold text-indigo-200">
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/10 backdrop-blur-md px-3.5 py-1.5 rounded-full drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] flex items-center gap-2 z-30 animate-in fade-in slide-in-from-top-2 text-slate-100 pointer-events-auto">
+              <span className="text-xs font-semibold text-indigo-300 drop-shadow-[0_0_6px_rgba(99,102,241,0.8)] pl-1 pr-2 border-r border-white/20">
                 {selectedElementIds.length} {selectedElementIds.length === 1 ? 'Objekt' : 'Objekte'} markiert
               </span>
-              <div className="h-4 w-px bg-slate-700" />
               <button
                 onClick={handleCenterObjectOnBed}
-                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors"
+                className="px-2 py-1 hover:bg-white/10 text-slate-200 rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
                 title="Markierte Objekte auf dem Bett zentrieren"
               >
                 <AlignCenter className="w-3.5 h-3.5 text-indigo-400" />
@@ -7075,7 +7044,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               </button>
               <button
                 onClick={handleMoveObjectToOrigin}
-                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors"
+                className="px-2 py-1 hover:bg-white/10 text-slate-200 rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
                 title="Markierte Objekte auf Nullpunkt (0,0) setzen"
               >
                 <CornerDownLeft className="w-3.5 h-3.5 text-emerald-400" />
@@ -7083,7 +7052,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               </button>
               <button
                 onClick={handleDuplicateSelected}
-                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors"
+                className="px-2 py-1 hover:bg-white/10 text-amber-200 rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
                 title="Markierte Objekte duplizieren"
               >
                 <Copy className="w-3.5 h-3.5 text-amber-400" />
@@ -7091,7 +7060,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               </button>
               <button
                 onClick={handleDeleteSelected}
-                className="px-2.5 py-1 bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-800/60 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors"
+                className="px-2 py-1 hover:bg-white/10 text-rose-300 rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
                 title="Markierte Objekte löschen (Entf / Backspace)"
               >
                 <Trash2 className="w-3.5 h-3.5 text-rose-400" />
@@ -7099,7 +7068,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               </button>
               <button
                 onClick={() => setSelectedElementIds([])}
-                className="p-1 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-lg transition-colors ml-1"
+                className="p-1 hover:bg-white/10 text-slate-300 hover:text-slate-100 rounded-full transition-colors ml-1"
                 title="Auswahl aufheben"
               >
                 <X className="w-4 h-4" />
@@ -7109,35 +7078,48 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
           {/* Floating Measurement Mode Active Banner */}
           {isMeasureActive && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-cyan-950/95 border border-cyan-500/60 backdrop-blur-md px-4 py-2 rounded-xl text-xs text-cyan-200 font-mono flex items-center gap-3 shadow-2xl z-30 animate-in fade-in">
-              <Ruler className="w-4 h-4 text-cyan-400 animate-pulse shrink-0" />
-              <span>
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/10 backdrop-blur-md px-4 py-2 rounded-full drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] text-xs text-slate-100 font-mono flex items-center gap-3 z-30 animate-in fade-in pointer-events-auto">
+              <div className="flex items-center gap-1.5 font-semibold text-cyan-300 drop-shadow-[0_0_6px_rgba(34,211,238,0.8)]">
+                <Ruler className="w-4 h-4 text-cyan-400 animate-pulse shrink-0" />
+                <span>Messwerkzeug:</span>
+              </div>
+              
+              <span className="text-slate-300 drop-shadow-md">
                 {genMeasureStart && genMeasureEnd 
-                  ? `Länge: ${Math.hypot(genMeasureEnd.x - genMeasureStart.x, genMeasureEnd.y - genMeasureStart.y).toFixed(2)} mm (ΔX: ${(genMeasureEnd.x - genMeasureStart.x).toFixed(2)}, ΔY: ${(genMeasureEnd.y - genMeasureStart.y).toFixed(2)})`
-                  : 'Messwerkzeug aktiv: Klicken & Ziehen um Distanz zu messen'}
+                  ? <span className="font-bold text-cyan-200 bg-cyan-950/40 px-2 py-0.5 rounded-md">Länge: {Math.hypot(genMeasureEnd.x - genMeasureStart.x, genMeasureEnd.y - genMeasureStart.y).toFixed(2)} mm</span>
+                  : 'Klicken & Ziehen um Distanz zu messen'}
               </span>
-              {genMeasureStart && (
+              
+              {genMeasureStart && genMeasureEnd && (
+                <span className="text-[11px] text-slate-300 drop-shadow-md">
+                   (ΔX: {(genMeasureEnd.x - genMeasureStart.x).toFixed(2)}, ΔY: {(genMeasureEnd.y - genMeasureStart.y).toFixed(2)})
+                </span>
+              )}
+
+              <div className="flex items-center gap-1.5 ml-1 border-l border-white/20 pl-2">
+                {genMeasureStart && (
+                  <button
+                    onClick={() => {
+                      setGenMeasureStart(null);
+                      setGenMeasureEnd(null);
+                    }}
+                    className="px-2 py-0.5 bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-200 rounded-md text-[10px] transition-colors"
+                  >
+                    Messung löschen
+                  </button>
+                )}
                 <button
                   onClick={() => {
+                    setIsMeasureActive(false);
                     setGenMeasureStart(null);
                     setGenMeasureEnd(null);
                   }}
-                  className="px-2 py-0.5 bg-cyan-900 hover:bg-cyan-800 text-cyan-200 rounded border border-cyan-700/60 text-[10px] cursor-pointer"
+                  className="px-2 py-0.5 bg-black/20 hover:bg-black/40 text-slate-300 rounded-md text-[10px] transition-colors"
+                  title="Messmodus beenden"
                 >
-                  Messung löschen
+                  Beenden
                 </button>
-              )}
-              <button
-                onClick={() => {
-                  setIsMeasureActive(false);
-                  setGenMeasureStart(null);
-                  setGenMeasureEnd(null);
-                }}
-                className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 text-[10px] cursor-pointer"
-                title="Messmodus beenden"
-              >
-                Beenden
-              </button>
+              </div>
             </div>
           )}
 
@@ -7159,34 +7141,34 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
           />
 
           {/* Interactive Live Legend Overlay with Standardized Color Scheme */}
-          <div className="absolute bottom-3 left-3 bg-slate-950/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2 shadow-xl z-20">
-            <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider mr-1 hidden sm:inline">Ebenen:</span>
+          <div className="absolute bottom-4 left-3 bg-black/10 backdrop-blur-md px-3 py-1.5 rounded-full drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] text-[10px] text-slate-100 flex items-center gap-2 z-20 pointer-events-auto transition-opacity opacity-50 hover:opacity-100">
+            <span className="text-slate-300 font-semibold mr-1 hidden sm:inline drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]">Ebenen:</span>
             
             {/* Bearbeitung / Cut Paths */}
             <button
               onClick={() => setShowCutPaths(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all cursor-pointer ${
                 showCutPaths 
-                  ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 font-semibold' 
-                  : 'bg-slate-900/60 border border-slate-800 text-slate-500 line-through opacity-60 hover:opacity-100'
+                  ? 'text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.8)] font-medium hover:bg-white/10' 
+                  : 'text-slate-400 line-through opacity-80 hover:opacity-100 hover:bg-white/5'
               }`}
               title="Bearbeitungslinien (Schnitt / Stift / Laser) ein-/ausblenden"
             >
-              <span className={`w-3 h-1 rounded-full ${showCutPaths ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-slate-600'}`} />
+              <span className={`w-2.5 h-1 rounded-full ${showCutPaths ? 'bg-emerald-400 shadow-sm' : 'bg-slate-500'}`} />
               <span>Bearbeitung</span>
             </button>
 
             {/* Leerfahrt / Eilgang (G0) */}
             <button
               onClick={() => setShowRapid(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all cursor-pointer ${
                 showRapid 
-                  ? 'bg-rose-950/60 border border-rose-500/40 text-rose-300 font-semibold' 
-                  : 'bg-slate-900/60 border border-slate-800 text-slate-500 line-through opacity-60 hover:opacity-100'
+                  ? 'text-rose-400 drop-shadow-[0_0_6px_rgba(251,113,133,0.8)] font-medium hover:bg-white/10' 
+                  : 'text-slate-400 line-through opacity-80 hover:opacity-100 hover:bg-white/5'
               }`}
               title="Leerfahrten / Eilgang (G0) ein-/ausblenden"
             >
-              <span className={`w-3 border-b-2 border-dashed ${showRapid ? 'border-rose-500' : 'border-slate-600'}`} />
+              <span className={`w-2.5 border-b-2 border-dashed ${showRapid ? 'border-rose-400' : 'border-slate-500'}`} />
               <span>Leerfahrt (G0)</span>
             </button>
 
@@ -7194,14 +7176,14 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             {targetMode === 'dragknife' && (
               <button
                 onClick={() => setShowSwivelArcs(prev => !prev)}
-                className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all cursor-pointer ${
                   showSwivelArcs 
-                    ? 'bg-amber-950/60 border border-amber-500/40 text-amber-300 font-semibold' 
-                    : 'bg-slate-900/60 border border-slate-800 text-slate-500 line-through opacity-60 hover:opacity-100'
+                    ? 'text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)] font-medium hover:bg-white/10' 
+                    : 'text-slate-400 line-through opacity-80 hover:opacity-100 hover:bg-white/5'
                 }`}
                 title="Messer-Schwenkbögen ein-/ausblenden"
               >
-                <span className={`w-3 h-1 rounded-full ${showSwivelArcs ? 'bg-amber-500' : 'bg-slate-600'}`} />
+                <span className={`w-2.5 h-1 rounded-full ${showSwivelArcs ? 'bg-amber-400' : 'bg-slate-500'}`} />
                 <span>Schwenkbögen</span>
               </button>
             )}
@@ -7209,14 +7191,14 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             {/* Nullpunkt / Start */}
             <button
               onClick={() => setShowOriginMarker(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all cursor-pointer ${
                 showOriginMarker 
-                  ? 'bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 font-semibold' 
-                  : 'bg-slate-900/60 border border-slate-800 text-slate-500 line-through opacity-60 hover:opacity-100'
+                  ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.8)] font-medium hover:bg-white/10' 
+                  : 'text-slate-400 line-through opacity-80 hover:opacity-100 hover:bg-white/5'
               }`}
               title="Nullpunkt-Achsen & Startpunkt-Markierung ein-/ausblenden"
             >
-              <span className={`w-2 h-2 rounded-full ${showOriginMarker ? 'bg-cyan-400' : 'bg-slate-600'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${showOriginMarker ? 'bg-cyan-400' : 'bg-slate-500'}`} />
               <span>Nullpunkt (0,0)</span>
             </button>
           </div>
@@ -7466,25 +7448,25 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                 {/* Split slider overlay when in split mode */}
                 {lightboxView === 'split' && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-700 flex items-center gap-3 shadow-2xl z-10 font-mono text-xs">
-                    <span className="text-slate-300 font-semibold">Original</span>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/20 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-3 z-10 font-mono text-xs opacity-50 hover:opacity-100 transition-opacity pointer-events-auto shadow-md border border-white/5">
+                    <span className="text-slate-200 font-semibold drop-shadow-sm">Original</span>
                     <input
                       type="range"
                       min="0"
                       max="100"
                       value={lightboxSplitPos}
                       onChange={(e) => setLightboxSplitPos(Number(e.target.value))}
-                      className="w-48 accent-cyan-400 cursor-ew-resize"
+                      className="w-48 accent-cyan-400 h-1.5 bg-black/40 rounded-full cursor-ew-resize hover:h-2 transition-all"
                     />
-                    <span className="text-cyan-400 font-semibold">SW-Schwelle</span>
+                    <span className="text-cyan-300 font-semibold drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]">SW-Schwelle</span>
                   </div>
                 )}
 
                 {/* Transparency slider overlay when in vector mode */}
                 {lightboxView === 'vectors' && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-700 flex items-center gap-3 shadow-2xl z-10 font-mono text-xs">
-                    <span className="text-slate-300 font-semibold flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/20 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-3 z-10 font-mono text-xs opacity-50 hover:opacity-100 transition-opacity pointer-events-auto shadow-md border border-white/5">
+                    <span className="text-slate-200 font-semibold flex items-center gap-1.5 drop-shadow-sm">
+                      <Layers className="w-3.5 h-3.5 text-cyan-400 drop-shadow-[0_0_3px_rgba(34,211,238,0.8)]" />
                       <span>Originalbild-Transparenz:</span>
                     </span>
                     <input
@@ -7494,10 +7476,10 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       step="5"
                       value={tracerBgOpacity}
                       onChange={(e) => setTracerBgOpacity(Number(e.target.value))}
-                      className="w-36 sm:w-48 accent-cyan-400 cursor-pointer"
+                      className="w-36 sm:w-48 accent-cyan-400 h-1.5 bg-black/40 rounded-full cursor-pointer hover:h-2 transition-all"
                       title="Deckkraft des Originalbildes im Hintergrund der Pfadansicht"
                     />
-                    <span className="text-cyan-400 font-bold w-10 text-right">{tracerBgOpacity}%</span>
+                    <span className="text-cyan-300 font-bold w-10 text-right drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]">{tracerBgOpacity}%</span>
                   </div>
                 )}
               </div>

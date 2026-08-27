@@ -15,6 +15,7 @@ import {
   Activity,
   Move,
   Info,
+  BarChart2,
   RotateCw,
   AlignCenter,
   CornerDownLeft,
@@ -231,6 +232,9 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
   // Floating Color Legend Toggle (Simple bottom overlay matching generator)
   const [showLegend, setShowLegend] = useState<boolean>(true);
+  
+  // Job Stats Panel Toggle
+  const [isStatsOpen, setIsStatsOpen] = useState<boolean>(false);
 
   // Custom Direct Offset Inputs
   const [customOffsetX, setCustomOffsetX] = useState<number>(0);
@@ -1936,34 +1940,8 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
     >
       {/* Top Floating Control Bar */}
       <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
-        {/* Left: 2D/3D Mode, Undo/Redo, Layer Toggles, Measurement */}
+        {/* Left: Undo/Redo, Layer Toggles, Measurement */}
         <div className="flex items-center gap-1 md:gap-2 pointer-events-auto text-xs drop-shadow-md">
-          {/* 2D / 3D Mode */}
-          <div className="flex items-center gap-0.5">
-            <button
-              onClick={() => {
-                setViewMode('2d');
-                fitToView('2d');
-              }}
-              className={`px-2.5 py-1.5 rounded font-medium transition-all ${
-                viewMode === '2d' ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.6)]' : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
-              }`}
-            >
-              2D Plan
-            </button>
-            <button
-              onClick={() => {
-                setViewMode('3d');
-                fitToView('3d');
-              }}
-              className={`px-2.5 py-1.5 rounded font-medium flex items-center gap-1.5 transition-all ${
-                viewMode === '3d' ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.6)]' : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
-              }`}
-            >
-              <Box className="w-3.5 h-3.5" />
-              <span>3D Iso</span>
-            </button>
-          </div>
 
           {/* Undo / Redo Arrow Buttons */}
           <div className="flex items-center gap-0.5 ml-1">
@@ -2266,122 +2244,144 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
           </div>
         )}
 
-        {/* Interactive Live Color Legend Overlay */}
-        {showLegend && (
-          <div className="absolute bottom-10 left-3 flex items-center gap-2.5 z-10 animate-in fade-in select-none text-[11px] pointer-events-auto bg-black/5 backdrop-blur-[2px] rounded-full px-2 py-1">
-            <button
-              onClick={() => setShowCutPaths(prev => !prev)}
-              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                showCutPaths
-                  ? 'text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.8)] font-medium'
-                  : 'text-slate-500/70 line-through hover:text-slate-400'
-              }`}
-              title="Klicken: Bearbeitungs- und Schnittlinien ein-/ausblenden"
-            >
-              <span className={`w-2.5 h-1 rounded-full ${showCutPaths ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-              <span>Bearbeitung</span>
-            </button>
-
-            <button
-              onClick={() => setShowRapid(prev => !prev)}
-              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                showRapid
-                  ? 'text-rose-400 drop-shadow-[0_0_6px_rgba(251,113,133,0.8)] font-medium'
-                  : 'text-slate-500/70 line-through hover:text-slate-400'
-              }`}
-              title="Klicken: Leerfahrten / Eilgang (G0) ein-/ausblenden"
-            >
-              <span className={`w-2.5 border-b-2 border-dashed ${showRapid ? 'border-rose-400' : 'border-slate-600'}`} />
-              <span>Leerfahrt (G0)</span>
-            </button>
-
-            {currentProfile.dragKnife?.enabled && (
+        {/* Grouped Legend & HUD (Positioned above the scrubber slider) */}
+        <div className="absolute bottom-20 left-3 flex flex-col items-start gap-1.5 z-10 pointer-events-none">
+          
+          {/* Interactive Live Color Legend Overlay */}
+          {showLegend && (
+            <div className="flex items-center gap-1.5 animate-in fade-in select-none text-[9px] pointer-events-auto bg-black/5 backdrop-blur-[2px] rounded-full px-1.5 py-0.5">
               <button
-                onClick={() => setShowSwivelArcs(prev => !prev)}
-                className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                  showSwivelArcs
-                    ? 'text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)] font-medium'
+                onClick={() => setShowCutPaths(prev => !prev)}
+                className={`flex items-center gap-1 px-1 py-0.5 rounded transition-all cursor-pointer ${
+                  showCutPaths
+                    ? 'text-emerald-400 drop-shadow-[0_0_4px_rgba(52,211,153,0.8)] font-medium'
                     : 'text-slate-500/70 line-through hover:text-slate-400'
                 }`}
-                title="Klicken: Messer-Schwenkbögen ein-/ausblenden"
+                title="Klicken: Bearbeitungs- und Schnittlinien ein-/ausblenden"
               >
-                <span className={`w-2.5 h-1 rounded-full ${showSwivelArcs ? 'bg-amber-400' : 'bg-slate-600'}`} />
-                <span>Messerbögen</span>
+                <span className={`w-2 h-0.5 rounded-full ${showCutPaths ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+                <span>Bearbeitung</span>
               </button>
-            )}
 
-            <button
-              onClick={() => setShowOriginMarker(prev => !prev)}
-              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                showOriginMarker
-                  ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.8)] font-medium'
-                  : 'text-slate-500/70 line-through hover:text-slate-400'
-              }`}
-              title="Klicken: Nullpunkt / Start-Achsen ein-/ausblenden"
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${showOriginMarker ? 'bg-cyan-400' : 'bg-slate-600'}`} />
-              <span>Start</span>
-            </button>
+              <button
+                onClick={() => setShowRapid(prev => !prev)}
+                className={`flex items-center gap-1 px-1 py-0.5 rounded transition-all cursor-pointer ${
+                  showRapid
+                    ? 'text-rose-400 drop-shadow-[0_0_4px_rgba(251,113,133,0.8)] font-medium'
+                    : 'text-slate-500/70 line-through hover:text-slate-400'
+                }`}
+                title="Klicken: Leerfahrten / Eilgang (G0) ein-/ausblenden"
+              >
+                <span className={`w-2 border-b-2 border-dashed ${showRapid ? 'border-rose-400' : 'border-slate-600'}`} />
+                <span>Leerfahrt (G0)</span>
+              </button>
 
-            <button
-              onClick={() => setShowLegend(false)}
-              className="text-slate-400 hover:text-slate-200 text-[10px] pl-1.5 border-l border-slate-700/50 cursor-pointer"
-              title="Legende minimieren"
-            >
-              ✕
-            </button>
-          </div>
-        )}
+              {currentProfile.dragKnife?.enabled && (
+                <button
+                  onClick={() => setShowSwivelArcs(prev => !prev)}
+                  className={`flex items-center gap-1 px-1 py-0.5 rounded transition-all cursor-pointer ${
+                    showSwivelArcs
+                      ? 'text-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.8)] font-medium'
+                      : 'text-slate-500/70 line-through hover:text-slate-400'
+                  }`}
+                  title="Klicken: Messer-Schwenkbögen ein-/ausblenden"
+                >
+                  <span className={`w-2 h-0.5 rounded-full ${showSwivelArcs ? 'bg-amber-400' : 'bg-slate-600'}`} />
+                  <span>Messerbögen</span>
+                </button>
+              )}
 
-        {/* Bottom Left Coordinate & Nav HUD */}
-        <div className="absolute bottom-3 left-4 flex items-center gap-4 text-[11px] font-mono pointer-events-none z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-black/5 backdrop-blur-[2px] rounded-full px-2 py-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-400/80">Maus:</span>
-            <span className="text-slate-200">{cursorPosMm.x.toFixed(1)}, {cursorPosMm.y.toFixed(1)}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-400/80">Kopf:</span>
-            <span className="text-cyan-300 drop-shadow-[0_0_5px_rgba(34,211,238,0.8)] font-semibold">
-              {(liveState?.wpos?.x ?? 0).toFixed(1)}, {(liveState?.wpos?.y ?? 0).toFixed(1)}
-            </span>
-          </div>
-          <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-emerald-400/90 ml-2 border-l border-slate-700/50 pl-3">
-            <MousePointerClick className="w-3 h-3 text-emerald-400 drop-shadow-[0_0_3px_rgba(52,211,153,0.8)]" />
-            <span>Doppelklick = Fahren</span>
+              <button
+                onClick={() => setShowOriginMarker(prev => !prev)}
+                className={`flex items-center gap-1 px-1 py-0.5 rounded transition-all cursor-pointer ${
+                  showOriginMarker
+                    ? 'text-cyan-400 drop-shadow-[0_0_4px_rgba(34,211,238,0.8)] font-medium'
+                    : 'text-slate-500/70 line-through hover:text-slate-400'
+                }`}
+                title="Klicken: Nullpunkt / Start-Achsen ein-/ausblenden"
+              >
+                <span className={`w-1 h-1 rounded-full ${showOriginMarker ? 'bg-cyan-400' : 'bg-slate-600'}`} />
+                <span>Start</span>
+              </button>
+
+              <button
+                onClick={() => setShowLegend(false)}
+                className="text-slate-400 hover:text-slate-200 text-[9px] pl-1 border-l border-slate-700/50 cursor-pointer"
+                title="Legende minimieren"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Bottom Left Coordinate & Nav HUD */}
+          <div className="flex items-center gap-2.5 text-[9px] font-mono drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-black/5 backdrop-blur-[2px] rounded-full px-2 py-0.5">
+            <div className="flex items-center gap-1">
+              <span className="text-slate-400/80">Maus:</span>
+              <span className="text-slate-200">{cursorPosMm.x.toFixed(1)}, {cursorPosMm.y.toFixed(1)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-slate-400/80">Kopf:</span>
+              <span className="text-cyan-300 drop-shadow-[0_0_4px_rgba(34,211,238,0.8)] font-semibold">
+                {(liveState?.wpos?.x ?? 0).toFixed(1)}, {(liveState?.wpos?.y ?? 0).toFixed(1)}
+              </span>
+            </div>
+            <div className="hidden sm:flex items-center gap-1 text-[9px] text-emerald-400/90 ml-1 border-l border-slate-700/50 pl-2">
+              <MousePointerClick className="w-2.5 h-2.5 text-emerald-400 drop-shadow-[0_0_3px_rgba(52,211,153,0.8)]" />
+              <span>Doppelklick = Fahren</span>
+            </div>
           </div>
         </div>
 
-        {/* Job Stats Badge (Placed in Bottom-Right Corner to completely avoid ViewCube collision) */}
+        {/* Collapsible Job Stats Badge (Placed in Bottom-Right Corner) */}
         {parsedGcode && parsedGcode.segments.length > 0 && (
-          <div className="absolute bottom-3 right-3 bg-slate-900/95 backdrop-blur-md p-2.5 rounded-lg border border-slate-800 text-xs text-slate-300 pointer-events-none shadow-xl space-y-1 max-w-[220px] z-10">
-            <div className="font-semibold text-slate-100 flex items-center justify-between pb-1 border-b border-slate-800">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                Statistik
-              </span>
-              <span className="text-[10px] text-indigo-300 font-mono bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-800/50">{parsedGcode.stats.lineCount} Zeilen</span>
-            </div>
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-slate-400">Schnitt/Zeichnen:</span>
-              <span className="text-emerald-400 font-mono font-semibold">{(parsedGcode.stats.cutLength / 10).toFixed(1)} cm</span>
-            </div>
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-slate-400">Leerfahrt:</span>
-              <span className="text-rose-400 font-mono font-semibold">{(parsedGcode.stats.travelLength / 10).toFixed(1)} cm</span>
-            </div>
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-slate-400">Stift-Hebungen:</span>
-              <span className="text-amber-400 font-mono font-semibold">{parsedGcode.stats.penLifts}x</span>
-            </div>
-            <div className="flex justify-between items-center text-[10px] pt-1 border-t border-slate-800/80">
-              <span className="text-slate-300 flex items-center gap-1">
-                <Clock className="w-3 h-3 text-indigo-400" />
-                Zeit:
-              </span>
-              <span className="text-indigo-300 font-mono font-semibold">
-                {Math.floor(parsedGcode.stats.estimatedTimeSec / 60)}m {parsedGcode.stats.estimatedTimeSec % 60}s
-              </span>
-            </div>
+          <div className="absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2 pointer-events-none">
+            {/* Toggle Button */}
+            <button
+              onClick={() => setIsStatsOpen(!isStatsOpen)}
+              className={`pointer-events-auto p-1.5 rounded-full transition-all backdrop-blur-[2px] ${
+                isStatsOpen 
+                  ? 'bg-indigo-600 text-white shadow-[0_0_10px_rgba(99,102,241,0.5)]' 
+                  : 'bg-black/10 text-slate-400 hover:text-slate-200 hover:bg-black/20'
+              }`}
+              title={isStatsOpen ? 'Statistik ausblenden' : 'Statistik anzeigen'}
+            >
+              <BarChart2 className="w-4 h-4" />
+            </button>
+
+            {/* Stats Panel */}
+            {isStatsOpen && (
+              <div className="bg-black/20 backdrop-blur-md p-3 rounded-xl border border-white/10 text-xs text-slate-200 pointer-events-auto shadow-xl space-y-2 min-w-[200px] animate-in fade-in slide-in-from-right-4 drop-shadow-lg">
+                <div className="font-semibold text-slate-100 flex items-center justify-between pb-2 border-b border-white/10">
+                  <span className="flex items-center gap-1.5 drop-shadow-[0_0_5px_rgba(99,102,241,0.8)]">
+                    <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                    Statistik
+                  </span>
+                  <span className="text-[10px] text-indigo-300 font-mono bg-indigo-950/40 px-1.5 py-0.5 rounded-md drop-shadow-sm">{parsedGcode.stats.lineCount} Zeilen</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-slate-400/90">Schnitt/Zeichnen:</span>
+                  <span className="text-emerald-400 font-mono font-semibold drop-shadow-[0_0_3px_rgba(52,211,153,0.8)]">{(parsedGcode.stats.cutLength / 10).toFixed(1)} cm</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-slate-400/90">Leerfahrt:</span>
+                  <span className="text-rose-400 font-mono font-semibold drop-shadow-[0_0_3px_rgba(251,113,133,0.8)]">{(parsedGcode.stats.travelLength / 10).toFixed(1)} cm</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-slate-400/90">Stift-Hebungen:</span>
+                  <span className="text-amber-400 font-mono font-semibold drop-shadow-[0_0_3px_rgba(251,191,36,0.8)]">{parsedGcode.stats.penLifts}x</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px] pt-1.5 border-t border-white/10">
+                  <span className="text-slate-300 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-indigo-400 drop-shadow-[0_0_3px_rgba(99,102,241,0.8)]" />
+                    Dauer:
+                  </span>
+                  <span className="text-indigo-300 font-mono font-semibold drop-shadow-[0_0_3px_rgba(99,102,241,0.8)]">
+                    {Math.floor(parsedGcode.stats.estimatedTimeSec / 60)}m {parsedGcode.stats.estimatedTimeSec % 60}s
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -2424,18 +2424,18 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
       {/* Bottom Interactive G-Code Simulation Scrubber & Playback Bar */}
       {parsedGcode && parsedGcode.segments.length > 0 && (
-        <div className="bg-slate-900 border-t border-slate-800 px-4 py-2.5 flex items-center gap-3 text-xs z-20 shadow-lg shrink-0">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl flex items-center gap-2 md:gap-3 text-xs z-20 opacity-40 hover:opacity-100 transition-opacity duration-300 bg-black/20 backdrop-blur-md rounded-full px-3 py-1.5 md:px-4 md:py-2 pointer-events-auto">
           {/* Play / Pause */}
           <button
             onClick={() => setIsSimPlaying(!isSimPlaying)}
-            className={`p-2 rounded-lg text-white font-medium transition-all shadow-sm flex items-center justify-center ${
+            className={`p-1.5 md:p-2 rounded-full text-white font-medium transition-all shadow-sm flex items-center justify-center ${
               isSimPlaying
-                ? 'bg-amber-600 hover:bg-amber-500 active:bg-amber-700'
-                : 'bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700'
+                ? 'bg-amber-600/80 hover:bg-amber-500 shadow-[0_0_8px_rgba(217,119,6,0.6)]'
+                : 'bg-indigo-600/80 hover:bg-indigo-500 shadow-[0_0_8px_rgba(79,70,229,0.6)]'
             }`}
             title={isSimPlaying ? 'Simulation anhalten' : 'Simulation abspielen'}
           >
-            {isSimPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            {isSimPlaying ? <Pause className="w-3 h-3 md:w-4 md:h-4" /> : <Play className="w-3 h-3 md:w-4 md:h-4" />}
           </button>
 
           {/* Rewind */}
@@ -2444,10 +2444,10 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
               setIsSimPlaying(false);
               setSimIndex(0);
             }}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
+            className="p-1 md:p-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
             title="Zum Anfang (Segment 0)"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3 h-3 md:w-4 md:h-4" />
           </button>
 
           {/* Step Back 1 */}
@@ -2456,10 +2456,10 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
               setIsSimPlaying(false);
               setSimIndex(prev => Math.max(0, prev - 1));
             }}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
+            className="p-1 md:p-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
             title="Ein Segment zurück"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3 h-3 md:w-4 md:h-4" />
           </button>
 
           {/* Step Forward 1 */}
@@ -2468,15 +2468,15 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
               setIsSimPlaying(false);
               setSimIndex(prev => Math.min(parsedGcode.segments.length - 1, prev + 1));
             }}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
+            className="p-1 md:p-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
             title="Ein Segment vorwärts"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
           </button>
 
           {/* Timeline Slider with Live Scrubbing */}
-          <div className="flex-1 flex items-center gap-3">
-            <span className="text-slate-400 font-mono text-[11px] min-w-[90px]">
+          <div className="flex-1 flex items-center gap-2 md:gap-3 px-2">
+            <span className="text-slate-300 font-mono text-[10px] md:text-[11px] min-w-[70px] md:min-w-[90px] drop-shadow-md">
               Seg {simIndex} / {parsedGcode.segments.length - 1}
             </span>
             <input
@@ -2488,31 +2488,31 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
                 setIsSimPlaying(false);
                 setSimIndex(Number(e.target.value));
               }}
-              className="flex-1 accent-indigo-500 h-2 bg-slate-800 rounded-lg cursor-pointer transition-all"
+              className="flex-1 accent-indigo-500 h-1.5 bg-black/30 rounded-full cursor-pointer transition-all hover:h-2"
             />
-            <span className="text-indigo-400 font-mono font-semibold text-[11px] min-w-[40px] text-right">
+            <span className="text-indigo-300 font-mono font-semibold text-[10px] md:text-[11px] min-w-[35px] md:min-w-[40px] text-right drop-shadow-[0_0_3px_rgba(99,102,241,0.8)]">
               {Math.round((simIndex / Math.max(1, parsedGcode.segments.length - 1)) * 100)}%
             </span>
           </div>
 
           {/* Current Segment Coordinate Details */}
           {parsedGcode.segments[simIndex] && (
-            <div className="hidden lg:flex items-center gap-2 bg-slate-950 px-2.5 py-1 rounded-md border border-slate-800 font-mono text-[11px] text-slate-300">
-              <span className="text-slate-500">{parsedGcode.segments[simIndex].type}:</span>
+            <div className="hidden lg:flex items-center gap-2 bg-black/20 px-2.5 py-1 rounded-full border border-white/5 font-mono text-[11px] text-slate-200 drop-shadow-sm">
+              <span className="text-slate-400">{parsedGcode.segments[simIndex].type}:</span>
               <span>X{parsedGcode.segments[simIndex].to.x.toFixed(1)}</span>
               <span>Y{parsedGcode.segments[simIndex].to.y.toFixed(1)}</span>
-              <span className="text-indigo-400">Z{parsedGcode.segments[simIndex].to.z.toFixed(1)}</span>
+              <span className="text-indigo-300 drop-shadow-[0_0_2px_rgba(99,102,241,0.5)]">Z{parsedGcode.segments[simIndex].to.z.toFixed(1)}</span>
             </div>
           )}
 
           {/* Speed Selector */}
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-md border border-slate-800">
+          <div className="flex items-center gap-0.5 bg-black/20 p-0.5 md:p-1 rounded-full border border-white/5">
             {[0.5, 1, 2, 5, 10].map((s) => (
               <button
                 key={s}
                 onClick={() => setSimSpeed(s)}
-                className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${
-                  simSpeed === s ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+                className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded-full text-[9px] md:text-[10px] font-mono font-medium transition-all ${
+                  simSpeed === s ? 'bg-indigo-600 text-white shadow-[0_0_6px_rgba(99,102,241,0.6)]' : 'text-slate-400 hover:text-slate-200 hover:bg-white/10'
                 }`}
               >
                 {s}x

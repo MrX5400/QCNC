@@ -76,30 +76,23 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
 
   return (
     <div
-      className={`select-none pointer-events-auto flex flex-col items-center gap-1 bg-slate-950/85 backdrop-blur-md p-2 rounded-xl border border-slate-700/60 shadow-2xl z-20 ${className}`}
-      onMouseDown={(e) => e.stopPropagation()}
+      className={`select-none pointer-events-none flex flex-col items-end gap-1.5 z-20 ${className}`}
     >
-      {/* Mini Header / Reset Home Button */}
-      <div className="flex items-center justify-between w-full px-1 text-[10px] text-slate-400 font-semibold border-b border-slate-800/80 pb-1">
-        <span className="flex items-center gap-1 text-slate-300">
-          <Compass className="w-3 h-3 text-indigo-400" />
-          <span>Ansicht</span>
-        </span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onResetHome();
-          }}
-          className="p-1 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded transition-colors"
-          title="Startansicht (Isometrisch)"
-        >
-          <Home className="w-3 h-3" />
-        </button>
-      </div>
+      {/* Floating Reset Home Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onResetHome();
+        }}
+        className="pointer-events-auto p-1.5 text-slate-400 hover:text-white bg-black/10 hover:bg-black/30 backdrop-blur-sm rounded-full transition-all drop-shadow-md"
+        title="Startansicht (Isometrisch)"
+      >
+        <Home className="w-4 h-4" />
+      </button>
 
       {/* 3D Perspective Cube Container */}
       <div
-        className="w-18 h-18 relative cursor-grab active:cursor-grabbing flex items-center justify-center my-1"
+        className="w-18 h-18 relative cursor-grab active:cursor-grabbing flex items-center justify-center my-1 pointer-events-auto"
         style={{ perspective: '300px' }}
         onMouseDown={handleMouseDown}
         title="Klicken für Ausrichtung, Ziehen zum freien Drehen"
