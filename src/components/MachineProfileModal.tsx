@@ -79,7 +79,7 @@ export const MachineProfileModal: React.FC<MachineProfileModalProps> = ({
         <div className="p-5 overflow-y-auto space-y-5 text-xs">
           {/* Preset Buttons */}
           <div className="space-y-2">
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Bauraum-Vorlagen</label>
+            <label className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-wider">Bauraum-Vorlagen</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {(allProfiles.length > 0 ? allProfiles : DEFAULT_PROFILES).map((p) => {
                 const isSelected = profile.id === p.id;
@@ -94,7 +94,7 @@ export const MachineProfileModal: React.FC<MachineProfileModalProps> = ({
                     }`}
                   >
                     <div className="font-semibold text-slate-200 truncate">{p.name.split('(')[0].trim()}</div>
-                    <div className="text-[10px] text-indigo-400 font-mono mt-0.5">{p.bedWidth} × {p.bedHeight} mm</div>
+                    <div className="text-[0.625rem] text-indigo-400 font-mono mt-0.5">{p.bedWidth} × {p.bedHeight} mm</div>
                   </button>
                 );
               })}
@@ -103,7 +103,7 @@ export const MachineProfileModal: React.FC<MachineProfileModalProps> = ({
 
           {/* Profile Name */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-slate-300">Profilname</label>
+            <label className="text-[0.6875rem] font-semibold text-slate-300">Profilname</label>
             <input
               type="text"
               value={profile.name}
@@ -114,10 +114,10 @@ export const MachineProfileModal: React.FC<MachineProfileModalProps> = ({
 
           {/* Bed Dimensions */}
           <div className="space-y-2">
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Arbeitsbereich / Bauraum (mm)</label>
+            <label className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-wider">Arbeitsbereich / Bauraum (mm)</label>
             <div className="grid grid-cols-3 gap-3 font-mono">
               <div className="space-y-1">
-                <span className="text-slate-400 text-[11px]">X Max (Breite):</span>
+                <span className="text-slate-400 text-[0.6875rem]">X Max (Breite):</span>
                 <div className="flex items-center gap-1 bg-slate-950 px-3 py-2 rounded-md border border-slate-800 focus-within:border-indigo-500">
                   <input
                     type="number"
@@ -130,7 +130,7 @@ export const MachineProfileModal: React.FC<MachineProfileModalProps> = ({
               </div>
 
               <div className="space-y-1">
-                <span className="text-slate-400 text-[11px]">Y Max (Höhe):</span>
+                <span className="text-slate-400 text-[0.6875rem]">Y Max (Höhe):</span>
                 <div className="flex items-center gap-1 bg-slate-950 px-3 py-2 rounded-md border border-slate-800 focus-within:border-indigo-500">
                   <input
                     type="number"
@@ -143,7 +143,7 @@ export const MachineProfileModal: React.FC<MachineProfileModalProps> = ({
               </div>
 
               <div className="space-y-1">
-                <span className="text-slate-400 text-[11px]">Z Hub (Tiefe):</span>
+                <span className="text-slate-400 text-[0.6875rem]">Z Hub (Tiefe):</span>
                 <div className="flex items-center gap-1 bg-slate-950 px-3 py-2 rounded-md border border-slate-800 focus-within:border-indigo-500">
                   <input
                     type="number"
@@ -159,7 +159,7 @@ export const MachineProfileModal: React.FC<MachineProfileModalProps> = ({
 
           {/* Machine Origin (Nullpunkt) */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+            <label className="text-[0.6875rem] font-semibold text-slate-300 flex items-center gap-1.5">
               <Compass className="w-3.5 h-3.5 text-indigo-400" />
               <span>Maschinen-Nullpunkt (Ursprung X0 Y0)</span>
             </label>
@@ -180,7 +180,7 @@ export const MachineProfileModal: React.FC<MachineProfileModalProps> = ({
                   }`}
                 >
                   <div className="font-semibold text-xs text-slate-200">{opt.label}</div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">{opt.desc}</div>
+                  <div className="text-[0.625rem] text-slate-500 mt-0.5">{opt.desc}</div>
                 </button>
               ))}
             </div>
@@ -189,7 +189,7 @@ export const MachineProfileModal: React.FC<MachineProfileModalProps> = ({
           {/* Architectural Clarification Info Box */}
           <div className="p-3.5 bg-indigo-950/30 rounded-lg border border-indigo-900/40 flex items-start gap-3">
             <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-            <div className="text-[11px] text-slate-300 leading-relaxed">
+            <div className="text-[0.6875rem] text-slate-300 leading-relaxed">
               <strong className="text-indigo-200">Reine Bauraumverwaltung:</strong> Maschinenprofile steuern ausschließlich die Dimensionen und Grenzwerte Ihrer Arbeitsfläche. 
               Alle Werkzeugbefehle (wie <em>Stift Z-Achse vs. Servo/M3</em>, <em>Schleppmesser G2/G3 Kreisbögen</em>, <em>Laser M3/M4</em>) werden flexibel und auftragsspezifisch direkt in den <strong>Generator-Einstellungen</strong> festgelegt.
             </div>
@@ -198,7 +198,7 @@ export const MachineProfileModal: React.FC<MachineProfileModalProps> = ({
 
         {/* Modal Footer */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-slate-800 bg-slate-950/80">
-          <div className="text-slate-400 font-mono text-[11px]">
+          <div className="text-slate-400 font-mono text-[0.6875rem]">
             {profile.bedWidth} × {profile.bedHeight} mm
           </div>
 

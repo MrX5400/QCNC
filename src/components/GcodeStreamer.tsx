@@ -256,7 +256,7 @@ G0 X0.000 Y0.000
               />
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+            <div className="flex items-center justify-between text-[0.6875rem] text-slate-400 pt-1">
               <div className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-slate-500" />
                 <span>Laufzeit: <span className="text-slate-200 font-mono">{formatTime(elapsedSeconds)}</span></span>
@@ -316,7 +316,7 @@ G0 X0.000 Y0.000
               <span className="text-slate-400 font-medium">Vorschub-Echtzeit-Override:</span>
               <span className="text-cyan-400 font-mono font-bold">{feedOverride}%</span>
             </div>
-            <div className="grid grid-cols-5 gap-1.5 font-mono text-[11px]">
+            <div className="grid grid-cols-5 gap-1.5 font-mono text-[0.6875rem]">
               <button
                 onClick={() => handleFeedOverrideChange(-10)}
                 className="py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700"
@@ -356,11 +356,11 @@ G0 X0.000 Y0.000
 
           {/* G-Code Live Syntax Viewer */}
           <div className="space-y-1">
-            <div className="flex items-center justify-between text-[11px] text-slate-400">
+            <div className="flex items-center justify-between text-[0.6875rem] text-slate-400">
               <span>G-Code Inspektor ({parsedGcode.lines.length} Zeilen):</span>
               <button
                 onClick={() => setAutoScrollGcode(!autoScrollGcode)}
-                className={`px-2 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1 transition-colors ${
+                className={`px-2 py-0.5 rounded text-[0.625rem] font-medium border flex items-center gap-1 transition-colors ${
                   autoScrollGcode
                     ? 'bg-cyan-950/70 border-cyan-700/60 text-cyan-300'
                     : 'bg-slate-800 border-slate-700 text-slate-400'
@@ -373,7 +373,7 @@ G0 X0.000 Y0.000
             </div>
             <div
               ref={codeViewerRef}
-              className="h-36 overflow-y-auto overscroll-contain bg-slate-950 rounded-md border border-slate-800 p-2 font-mono text-[11px] leading-relaxed select-text"
+              className="h-36 overflow-y-auto overscroll-contain bg-slate-950 rounded-md border border-slate-800 p-2 font-mono text-[0.6875rem] leading-relaxed select-text"
             >
               {parsedGcode.lines.map((line, idx) => {
                 const lineNum = idx + 1;
@@ -392,7 +392,7 @@ G0 X0.000 Y0.000
                         : 'text-slate-300 hover:bg-slate-900'
                     }`}
                   >
-                    <span className="w-8 text-slate-600 select-none text-[10px]">{lineNum}</span>
+                    <span className="w-8 text-slate-600 select-none text-[0.625rem]">{lineNum}</span>
                     <span className="flex-1 truncate">{line}</span>
                   </div>
                 );

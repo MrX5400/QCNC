@@ -79,7 +79,7 @@ export const GrblSettingsManager: React.FC = () => {
         <div className="flex items-center gap-2">
           <Settings className="w-4 h-4 text-indigo-400" />
           <h3 className="font-semibold text-sm text-slate-100">GRBL $$ Konfigurations-Manager</h3>
-          <span className="text-[11px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">
+          <span className="text-[0.6875rem] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">
             {settings.length} Parameter
           </span>
         </div>
@@ -137,7 +137,7 @@ export const GrblSettingsManager: React.FC = () => {
       {/* Settings Table */}
       <div className="overflow-x-auto rounded-lg border border-slate-800">
         <table className="w-full text-left text-xs border-collapse">
-          <thead className="bg-slate-950 text-slate-400 font-mono text-[11px] border-b border-slate-800">
+          <thead className="bg-slate-950 text-slate-400 font-mono text-[0.6875rem] border-b border-slate-800">
             <tr>
               <th className="p-2.5 w-16">ID</th>
               <th className="p-2.5">Name & Beschreibung</th>
@@ -157,10 +157,10 @@ export const GrblSettingsManager: React.FC = () => {
                   <td className="p-2.5 font-mono font-bold text-cyan-400">{s.id}</td>
                   <td className="p-2.5">
                     <div className="font-semibold text-slate-200">{s.name}</div>
-                    <div className="text-[11px] text-slate-400 leading-snug">{s.description}</div>
+                    <div className="text-[0.6875rem] text-slate-400 leading-snug">{s.description}</div>
                   </td>
                   <td className="p-2.5">
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60">
+                    <span className="text-[0.625rem] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60">
                       {s.category}
                     </span>
                   </td>
@@ -174,14 +174,14 @@ export const GrblSettingsManager: React.FC = () => {
                           isDirty ? 'border-amber-500 text-amber-300' : 'border-slate-700 text-slate-200'
                         }`}
                       />
-                      <span className="text-[10px] text-slate-500">{s.unit}</span>
+                      <span className="text-[0.625rem] text-slate-500">{s.unit}</span>
                     </div>
                   </td>
                   <td className="p-2.5 text-right">
                     <button
                       onClick={() => handleSaveSetting(s.id)}
                       disabled={isSaved}
-                      className={`px-2.5 py-1 rounded text-[11px] font-medium inline-flex items-center gap-1 transition-all ${
+                      className={`px-2.5 py-1 rounded text-[0.6875rem] font-medium inline-flex items-center gap-1 transition-all ${
                         isSaved
                           ? 'bg-emerald-600 text-white'
                           : isDirty

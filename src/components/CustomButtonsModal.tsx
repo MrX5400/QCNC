@@ -396,7 +396,7 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
                   {buttons.filter(b => b.isVisible).length} / {buttons.length} aktiv
                 </span>
               </h2>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[0.6875rem] text-slate-400">
                 Erstelle, ordne und teste benutzerdefinierte G-Code Sequenzen, Laser-Pulse und Fahrbefehle.
               </p>
             </div>
@@ -622,16 +622,16 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-xs text-slate-100">{btn.name}</span>
                           {btn.requireConfirmation && (
-                            <span className="text-[9px] bg-amber-950/80 text-amber-300 border border-amber-800 px-1 py-0.2 rounded" title="Sicherheitsabfrage aktiv">
+                            <span className="text-[0.5625rem] bg-amber-950/80 text-amber-300 border border-amber-800 px-1 py-0.2 rounded" title="Sicherheitsabfrage aktiv">
                               Bestätigung
                             </span>
                           )}
-                          <span className="text-[10px] text-slate-500 font-mono">
+                          <span className="text-[0.625rem] text-slate-500 font-mono">
                             {btn.category}
                           </span>
                         </div>
                         {btn.description && (
-                          <p className="text-[11px] text-slate-400 line-clamp-1">
+                          <p className="text-[0.6875rem] text-slate-400 line-clamp-1">
                             {btn.description}
                           </p>
                         )}
@@ -639,7 +639,7 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
                     </div>
 
                     {/* Middle: Command Preview */}
-                    <div className="hidden md:block flex-1 max-w-[260px] truncate text-[10px] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded border border-slate-800/80">
+                    <div className="hidden md:block flex-1 max-w-[260px] truncate text-[0.625rem] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded border border-slate-800/80">
                       {btn.command.replace(/\n/g, ' ↵ ')}
                     </div>
 
@@ -648,7 +648,7 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
                       {/* Test Execute Button */}
                       <button
                         onClick={() => handleTestMacro(btn)}
-                        className="px-2 py-1 bg-purple-950/60 hover:bg-purple-900 text-purple-300 hover:text-white rounded border border-purple-800/50 text-[11px] font-medium flex items-center gap-1 transition-colors"
+                        className="px-2 py-1 bg-purple-950/60 hover:bg-purple-900 text-purple-300 hover:text-white rounded border border-purple-800/50 text-[0.6875rem] font-medium flex items-center gap-1 transition-colors"
                         title="Makro jetzt ausführen / testen"
                       >
                         <Play className="w-3 h-3" />
@@ -717,7 +717,7 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
               <div className="bg-slate-950/80 p-3 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
                 <div>
                   <h3 className="font-bold text-slate-200">Fertige Makro-Vorlagen für Plotter, CNC &amp; Laser</h3>
-                  <p className="text-slate-400 text-[11px]">
+                  <p className="text-slate-400 text-[0.6875rem]">
                     Füge bewährte CNC-Befehle mit einem Klick zu deinen Makros hinzu.
                   </p>
                 </div>
@@ -737,14 +737,14 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
                           </div>
                           <span className="font-bold text-xs text-slate-100">{tpl.name}</span>
                         </div>
-                        <span className="text-[10px] text-slate-500 font-mono">
+                        <span className="text-[0.625rem] text-slate-500 font-mono">
                           {tpl.category}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1.5">
+                      <p className="text-[0.6875rem] text-slate-400 mt-1.5">
                         {tpl.description}
                       </p>
-                      <div className="mt-2 bg-slate-900 p-1.5 rounded font-mono text-[10px] text-slate-300 border border-slate-800/80 max-h-16 overflow-y-auto whitespace-pre-line">
+                      <div className="mt-2 bg-slate-900 p-1.5 rounded font-mono text-[0.625rem] text-slate-300 border border-slate-800/80 max-h-16 overflow-y-auto whitespace-pre-line">
                         {tpl.command}
                       </div>
                     </div>
@@ -772,7 +772,7 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
                     <Download className="w-4 h-4" />
                     <span>Makros Exportieren</span>
                   </div>
-                  <p className="text-slate-400 text-[11px]">
+                  <p className="text-slate-400 text-[0.6875rem]">
                     Sichere alle {buttons.length} konfigurierten Makros als wiederverwendbare JSON-Datei.
                   </p>
                   <button
@@ -790,7 +790,7 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
                     <Upload className="w-4 h-4" />
                     <span>Makros Importieren</span>
                   </div>
-                  <p className="text-slate-400 text-[11px]">
+                  <p className="text-slate-400 text-[0.6875rem]">
                     Lade eine zuvor exportierte Makro-Konfigurationsdatei hoch und führe sie zusammen.
                   </p>
                   <input
@@ -815,7 +815,7 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
                     <RotateCcw className="w-4 h-4" />
                     <span>Standard Wiederherstellen</span>
                   </div>
-                  <p className="text-slate-400 text-[11px]">
+                  <p className="text-slate-400 text-[0.6875rem]">
                     Stellt alle 18 Standard-Makros und empfohlenen Werkzeugaktionen wieder her.
                   </p>
                   <button
@@ -898,7 +898,7 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
                     <label className="text-slate-300 font-semibold">
                       G-Code Befehle (Mehrzeilig, Variablen möglich):
                     </label>
-                    <span className="text-[10px] text-slate-500">
+                    <span className="text-[0.625rem] text-slate-500">
                       Spezial: FRAMING_ACTION, AIR_ASSIST_TOGGLE, GRBL_SOFT_RESET
                     </span>
                   </div>
@@ -908,13 +908,13 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
                     value={editingButton.command}
                     onChange={(e) => setEditingButton({ ...editingButton, command: e.target.value })}
                     placeholder="G90&#10;G0 Z{penUpZ}&#10;G0 X{bedCenterX} Y{bedCenterY} F{travelFeedrate}"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 font-mono text-[11px] text-slate-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 font-mono text-[0.6875rem] text-slate-100 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
 
                 {/* Clickable Variable Chips */}
                 <div>
-                  <label className="block text-slate-400 mb-1 text-[11px] font-medium">
+                  <label className="block text-slate-400 mb-1 text-[0.6875rem] font-medium">
                     Klickbare Platzhalter-Variablen einfügen:
                   </label>
                   <div className="flex flex-wrap gap-1">
@@ -923,7 +923,7 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
                         key={idx}
                         type="button"
                         onClick={() => insertVariableIntoEditor(chip.label)}
-                        className="px-2 py-0.5 bg-slate-950 hover:bg-purple-950/70 text-purple-300 hover:text-purple-200 border border-slate-800 hover:border-purple-600 rounded text-[10px] font-mono transition-colors"
+                        className="px-2 py-0.5 bg-slate-950 hover:bg-purple-950/70 text-purple-300 hover:text-purple-200 border border-slate-800 hover:border-purple-600 rounded text-[0.625rem] font-mono transition-colors"
                         title={chip.desc}
                       >
                         {chip.label}
@@ -934,10 +934,10 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
 
                 {/* Visual Preview of Substituted G-Code */}
                 <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                  <span className="text-[10px] text-slate-500 font-semibold block mb-0.5">
+                  <span className="text-[0.625rem] text-slate-500 font-semibold block mb-0.5">
                     Vorschau (aufgelöste Variablen für aktuelles Profil):
                   </span>
-                  <div className="font-mono text-[10px] text-emerald-400 max-h-16 overflow-y-auto whitespace-pre-line">
+                  <div className="font-mono text-[0.625rem] text-emerald-400 max-h-16 overflow-y-auto whitespace-pre-line">
                     {substituteMacroVariables(editingButton.command, activeProfile)}
                   </div>
                 </div>
@@ -952,7 +952,7 @@ export const CustomButtonsModal: React.FC<CustomButtonsModalProps> = ({
                           key={c}
                           type="button"
                           onClick={() => setEditingButton({ ...editingButton, color: c })}
-                          className={`px-2 py-1 rounded text-[10px] font-semibold border transition-all ${
+                          className={`px-2 py-1 rounded text-[0.625rem] font-semibold border transition-all ${
                             editingButton.color === c
                               ? 'ring-2 ring-white ' + getColorClasses(c)
                               : getColorClasses(c)

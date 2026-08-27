@@ -43,8 +43,8 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
       if (!isDragging) return;
       const dx = e.clientX - dragStartRef.current.x;
       const dy = e.clientY - dragStartRef.current.y;
-      const newYaw = (dragStartRef.current.yaw + dx * 0.8) % 360;
-      const newPitch = Math.max(5, Math.min(85, dragStartRef.current.pitch + dy * 0.8));
+      const newYaw = (dragStartRef.current.yaw - dx * 0.8) % 360;
+      const newPitch = Math.max(5, Math.min(85, dragStartRef.current.pitch - dy * 0.8));
       onOrientationChange(newYaw, newPitch, '3d');
     };
 
@@ -76,30 +76,23 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
 
   return (
     <div
-      className={`select-none pointer-events-auto flex flex-col items-center gap-1 bg-slate-950/85 backdrop-blur-md p-2 rounded-xl border border-slate-700/60 shadow-2xl z-20 ${className}`}
-      onMouseDown={(e) => e.stopPropagation()}
+      className={`select-none pointer-events-none flex flex-col items-end gap-1.5 z-20 ${className}`}
     >
-      {/* Mini Header / Reset Home Button */}
-      <div className="flex items-center justify-between w-full px-1 text-[10px] text-slate-400 font-semibold border-b border-slate-800/80 pb-1">
-        <span className="flex items-center gap-1 text-slate-300">
-          <Compass className="w-3 h-3 text-indigo-400" />
-          <span>Ansicht</span>
-        </span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onResetHome();
-          }}
-          className="p-1 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded transition-colors"
-          title="Startansicht (Isometrisch)"
-        >
-          <Home className="w-3 h-3" />
-        </button>
-      </div>
+      {/* Floating Reset Home Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onResetHome();
+        }}
+        className="pointer-events-auto p-1.5 text-slate-400 hover:text-white bg-black/10 hover:bg-black/30 backdrop-blur-sm rounded-full transition-all drop-shadow-md"
+        title="Startansicht (Isometrisch)"
+      >
+        <Home className="w-4 h-4" />
+      </button>
 
       {/* 3D Perspective Cube Container */}
       <div
-        className="w-18 h-18 relative cursor-grab active:cursor-grabbing flex items-center justify-center my-1"
+        className="w-18 h-18 relative cursor-grab active:cursor-grabbing flex items-center justify-center my-1 pointer-events-auto"
         style={{ perspective: '300px' }}
         onMouseDown={handleMouseDown}
         title="Klicken für Ausrichtung, Ziehen zum freien Drehen"
@@ -114,7 +107,7 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
           {/* TOP Face (Oben) */}
           <div
             onClick={(e) => handleFaceClick(0, 90, '2d', e)}
-            className="absolute inset-0 bg-slate-800/90 border border-indigo-500/70 hover:bg-indigo-600 hover:text-white text-slate-200 font-bold text-[9px] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+            className="absolute inset-0 bg-slate-800/90 border border-indigo-500/70 hover:bg-indigo-600 hover:text-white text-slate-200 font-bold text-[0.5625rem] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
             style={{ transform: 'rotateX(90deg) translateZ(24px)' }}
           >
             OBEN
@@ -123,7 +116,7 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
           {/* BOTTOM Face (Unten) */}
           <div
             onClick={(e) => handleFaceClick(0, 10, '3d', e)}
-            className="absolute inset-0 bg-slate-900/90 border border-slate-700 hover:bg-slate-700 text-slate-400 font-bold text-[9px] flex items-center justify-center transition-colors cursor-pointer"
+            className="absolute inset-0 bg-slate-900/90 border border-slate-700 hover:bg-slate-700 text-slate-400 font-bold text-[0.5625rem] flex items-center justify-center transition-colors cursor-pointer"
             style={{ transform: 'rotateX(-90deg) translateZ(24px)' }}
           >
             UNTEN
@@ -132,7 +125,7 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
           {/* FRONT Face (Vorne) */}
           <div
             onClick={(e) => handleFaceClick(0, 15, '3d', e)}
-            className="absolute inset-0 bg-slate-800/90 border border-emerald-500/60 hover:bg-emerald-600 hover:text-white text-slate-200 font-bold text-[9px] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+            className="absolute inset-0 bg-slate-800/90 border border-emerald-500/60 hover:bg-emerald-600 hover:text-white text-slate-200 font-bold text-[0.5625rem] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
             style={{ transform: 'translateZ(24px)' }}
           >
             VORNE
@@ -141,7 +134,7 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
           {/* BACK Face (Hinten) */}
           <div
             onClick={(e) => handleFaceClick(180, 15, '3d', e)}
-            className="absolute inset-0 bg-slate-800/90 border border-amber-500/60 hover:bg-amber-600 hover:text-white text-slate-200 font-bold text-[9px] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+            className="absolute inset-0 bg-slate-800/90 border border-amber-500/60 hover:bg-amber-600 hover:text-white text-slate-200 font-bold text-[0.5625rem] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
             style={{ transform: 'rotateY(180deg) translateZ(24px)' }}
           >
             HINTEN
@@ -150,7 +143,7 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
           {/* RIGHT Face (Rechts) */}
           <div
             onClick={(e) => handleFaceClick(90, 15, '3d', e)}
-            className="absolute inset-0 bg-slate-800/90 border border-cyan-500/60 hover:bg-cyan-600 hover:text-white text-slate-200 font-bold text-[9px] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+            className="absolute inset-0 bg-slate-800/90 border border-sky-500/60 hover:bg-sky-600 hover:text-white text-slate-200 font-bold text-[0.5625rem] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
             style={{ transform: 'rotateY(90deg) translateZ(24px)' }}
           >
             RECHTS
@@ -159,7 +152,7 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
           {/* LEFT Face (Links) */}
           <div
             onClick={(e) => handleFaceClick(270, 15, '3d', e)}
-            className="absolute inset-0 bg-slate-800/90 border border-purple-500/60 hover:bg-purple-600 hover:text-white text-slate-200 font-bold text-[9px] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+            className="absolute inset-0 bg-slate-800/90 border border-purple-500/60 hover:bg-purple-600 hover:text-white text-slate-200 font-bold text-[0.5625rem] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
             style={{ transform: 'rotateY(-90deg) translateZ(24px)' }}
           >
             LINKS
@@ -168,20 +161,20 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
       </div>
 
       {/* Quick View Switch Buttons below Cube */}
-      <div className="grid grid-cols-2 gap-1 w-full pt-1 border-t border-slate-800/80">
+      <div className="grid grid-cols-2 gap-1.5 w-full pointer-events-auto bg-black/10 backdrop-blur-md p-1 rounded-lg drop-shadow-md">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onOrientationChange(0, 90, '2d');
           }}
-          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+          className={`px-1.5 py-0.5 rounded text-[0.625rem] font-bold transition-all ${
             viewMode === '2d'
-              ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-              : 'bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              ? 'bg-indigo-600/80 text-white shadow-sm drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/10'
           }`}
           title="2D Draufsicht"
         >
-          2D Oben
+          2D
         </button>
 
         <button
@@ -189,14 +182,14 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
             e.stopPropagation();
             onOrientationChange(45, 55, '3d');
           }}
-          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+          className={`px-1.5 py-0.5 rounded text-[0.625rem] font-bold transition-all ${
             viewMode === '3d'
-              ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-              : 'bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              ? 'bg-indigo-600/80 text-white shadow-sm drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/10'
           }`}
           title="3D Isometrisch"
         >
-          3D Iso
+          3D
         </button>
       </div>
     </div>

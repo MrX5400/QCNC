@@ -15,6 +15,7 @@ import {
   Activity,
   Move,
   Info,
+  BarChart2,
   RotateCw,
   AlignCenter,
   CornerDownLeft,
@@ -75,7 +76,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
   onGcodeUpdate,
   onOpenGenerator,
 }) => {
-  const { theme } = useThemeLanguage();
+  const { theme, uiScale } = useThemeLanguage();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -231,6 +232,9 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
   // Floating Color Legend Toggle (Simple bottom overlay matching generator)
   const [showLegend, setShowLegend] = useState<boolean>(true);
+  
+  // Job Stats Panel Toggle
+  const [isStatsOpen, setIsStatsOpen] = useState<boolean>(false);
 
   // Custom Direct Offset Inputs
   const [customOffsetX, setCustomOffsetX] = useState<number>(0);
@@ -879,9 +883,14 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // A. TOUCHPAD PINCH-TO-ZOOM (Modern trackpads send wheel events with e.ctrlKey=true on pinch)
-    if (e.ctrlKey || e.metaKey) {
-      const zoomDelta = -e.deltaY * 0.012;
+    // Drastically reduced speeds for smooth OrbitControls-like touchpad usage
+    // Native trackpad momentum acts as our "enableDamping = true" physics engine
+    const PAN_SPEED = 0.4;
+    const ROTATE_SPEED = 0.15;
+    const ZOOM_SPEED = 0.003;
+
+    const applyZoom = (deltaY: number) => {
+      const zoomDelta = -deltaY * ZOOM_SPEED;
       const zoomFactor = Math.exp(zoomDelta);
       const newZoom = Math.min(25.0, Math.max(0.12, zoom * zoomFactor));
 
@@ -890,45 +899,44 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
       setZoom(newZoom);
       setPan({ x: newPanX, y: newPanY });
+    };
+
+    // 1. ZOOM: Ctrl/Cmd + Pinch/Scroll
+    if (e.ctrlKey || e.metaKey) {
+      applyZoom(e.deltaY);
       return;
     }
 
-    // B. TOUCHPAD 2-FINGER PAN / ORBIT SWIPE (e.ctrlKey === false)
+    // 2. PAN: Shift + 2-Finger Swipe / Scroll
+    if (e.shiftKey) {
+      // Standard mouse: shift+scroll = horizontal pan. Trackpad = 2D pan.
+      const dx = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+      const dy = e.deltaX !== 0 ? e.deltaY : 0;
+      setPan(prev => ({ x: prev.x - dx * PAN_SPEED, y: prev.y - dy * PAN_SPEED }));
+      return;
+    }
+
+    // 3. DEFAULT (No modifiers)
+    // Detect standard mouse wheel (large vertical steps) vs touchpad (smooth 2D swiping)
+    const isMouseWheel = Math.abs(e.deltaX) === 0 && Math.abs(e.deltaY) >= 20 && e.deltaY % 1 === 0;
+
     if (viewMode === '2d') {
-      // If horizontal delta exists or shift is held, pan continuously
-      if (Math.abs(e.deltaX) > 0 || e.shiftKey) {
-        const dx = e.shiftKey ? -e.deltaY : -e.deltaX;
-        const dy = e.shiftKey ? 0 : -e.deltaY;
-        setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-        return;
+      if (isMouseWheel) {
+        // Standard mouse wheel zooms in 2D
+        applyZoom(e.deltaY);
+      } else {
+        // Touchpad swipe pans in 2D
+        setPan(prev => ({ x: prev.x - e.deltaX * PAN_SPEED, y: prev.y - e.deltaY * PAN_SPEED }));
       }
-
-      // Vertical wheel: Standard mouse wheel zoom centered at cursor
-      const zoomFactor = e.deltaY > 0 ? 0.88 : 1.14;
-      const newZoom = Math.min(25.0, Math.max(0.12, zoom * zoomFactor));
-      const newPanX = mouseX - (mouseX - pan.x) * (newZoom / zoom);
-      const newPanY = mouseY - (mouseY - pan.y) * (newZoom / zoom);
-
-      setZoom(newZoom);
-      setPan({ x: newPanX, y: newPanY });
     } else {
       // 3D Isometric Mode
-      if (e.shiftKey) {
-        // Shift + Trackpad swipe: 3D Pan
-        setPan(prev => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
-      } else if (Math.abs(e.deltaX) > 0 && Math.abs(e.deltaX) > Math.abs(e.deltaY) * 0.5) {
-        // 2-finger horizontal swipe rotates 3D Orbit
-        setOrbitYaw(prev => prev + e.deltaX * 0.4);
-        setOrbitPitch(prev => Math.min(85, Math.max(10, prev - e.deltaY * 0.4)));
+      if (isMouseWheel) {
+        // Standard mouse wheel zooms in 3D
+        applyZoom(e.deltaY);
       } else {
-        // Standard zoom in 3D centered at cursor
-        const zoomFactor = e.deltaY > 0 ? 0.88 : 1.14;
-        const newZoom = Math.min(25.0, Math.max(0.12, zoom * zoomFactor));
-        const newPanX = mouseX - (mouseX - pan.x) * (newZoom / zoom);
-        const newPanY = mouseY - (mouseY - pan.y) * (newZoom / zoom);
-
-        setZoom(newZoom);
-        setPan({ x: newPanX, y: newPanY });
+        // Touchpad swipe rotates in 3D
+        setOrbitYaw(prev => prev + e.deltaX * ROTATE_SPEED);
+        setOrbitPitch(prev => Math.min(85, Math.max(10, prev - e.deltaY * ROTATE_SPEED)));
       }
     }
   };
@@ -1177,7 +1185,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
       // Major grid (50mm) with coordinates labels
       ctx.strokeStyle = theme.gridColor ? theme.gridColor.replace(/0\.\d+\)/, '0.8)') : 'rgba(51, 65, 85, 0.75)';
       ctx.fillStyle = theme.textMuted || '#64748b';
-      ctx.font = '10px monospace';
+      ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
 
       for (let x = 0; x <= bedWidth; x += 50) {
         const p1 = mmToScreen(x, 0);
@@ -1252,7 +1260,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
       ctx.stroke();
       ctx.setLineDash([]);
 
-      ctx.font = '10px monospace';
+      ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
       ctx.fillStyle = 'rgba(56, 189, 248, 0.6)';
       ctx.fillText(`Z max: ${zHeight}mm`, d00.sx + 4, d00.sy - 4);
       ctx.restore();
@@ -1273,7 +1281,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
       ctx.moveTo(orig.sx, orig.sy);
       ctx.lineTo(xAx.sx, xAx.sy);
       ctx.stroke();
-      ctx.font = 'bold 11px monospace';
+      ctx.font = `bold ${Math.round(11 * (uiScale || 100) / 100)}px monospace`;
       ctx.fillText('X+', xAx.sx + 4, xAx.sy + 3);
 
       // Y-Axis (Green)
@@ -1600,7 +1608,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
             ctx.fillStyle = isHover ? 'rgba(8, 47, 73, 0.85)' : 'rgba(15, 23, 42, 0.75)';
             ctx.fillRect(bP1.sx, bP1.sy - 16, 54, 14);
             ctx.fillStyle = isHover ? '#38bdf8' : '#94a3b8';
-            ctx.font = '9px monospace';
+            ctx.font = `${Math.round(9 * (uiScale || 100) / 100)}px monospace`;
             ctx.fillText(obj.name || `Obj ${obj.id + 1}`, bP1.sx + 4, bP1.sy - 5);
           });
         }
@@ -1660,7 +1668,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
             objTitle = `${selectedObject.name} (${selectedObject.bounds.width.toFixed(1)}×${selectedObject.bounds.height.toFixed(1)} mm)`;
           }
 
-          ctx.font = 'bold 10px monospace';
+          ctx.font = `bold ${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
           const titleW = ctx.measureText(objTitle).width;
           ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
           ctx.fillRect(p1.sx, p1.sy - 20, titleW + 12, 18);
@@ -1672,7 +1680,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
           // Drag offset or rotation live tooltip tag
           if (dragMode === 'transform_drag' && (offX !== 0 || offY !== 0)) {
             const tag = `ΔX: ${offX > 0 ? '+' : ''}${offX.toFixed(1)} mm | ΔY: ${offY > 0 ? '+' : ''}${offY.toFixed(1)} mm`;
-            ctx.font = 'bold 11px monospace';
+            ctx.font = `bold ${Math.round(11 * (uiScale || 100) / 100)}px monospace`;
             const tagW = ctx.measureText(tag).width;
             ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
             ctx.fillRect(centerPt.sx - tagW / 2 - 6, centerPt.sy - 28, tagW + 12, 20);
@@ -1682,7 +1690,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
             ctx.fillText(tag, centerPt.sx - tagW / 2, centerPt.sy - 14);
           } else if (customRotDeg !== 0) {
             const tag = `Drehwinkel: ${customRotDeg > 0 ? '+' : ''}${customRotDeg}°`;
-            ctx.font = 'bold 11px monospace';
+            ctx.font = `bold ${Math.round(11 * (uiScale || 100) / 100)}px monospace`;
             const tagW = ctx.measureText(tag).width;
             ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
             ctx.fillRect(centerPt.sx - tagW / 2 - 6, centerPt.sy - 28, tagW + 12, 20);
@@ -1818,9 +1826,9 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
       const label1 = `Länge: ${distMm.toFixed(2)} mm`;
       const label2 = `ΔX: ${dxMm.toFixed(2)} mm | ΔY: ${dyMm.toFixed(2)} mm (${angleDeg.toFixed(1)}°)`;
 
-      ctx.font = 'bold 12px monospace';
+      ctx.font = `bold ${Math.round(12 * (uiScale || 100) / 100)}px monospace`;
       const w1 = ctx.measureText(label1).width;
-      ctx.font = '10px monospace';
+      ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
       const w2 = ctx.measureText(label2).width;
       const badgeW = Math.max(w1, w2) + 20;
       const badgeH = 34;
@@ -1832,12 +1840,12 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
       ctx.strokeRect(midX - badgeW / 2, midY - badgeH / 2, badgeW, badgeH);
 
       ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 12px monospace';
+      ctx.font = `bold ${Math.round(12 * (uiScale || 100) / 100)}px monospace`;
       ctx.textAlign = 'center';
       ctx.fillText(label1, midX, midY - 3);
 
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '10px monospace';
+      ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
       ctx.textAlign = 'center';
       ctx.fillText(label2, midX, midY + 11);
       ctx.restore();
@@ -1932,56 +1940,28 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
     >
       {/* Top Floating Control Bar */}
       <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
-        {/* Left: 2D/3D Mode, Undo/Redo, Layer Toggles, Measurement */}
-        <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-lg border border-slate-800 pointer-events-auto shadow-lg text-xs">
-          {/* 2D / 3D Mode */}
-          <div className="flex items-center bg-slate-950 rounded-md p-0.5 border border-slate-800">
-            <button
-              onClick={() => {
-                setViewMode('2d');
-                fitToView('2d');
-              }}
-              className={`px-3 py-1 rounded font-medium transition-colors ${
-                viewMode === '2d' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              2D Plan
-            </button>
-            <button
-              onClick={() => {
-                setViewMode('3d');
-                fitToView('3d');
-              }}
-              className={`px-3 py-1 rounded font-medium flex items-center gap-1 transition-colors ${
-                viewMode === '3d' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Box className="w-3 h-3" />
-              <span>3D Iso</span>
-            </button>
-          </div>
+        {/* Left: Undo/Redo, Layer Toggles, Measurement */}
+        <div className="flex items-center gap-1 md:gap-2 pointer-events-auto text-xs drop-shadow-md">
 
-          {/* Undo / Redo Arrow Buttons (User Request) */}
-          <div className="flex items-center bg-slate-950 rounded-md p-0.5 border border-slate-800">
+          {/* Undo / Redo Arrow Buttons */}
+          <div className="flex items-center gap-0.5 ml-1">
             <button
               onClick={handleUndo}
               disabled={undoStack.length === 0}
-              className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="p-1.5 rounded text-slate-400/70 hover:text-slate-200 hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
               title="Rückgängig (Strg+Z)"
             >
-              <Undo2 className="w-3.5 h-3.5" />
+              <Undo2 className="w-4 h-4" />
             </button>
             <button
               onClick={handleRedo}
               disabled={redoStack.length === 0}
-              className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="p-1.5 rounded text-slate-400/70 hover:text-slate-200 hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
               title="Wiederholen (Strg+Y / Strg+Shift+Z)"
             >
-              <Redo2 className="w-3.5 h-3.5" />
+              <Redo2 className="w-4 h-4" />
             </button>
           </div>
-
-          <div className="h-4 w-px bg-slate-800" />
 
           {/* Quick 3D Reset in 3D Mode */}
           {viewMode === '3d' && (
@@ -1991,36 +1971,36 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
                 setOrbitPitch(55);
                 fitToView('3d');
               }}
-              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px] transition-colors"
+              className="px-2.5 py-1.5 ml-1 text-slate-400/70 hover:text-slate-200 hover:bg-white/5 rounded text-[0.6875rem] transition-colors"
               title="3D Ansicht zurücksetzen"
             >
               3D Reset
             </button>
           )}
 
-          {/* Messen (Measure) Toggle Button (User Request: must remain in both windows) */}
+          {/* Messen (Measure) Toggle Button */}
           <button
             onClick={() => {
               setIsMeasureActive(!isMeasureActive);
               setMeasureStart(null);
               setMeasureEnd(null);
             }}
-            className={`px-2.5 py-1 rounded text-[11px] font-semibold flex items-center gap-1.5 transition-all ${
+            className={`px-2.5 py-1.5 ml-1 rounded text-[0.6875rem] font-semibold flex items-center gap-1.5 transition-all ${
               isMeasureActive
-                ? 'bg-cyan-600 text-white shadow-md shadow-cyan-900/40'
-                : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-800'
+                ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]'
+                : 'text-slate-400/70 hover:text-cyan-300 hover:bg-white/5'
             }`}
             title="Abstand auf der Arbeitsfläche messen"
           >
-            <Ruler className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Messen</span>
+            <Ruler className="w-4 h-4" />
+            <span className="hidden md:inline">Messen</span>
           </button>
 
           {/* Layer toggles */}
           <button
             onClick={() => setShowGrid(!showGrid)}
-            className={`p-1.5 rounded transition-colors ${
-              showGrid ? 'bg-slate-800 text-cyan-400' : 'text-slate-500 hover:text-slate-300'
+            className={`p-1.5 ml-1 rounded transition-colors ${
+              showGrid ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]' : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
             }`}
             title="Gitter anzeigen / verbergen"
           >
@@ -2029,19 +2009,19 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           <button
             onClick={() => setShowRapid(!showRapid)}
-            className={`px-2 py-1 rounded text-[11px] font-mono transition-colors ${
-              showRapid ? 'bg-slate-800 text-cyan-400' : 'text-slate-500'
+            className={`px-2.5 py-1.5 rounded text-[0.6875rem] font-mono transition-colors ${
+              showRapid ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]' : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
             }`}
             title="Leerfahrten (G0 Rapid) anzeigen"
           >
-            Eilgang (G0)
+            Eilgang
           </button>
 
           {currentProfile.dragKnife?.enabled && (
             <button
               onClick={() => setShowSwivelArcs(!showSwivelArcs)}
-              className={`px-2 py-1 rounded text-[11px] font-mono transition-colors ${
-                showSwivelArcs ? 'bg-amber-950/60 text-amber-400 border border-amber-800/40' : 'text-slate-500'
+              className={`px-2.5 py-1.5 rounded text-[0.6875rem] font-mono transition-colors ${
+                showSwivelArcs ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]' : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
               }`}
               title="Schleppmesser-Drehbögen (Swivel Arcs) hervorheben"
             >
@@ -2049,18 +2029,18 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
             </button>
           )}
 
-          {/* Farb-Legende Toggle Button (User Request) */}
+          {/* Farb-Legende Toggle Button */}
           <button
             onClick={() => setShowLegend(prev => !prev)}
-            className={`px-2 py-1 rounded text-[11px] font-semibold flex items-center gap-1 transition-all ${
+            className={`px-2.5 py-1.5 ml-1 rounded text-[0.6875rem] font-semibold flex items-center gap-1.5 transition-all ${
               showLegend
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.6)]'
+                : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
             }`}
             title="Farb-Legende anzeigen / ausblenden"
           >
-            <Info className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Legende</span>
+            <Info className="w-4 h-4" />
+            <span className="hidden md:inline">Legende</span>
           </button>
         </div>
 
@@ -2069,16 +2049,16 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
           {parsedGcode && parsedGcode.segments.length > 0 && (
             <button
               onClick={() => setIsInspectorOpen(!isInspectorOpen)}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition-all shadow-md text-xs border ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all text-xs ${
                 isInspectorOpen
-                  ? 'bg-indigo-600 border-indigo-500 text-white shadow-indigo-950/60'
-                  : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700 text-indigo-300 hover:text-white'
+                  ? 'text-white bg-indigo-600/20 backdrop-blur-sm shadow-[0_0_15px_rgba(99,102,241,0.4)]'
+                  : 'text-indigo-300/80 hover:text-white bg-slate-900/10 backdrop-blur-sm hover:bg-white/10'
               }`}
               title="Inspektor-Panel mit Ebenen, Position, Skalierung & Drehung öffnen/schließen"
             >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Inspektor &amp; Ebenen</span>
-              <span className="bg-indigo-950/80 border border-indigo-800/60 px-1.5 py-0.2 rounded text-[10px] text-indigo-300 font-mono">
+              <Sliders className="w-4 h-4" />
+              <span className="hidden sm:inline">Inspektor</span>
+              <span className="bg-indigo-950/50 backdrop-blur-md px-1.5 py-0.5 rounded text-[0.625rem] text-indigo-200 font-mono">
                 {gcodeObjects.length}
               </span>
             </button>
@@ -2086,17 +2066,58 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
         </div>
       </div>
 
+      {/* Measurement Active Floating Banner */}
+      {isMeasureActive && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 bg-black/10 backdrop-blur-md px-4 py-2 rounded-full drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] text-xs text-slate-100 pointer-events-auto animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-1.5 font-semibold text-cyan-300 drop-shadow-[0_0_6px_rgba(34,211,238,0.8)]">
+            <Ruler className="w-4 h-4 text-cyan-400 animate-pulse" />
+            <span>Messwerkzeug:</span>
+          </div>
+
+          {measureStart && measureEnd ? (
+            <div className="flex items-center gap-3 font-mono">
+              <span className="text-cyan-200 font-bold bg-cyan-950/40 backdrop-blur-sm px-2 py-0.5 rounded-md drop-shadow-sm">
+                {Math.hypot(measureEnd.x - measureStart.x, measureEnd.y - measureStart.y).toFixed(2)} mm
+              </span>
+              <span className="text-slate-300 drop-shadow-md text-[0.6875rem]">
+                ΔX: {(measureEnd.x - measureStart.x).toFixed(2)} mm | ΔY: {(measureEnd.y - measureStart.y).toFixed(2)} mm ({(Math.atan2(measureEnd.y - measureStart.y, measureEnd.x - measureStart.x) * 180 / Math.PI).toFixed(1)}°)
+              </span>
+            </div>
+          ) : (
+            <span className="text-slate-300 drop-shadow-md">Klicke &amp; ziehe mit der Maus, um Distanzen zu messen</span>
+          )}
+
+          <div className="flex items-center gap-1.5 ml-2 border-l border-white/20 pl-2">
+            {measureStart && (
+              <button
+                onClick={() => { setMeasureStart(null); setMeasureEnd(null); }}
+                className="px-2 py-0.5 bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-200 rounded-md text-[0.6875rem] font-medium transition-colors"
+              >
+                Messung löschen
+              </button>
+            )}
+            <button
+              onClick={() => { setIsMeasureActive(false); setMeasureStart(null); setMeasureEnd(null); }}
+              className="px-2 py-0.5 bg-black/20 hover:bg-black/40 text-slate-300 rounded-md text-[0.6875rem] transition-colors"
+              title="Messmodus beenden"
+            >
+              Beenden
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Multi-Selection Active Floating Action Bar */}
       {selectedObjectIds.length > 0 && !isInspectorOpen && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-slate-900/95 backdrop-blur-md px-3.5 py-2 rounded-xl border border-indigo-500/50 shadow-2xl text-xs text-slate-200 pointer-events-auto animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center gap-1.5 font-semibold text-indigo-300 pr-2 border-r border-slate-700">
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-black/10 backdrop-blur-md px-3.5 py-1.5 rounded-full drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] text-xs text-slate-100 pointer-events-auto animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-1.5 font-semibold text-indigo-300 drop-shadow-[0_0_6px_rgba(99,102,241,0.8)] pr-2 border-r border-white/20">
             <Layers className="w-3.5 h-3.5 text-indigo-400" />
             <span>{selectedObjectIds.length} gewählt</span>
           </div>
 
           <button
             onClick={() => handleCenterOnBed()}
-            className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 hover:bg-white/10 rounded transition-colors"
             title="Auf Bettmitte zentrieren"
           >
             <AlignCenter className="w-3 h-3 text-indigo-400" />
@@ -2105,7 +2126,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           <button
             onClick={() => handleMoveToOrigin()}
-            className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 hover:bg-white/10 rounded transition-colors"
             title="Zu Nullpunkt (0,0)"
           >
             <CornerDownLeft className="w-3 h-3 text-cyan-400" />
@@ -2114,7 +2135,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           <button
             onClick={() => handleDuplicateObjects()}
-            className="flex items-center gap-1 px-2 py-1 bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-800/50 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 hover:bg-white/10 text-indigo-200 rounded transition-colors"
             title="Duplizieren"
           >
             <Copy className="w-3 h-3 text-indigo-400" />
@@ -2123,7 +2144,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           <button
             onClick={handleDeleteSelected}
-            className="flex items-center gap-1 px-2 py-1 bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/50 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 hover:bg-white/10 text-red-300 rounded transition-colors"
             title="Löschen"
           >
             <Trash2 className="w-3 h-3 text-red-400" />
@@ -2132,7 +2153,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           <button
             onClick={() => setIsInspectorOpen(true)}
-            className="flex items-center gap-1 px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-medium transition-colors ml-1"
+            className="flex items-center gap-1 px-2 py-1 bg-indigo-600/50 hover:bg-indigo-600 text-white rounded-md font-medium transition-colors ml-1"
           >
             <Sliders className="w-3 h-3" />
             <span>Inspektor</span>
@@ -2140,52 +2161,11 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           <button
             onClick={() => setSelectedObjectIds([])}
-            className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors ml-1"
+            className="p-1 hover:bg-white/10 rounded transition-colors ml-1"
             title="Auswahl aufheben"
           >
             <X className="w-3.5 h-3.5" />
           </button>
-        </div>
-      )}
-
-      {/* Measurement Active Floating Banner (Matching Generator Window) */}
-      {isMeasureActive && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 bg-slate-900/95 backdrop-blur-md px-4 py-2 rounded-xl border border-cyan-500/50 shadow-2xl text-xs text-slate-200 pointer-events-auto animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center gap-1.5 font-semibold text-cyan-300">
-            <Ruler className="w-4 h-4 text-cyan-400 animate-pulse" />
-            <span>Messwerkzeug:</span>
-          </div>
-
-          {measureStart && measureEnd ? (
-            <div className="flex items-center gap-3 font-mono">
-              <span className="text-cyan-200 font-bold bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800/60">
-                {Math.hypot(measureEnd.x - measureStart.x, measureEnd.y - measureStart.y).toFixed(2)} mm
-              </span>
-              <span className="text-slate-400 text-[11px]">
-                ΔX: {(measureEnd.x - measureStart.x).toFixed(2)} mm | ΔY: {(measureEnd.y - measureStart.y).toFixed(2)} mm ({(Math.atan2(measureEnd.y - measureStart.y, measureEnd.x - measureStart.x) * 180 / Math.PI).toFixed(1)}°)
-              </span>
-            </div>
-          ) : (
-            <span className="text-slate-400">Klicke &amp; ziehe mit der Maus, um Distanzen und Abstände zu messen</span>
-          )}
-
-          <div className="flex items-center gap-1.5 ml-2 border-l border-slate-700 pl-2">
-            {measureStart && (
-              <button
-                onClick={() => { setMeasureStart(null); setMeasureEnd(null); }}
-                className="px-2 py-0.5 bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 rounded border border-cyan-700/60 text-[11px] font-medium"
-              >
-                Messung löschen
-              </button>
-            )}
-            <button
-              onClick={() => { setIsMeasureActive(false); setMeasureStart(null); setMeasureEnd(null); }}
-              className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 text-[11px]"
-              title="Messmodus beenden"
-            >
-              Beenden
-            </button>
-          </div>
         </div>
       )}
 
@@ -2264,122 +2244,144 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
           </div>
         )}
 
-        {/* Interactive Live Color Legend Overlay */}
-        {showLegend && (
-          <div className="absolute bottom-11 left-3 bg-slate-950/90 backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2 shadow-xl pointer-events-auto z-10 animate-in fade-in select-none">
-            <button
-              onClick={() => setShowCutPaths(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
-                showCutPaths
-                  ? 'bg-emerald-950/70 border border-emerald-500/50 text-emerald-300 font-semibold'
-                  : 'bg-slate-900/60 border border-slate-800 text-slate-500 line-through opacity-60 hover:opacity-100'
-              }`}
-              title="Klicken: Bearbeitungs- und Schnittlinien ein-/ausblenden"
-            >
-              <span className={`w-3 h-1 rounded-full ${showCutPaths ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-slate-600'}`} />
-              <span>Bearbeitung (Schnitt / Stift / Laser)</span>
-            </button>
-
-            <button
-              onClick={() => setShowRapid(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
-                showRapid
-                  ? 'bg-rose-950/70 border border-rose-500/50 text-rose-300 font-semibold'
-                  : 'bg-slate-900/60 border border-slate-800 text-slate-500 line-through opacity-60 hover:opacity-100'
-              }`}
-              title="Klicken: Leerfahrten / Eilgang (G0) ein-/ausblenden"
-            >
-              <span className={`w-3 border-b-2 border-dashed ${showRapid ? 'border-rose-500' : 'border-slate-600'}`} />
-              <span>Leerfahrt / Eilgang (G0)</span>
-            </button>
-
-            {currentProfile.dragKnife?.enabled && (
+        {/* Grouped Legend & HUD (Positioned above the scrubber slider) */}
+        <div className="absolute bottom-20 left-3 flex flex-col items-start gap-1.5 z-10 pointer-events-none">
+          
+          {/* Interactive Live Color Legend Overlay */}
+          {showLegend && (
+            <div className="flex items-center gap-1.5 animate-in fade-in select-none text-[0.5625rem] pointer-events-auto bg-black/5 backdrop-blur-[2px] rounded-full px-1.5 py-0.5">
               <button
-                onClick={() => setShowSwivelArcs(prev => !prev)}
-                className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
-                  showSwivelArcs
-                    ? 'bg-amber-950/70 border border-amber-500/50 text-amber-300 font-semibold'
-                    : 'bg-slate-900/60 border border-slate-800 text-slate-500 line-through opacity-60 hover:opacity-100'
+                onClick={() => setShowCutPaths(prev => !prev)}
+                className={`flex items-center gap-1 px-1 py-0.5 rounded transition-all cursor-pointer ${
+                  showCutPaths
+                    ? 'text-emerald-400 drop-shadow-[0_0_4px_rgba(52,211,153,0.8)] font-medium'
+                    : 'text-slate-500/70 line-through hover:text-slate-400'
                 }`}
-                title="Klicken: Messer-Schwenkbögen ein-/ausblenden"
+                title="Klicken: Bearbeitungs- und Schnittlinien ein-/ausblenden"
               >
-                <span className={`w-3 h-1 rounded-full ${showSwivelArcs ? 'bg-amber-500' : 'bg-slate-600'}`} />
-                <span>Messer-Schwenkbögen</span>
+                <span className={`w-2 h-0.5 rounded-full ${showCutPaths ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+                <span>Bearbeitung</span>
               </button>
-            )}
 
-            <button
-              onClick={() => setShowOriginMarker(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-all cursor-pointer ${
-                showOriginMarker
-                  ? 'bg-cyan-950/70 border border-cyan-500/50 text-cyan-300 font-semibold'
-                  : 'bg-slate-900/60 border border-slate-800 text-slate-500 line-through opacity-60 hover:opacity-100'
-              }`}
-              title="Klicken: Nullpunkt / Start-Achsen ein-/ausblenden"
-            >
-              <span className={`w-2 h-2 rounded-full ${showOriginMarker ? 'bg-cyan-400' : 'bg-slate-600'}`} />
-              <span>Nullpunkt / Start</span>
-            </button>
+              <button
+                onClick={() => setShowRapid(prev => !prev)}
+                className={`flex items-center gap-1 px-1 py-0.5 rounded transition-all cursor-pointer ${
+                  showRapid
+                    ? 'text-rose-400 drop-shadow-[0_0_4px_rgba(251,113,133,0.8)] font-medium'
+                    : 'text-slate-500/70 line-through hover:text-slate-400'
+                }`}
+                title="Klicken: Leerfahrten / Eilgang (G0) ein-/ausblenden"
+              >
+                <span className={`w-2 border-b-2 border-dashed ${showRapid ? 'border-rose-400' : 'border-slate-600'}`} />
+                <span>Leerfahrt (G0)</span>
+              </button>
 
-            <button
-              onClick={() => setShowLegend(false)}
-              className="text-slate-500 hover:text-slate-300 text-[10px] pl-1 border-l border-slate-800 cursor-pointer"
-              title="Legende minimieren"
-            >
-              ✕
-            </button>
-          </div>
-        )}
+              {currentProfile.dragKnife?.enabled && (
+                <button
+                  onClick={() => setShowSwivelArcs(prev => !prev)}
+                  className={`flex items-center gap-1 px-1 py-0.5 rounded transition-all cursor-pointer ${
+                    showSwivelArcs
+                      ? 'text-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.8)] font-medium'
+                      : 'text-slate-500/70 line-through hover:text-slate-400'
+                  }`}
+                  title="Klicken: Messer-Schwenkbögen ein-/ausblenden"
+                >
+                  <span className={`w-2 h-0.5 rounded-full ${showSwivelArcs ? 'bg-amber-400' : 'bg-slate-600'}`} />
+                  <span>Messerbögen</span>
+                </button>
+              )}
 
-        {/* Bottom Left Coordinate & Nav HUD */}
-        <div className="absolute bottom-3 left-3 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-md border border-slate-800 text-[11px] font-mono text-slate-300 flex items-center gap-3 pointer-events-none shadow-md z-10">
-          <div className="flex items-center gap-1">
-            <span className="text-slate-500">Maus:</span>
-            <span className="text-slate-200">{cursorPosMm.x.toFixed(1)}mm, {cursorPosMm.y.toFixed(1)}mm</span>
-          </div>
-          <div className="h-3 w-px bg-slate-800" />
-          <div className="flex items-center gap-1">
-            <span className="text-slate-500">Kopf:</span>
-            <span className="text-cyan-400 font-semibold">{(liveState?.wpos?.x ?? 0).toFixed(1)}, {(liveState?.wpos?.y ?? 0).toFixed(1)}</span>
-          </div>
-          <div className="h-3 w-px bg-slate-800" />
-          <div className="hidden sm:flex items-center gap-1 text-[10px] text-emerald-400/90">
-            <MousePointerClick className="w-3 h-3 text-emerald-400" />
-            <span>Doppelklick = Kopf fahren</span>
+              <button
+                onClick={() => setShowOriginMarker(prev => !prev)}
+                className={`flex items-center gap-1 px-1 py-0.5 rounded transition-all cursor-pointer ${
+                  showOriginMarker
+                    ? 'text-cyan-400 drop-shadow-[0_0_4px_rgba(34,211,238,0.8)] font-medium'
+                    : 'text-slate-500/70 line-through hover:text-slate-400'
+                }`}
+                title="Klicken: Nullpunkt / Start-Achsen ein-/ausblenden"
+              >
+                <span className={`w-1 h-1 rounded-full ${showOriginMarker ? 'bg-cyan-400' : 'bg-slate-600'}`} />
+                <span>Start</span>
+              </button>
+
+              <button
+                onClick={() => setShowLegend(false)}
+                className="text-slate-400 hover:text-slate-200 text-[0.5625rem] pl-1 border-l border-slate-700/50 cursor-pointer"
+                title="Legende minimieren"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Bottom Left Coordinate & Nav HUD */}
+          <div className="flex items-center gap-2.5 text-[0.5625rem] font-mono drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-black/5 backdrop-blur-[2px] rounded-full px-2 py-0.5">
+            <div className="flex items-center gap-1">
+              <span className="text-slate-400/80">Maus:</span>
+              <span className="text-slate-200">{cursorPosMm.x.toFixed(1)}, {cursorPosMm.y.toFixed(1)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-slate-400/80">Kopf:</span>
+              <span className="text-cyan-300 drop-shadow-[0_0_4px_rgba(34,211,238,0.8)] font-semibold">
+                {(liveState?.wpos?.x ?? 0).toFixed(1)}, {(liveState?.wpos?.y ?? 0).toFixed(1)}
+              </span>
+            </div>
+            <div className="hidden sm:flex items-center gap-1 text-[0.5625rem] text-emerald-400/90 ml-1 border-l border-slate-700/50 pl-2">
+              <MousePointerClick className="w-2.5 h-2.5 text-emerald-400 drop-shadow-[0_0_3px_rgba(52,211,153,0.8)]" />
+              <span>Doppelklick = Fahren</span>
+            </div>
           </div>
         </div>
 
-        {/* Job Stats Badge (Placed in Bottom-Right Corner to completely avoid ViewCube collision) */}
+        {/* Collapsible Job Stats Badge (Placed in Bottom-Right Corner) */}
         {parsedGcode && parsedGcode.segments.length > 0 && (
-          <div className="absolute bottom-3 right-3 bg-slate-900/95 backdrop-blur-md p-2.5 rounded-lg border border-slate-800 text-xs text-slate-300 pointer-events-none shadow-xl space-y-1 max-w-[220px] z-10">
-            <div className="font-semibold text-slate-100 flex items-center justify-between pb-1 border-b border-slate-800">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                Statistik
-              </span>
-              <span className="text-[10px] text-indigo-300 font-mono bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-800/50">{parsedGcode.stats.lineCount} Zeilen</span>
-            </div>
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-slate-400">Schnitt/Zeichnen:</span>
-              <span className="text-emerald-400 font-mono font-semibold">{(parsedGcode.stats.cutLength / 10).toFixed(1)} cm</span>
-            </div>
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-slate-400">Leerfahrt:</span>
-              <span className="text-rose-400 font-mono font-semibold">{(parsedGcode.stats.travelLength / 10).toFixed(1)} cm</span>
-            </div>
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-slate-400">Stift-Hebungen:</span>
-              <span className="text-amber-400 font-mono font-semibold">{parsedGcode.stats.penLifts}x</span>
-            </div>
-            <div className="flex justify-between items-center text-[10px] pt-1 border-t border-slate-800/80">
-              <span className="text-slate-300 flex items-center gap-1">
-                <Clock className="w-3 h-3 text-indigo-400" />
-                Zeit:
-              </span>
-              <span className="text-indigo-300 font-mono font-semibold">
-                {Math.floor(parsedGcode.stats.estimatedTimeSec / 60)}m {parsedGcode.stats.estimatedTimeSec % 60}s
-              </span>
-            </div>
+          <div className="absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2 pointer-events-none">
+            {/* Toggle Button */}
+            <button
+              onClick={() => setIsStatsOpen(!isStatsOpen)}
+              className={`pointer-events-auto p-1.5 rounded-full transition-all backdrop-blur-[2px] ${
+                isStatsOpen 
+                  ? 'bg-indigo-600 text-white shadow-[0_0_10px_rgba(99,102,241,0.5)]' 
+                  : 'bg-black/10 text-slate-400 hover:text-slate-200 hover:bg-black/20'
+              }`}
+              title={isStatsOpen ? 'Statistik ausblenden' : 'Statistik anzeigen'}
+            >
+              <BarChart2 className="w-4 h-4" />
+            </button>
+
+            {/* Stats Panel */}
+            {isStatsOpen && (
+              <div className="bg-black/20 backdrop-blur-md p-3 rounded-xl border border-white/10 text-xs text-slate-200 pointer-events-auto shadow-xl space-y-2 min-w-[200px] animate-in fade-in slide-in-from-right-4 drop-shadow-lg">
+                <div className="font-semibold text-slate-100 flex items-center justify-between pb-2 border-b border-white/10">
+                  <span className="flex items-center gap-1.5 drop-shadow-[0_0_5px_rgba(99,102,241,0.8)]">
+                    <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                    Statistik
+                  </span>
+                  <span className="text-[0.625rem] text-indigo-300 font-mono bg-indigo-950/40 px-1.5 py-0.5 rounded-md drop-shadow-sm">{parsedGcode.stats.lineCount} Zeilen</span>
+                </div>
+                <div className="flex justify-between items-center text-[0.6875rem]">
+                  <span className="text-slate-400/90">Schnitt/Zeichnen:</span>
+                  <span className="text-emerald-400 font-mono font-semibold drop-shadow-[0_0_3px_rgba(52,211,153,0.8)]">{(parsedGcode.stats.cutLength / 10).toFixed(1)} cm</span>
+                </div>
+                <div className="flex justify-between items-center text-[0.6875rem]">
+                  <span className="text-slate-400/90">Leerfahrt:</span>
+                  <span className="text-rose-400 font-mono font-semibold drop-shadow-[0_0_3px_rgba(251,113,133,0.8)]">{(parsedGcode.stats.travelLength / 10).toFixed(1)} cm</span>
+                </div>
+                <div className="flex justify-between items-center text-[0.6875rem]">
+                  <span className="text-slate-400/90">Stift-Hebungen:</span>
+                  <span className="text-amber-400 font-mono font-semibold drop-shadow-[0_0_3px_rgba(251,191,36,0.8)]">{parsedGcode.stats.penLifts}x</span>
+                </div>
+                <div className="flex justify-between items-center text-[0.6875rem] pt-1.5 border-t border-white/10">
+                  <span className="text-slate-300 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-indigo-400 drop-shadow-[0_0_3px_rgba(99,102,241,0.8)]" />
+                    Dauer:
+                  </span>
+                  <span className="text-indigo-300 font-mono font-semibold drop-shadow-[0_0_3px_rgba(99,102,241,0.8)]">
+                    {Math.floor(parsedGcode.stats.estimatedTimeSec / 60)}m {parsedGcode.stats.estimatedTimeSec % 60}s
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -2422,18 +2424,18 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
       {/* Bottom Interactive G-Code Simulation Scrubber & Playback Bar */}
       {parsedGcode && parsedGcode.segments.length > 0 && (
-        <div className="bg-slate-900 border-t border-slate-800 px-4 py-2.5 flex items-center gap-3 text-xs z-20 shadow-lg shrink-0">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl flex items-center gap-2 md:gap-3 text-xs z-20 opacity-40 hover:opacity-100 transition-opacity duration-300 bg-black/20 backdrop-blur-md rounded-full px-3 py-1.5 md:px-4 md:py-2 pointer-events-auto">
           {/* Play / Pause */}
           <button
             onClick={() => setIsSimPlaying(!isSimPlaying)}
-            className={`p-2 rounded-lg text-white font-medium transition-all shadow-sm flex items-center justify-center ${
+            className={`p-1.5 md:p-2 rounded-full text-white font-medium transition-all shadow-sm flex items-center justify-center ${
               isSimPlaying
-                ? 'bg-amber-600 hover:bg-amber-500 active:bg-amber-700'
-                : 'bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700'
+                ? 'bg-amber-600/80 hover:bg-amber-500 shadow-[0_0_8px_rgba(217,119,6,0.6)]'
+                : 'bg-indigo-600/80 hover:bg-indigo-500 shadow-[0_0_8px_rgba(79,70,229,0.6)]'
             }`}
             title={isSimPlaying ? 'Simulation anhalten' : 'Simulation abspielen'}
           >
-            {isSimPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            {isSimPlaying ? <Pause className="w-3 h-3 md:w-4 md:h-4" /> : <Play className="w-3 h-3 md:w-4 md:h-4" />}
           </button>
 
           {/* Rewind */}
@@ -2442,10 +2444,10 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
               setIsSimPlaying(false);
               setSimIndex(0);
             }}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
+            className="p-1 md:p-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
             title="Zum Anfang (Segment 0)"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3 h-3 md:w-4 md:h-4" />
           </button>
 
           {/* Step Back 1 */}
@@ -2454,10 +2456,10 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
               setIsSimPlaying(false);
               setSimIndex(prev => Math.max(0, prev - 1));
             }}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
+            className="p-1 md:p-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
             title="Ein Segment zurück"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3 h-3 md:w-4 md:h-4" />
           </button>
 
           {/* Step Forward 1 */}
@@ -2466,15 +2468,15 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
               setIsSimPlaying(false);
               setSimIndex(prev => Math.min(parsedGcode.segments.length - 1, prev + 1));
             }}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
+            className="p-1 md:p-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
             title="Ein Segment vorwärts"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
           </button>
 
           {/* Timeline Slider with Live Scrubbing */}
-          <div className="flex-1 flex items-center gap-3">
-            <span className="text-slate-400 font-mono text-[11px] min-w-[90px]">
+          <div className="flex-1 flex items-center gap-2 md:gap-3 px-2">
+            <span className="text-slate-300 font-mono text-[0.625rem] md:text-[0.6875rem] min-w-[70px] md:min-w-[90px] drop-shadow-md">
               Seg {simIndex} / {parsedGcode.segments.length - 1}
             </span>
             <input
@@ -2486,31 +2488,31 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
                 setIsSimPlaying(false);
                 setSimIndex(Number(e.target.value));
               }}
-              className="flex-1 accent-indigo-500 h-2 bg-slate-800 rounded-lg cursor-pointer transition-all"
+              className="flex-1 accent-indigo-500 h-1.5 bg-black/30 rounded-full cursor-pointer transition-all hover:h-2"
             />
-            <span className="text-indigo-400 font-mono font-semibold text-[11px] min-w-[40px] text-right">
+            <span className="text-indigo-300 font-mono font-semibold text-[0.625rem] md:text-[0.6875rem] min-w-[35px] md:min-w-[40px] text-right drop-shadow-[0_0_3px_rgba(99,102,241,0.8)]">
               {Math.round((simIndex / Math.max(1, parsedGcode.segments.length - 1)) * 100)}%
             </span>
           </div>
 
           {/* Current Segment Coordinate Details */}
           {parsedGcode.segments[simIndex] && (
-            <div className="hidden lg:flex items-center gap-2 bg-slate-950 px-2.5 py-1 rounded-md border border-slate-800 font-mono text-[11px] text-slate-300">
-              <span className="text-slate-500">{parsedGcode.segments[simIndex].type}:</span>
+            <div className="hidden lg:flex items-center gap-2 bg-black/20 px-2.5 py-1 rounded-full border border-white/5 font-mono text-[0.6875rem] text-slate-200 drop-shadow-sm">
+              <span className="text-slate-400">{parsedGcode.segments[simIndex].type}:</span>
               <span>X{parsedGcode.segments[simIndex].to.x.toFixed(1)}</span>
               <span>Y{parsedGcode.segments[simIndex].to.y.toFixed(1)}</span>
-              <span className="text-indigo-400">Z{parsedGcode.segments[simIndex].to.z.toFixed(1)}</span>
+              <span className="text-indigo-300 drop-shadow-[0_0_2px_rgba(99,102,241,0.5)]">Z{parsedGcode.segments[simIndex].to.z.toFixed(1)}</span>
             </div>
           )}
 
           {/* Speed Selector */}
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-md border border-slate-800">
+          <div className="flex items-center gap-0.5 bg-black/20 p-0.5 md:p-1 rounded-full border border-white/5">
             {[0.5, 1, 2, 5, 10].map((s) => (
               <button
                 key={s}
                 onClick={() => setSimSpeed(s)}
-                className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${
-                  simSpeed === s ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+                className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded-full text-[0.5625rem] md:text-[0.625rem] font-mono font-medium transition-all ${
+                  simSpeed === s ? 'bg-indigo-600 text-white shadow-[0_0_6px_rgba(99,102,241,0.6)]' : 'text-slate-400 hover:text-slate-200 hover:bg-white/10'
                 }`}
               >
                 {s}x

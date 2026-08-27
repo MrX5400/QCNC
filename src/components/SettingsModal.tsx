@@ -43,7 +43,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   onOpenButtonsModal,
 }) => {
-  const { theme: currentTheme, setTheme, presetThemes, updateCustomTheme, language: currentLang, setLanguage, t } = useThemeLanguage();
+  const { theme: currentTheme, setTheme, presetThemes, updateCustomTheme, language: currentLang, setLanguage, t, uiScale, setUiScale } = useThemeLanguage();
   const [activeTab, setActiveTab] = useState<'appearance' | 'language' | 'safety' | 'backup' | 'about'>('appearance');
   const [themeFilterCategory, setThemeFilterCategory] = useState<'all' | 'minimal' | 'classic' | 'light' | 'contrast'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -301,6 +301,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* TAB 1: APPEARANCE & THEMES */}
           {activeTab === 'appearance' && (
             <div className="space-y-6">
+              {/* UI Scale Slider */}
+              <div className="bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Search className="w-4 h-4 text-indigo-400" />
+                    <h3 className="font-bold text-slate-200 text-sm">Bildschirmzoom (UI-Skalierung)</h3>
+                  </div>
+                  <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded text-xs font-bold border border-indigo-500/30">
+                    {uiScale}%
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-slate-500 font-mono">60%</span>
+                  <input
+                    type="range"
+                    min="60"
+                    max="150"
+                    step="5"
+                    value={uiScale}
+                    onChange={(e) => setUiScale(Number(e.target.value))}
+                    className="flex-1 accent-indigo-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-500 font-mono">150%</span>
+                </div>
+                
+                <p className="text-xs text-slate-400">
+                  Passt die Größe aller Schriften, Abstände und Menüs der gesamten Benutzeroberfläche dynamisch an.
+                </p>
+              </div>
+
               {/* Category Filter Pills & Search */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -402,13 +433,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="font-semibold text-xs text-slate-200 truncate">{thm.name}</span>
                             {thm.isDark ? (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 shrink-0">Dunkel</span>
+                              <span className="text-[0.625rem] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 shrink-0">Dunkel</span>
                             ) : (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-950/50 text-amber-300 border border-amber-800/60 shrink-0">Hell</span>
+                              <span className="text-[0.625rem] px-1.5 py-0.5 rounded bg-amber-950/50 text-amber-300 border border-amber-800/60 shrink-0">Hell</span>
                             )}
                           </div>
                           {isSelected && (
-                            <span className="flex items-center gap-1 text-[11px] font-bold text-indigo-400 bg-indigo-950/80 px-1.5 py-0.5 rounded border border-indigo-700/60 shrink-0">
+                            <span className="flex items-center gap-1 text-[0.6875rem] font-bold text-indigo-400 bg-indigo-950/80 px-1.5 py-0.5 rounded border border-indigo-700/60 shrink-0">
                               <Check className="w-3.5 h-3.5" />
                               <span>Aktiv</span>
                             </span>
@@ -417,7 +448,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                         {/* Description */}
                         {thm.description && (
-                          <p className="text-[11px] text-slate-400 leading-snug line-clamp-2 mb-2.5">
+                          <p className="text-[0.6875rem] text-slate-400 leading-snug line-clamp-2 mb-2.5">
                             {thm.description}
                           </p>
                         )}
@@ -433,7 +464,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         >
                           {/* Mock Title Bar */}
                           <div 
-                            className="flex items-center justify-between px-1.5 py-0.5 rounded border text-[9px] font-mono"
+                            className="flex items-center justify-between px-1.5 py-0.5 rounded border text-[0.5625rem] font-mono"
                             style={{
                               backgroundColor: thm.surfaceTone,
                               borderColor: thm.borderTone,
@@ -486,7 +517,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               />
                             </div>
                             <div 
-                              className="px-1.5 py-0.5 rounded text-[8px] font-bold shrink-0"
+                              className="px-1.5 py-0.5 rounded text-[0.5rem] font-bold shrink-0"
                               style={{ 
                                 backgroundColor: thm.accentColor,
                                 color: thm.isDark && thm.accentColor !== '#e4e4e7' && thm.accentColor !== '#f5f5f7' ? '#ffffff' : '#09090b'
@@ -508,7 +539,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <div className="w-4 h-4 rounded-full border border-slate-700/80 shadow-xs" style={{ backgroundColor: thm.cutLineColor }} title="Schnittbahn (G1)" />
                           <div className="w-4 h-4 rounded-full border border-slate-700/80 shadow-xs" style={{ backgroundColor: thm.rapidLineColor }} title="Eilgang (G0)" />
                         </div>
-                        <span className="text-[10px] text-slate-500 font-mono group-hover:text-slate-300 transition-colors">
+                        <span className="text-[0.625rem] text-slate-500 font-mono group-hover:text-slate-300 transition-colors">
                           {thm.tag || 'Design'}
                         </span>
                       </div>
@@ -529,28 +560,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                      <span className="text-slate-400 text-[11px]">Schnellvorlage:</span>
+                      <span className="text-slate-400 text-[0.6875rem]">Schnellvorlage:</span>
                       <button
                         onClick={() => handleApplyQuickStarter('monochrome_minimal')}
-                        className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px]"
+                        className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[0.6875rem]"
                       >
                         Monochrom
                       </button>
                       <button
                         onClick={() => handleApplyQuickStarter('graphite_matte')}
-                        className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px]"
+                        className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[0.6875rem]"
                       >
                         Graphit
                       </button>
                       <button
                         onClick={() => handleApplyQuickStarter('minimal_paper')}
-                        className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px]"
+                        className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[0.6875rem]"
                       >
                         Hell / Papier
                       </button>
                       <button
                         onClick={() => handleApplyQuickStarter('slate_industrial')}
-                        className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px]"
+                        className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[0.6875rem]"
                       >
                         Industrial
                       </button>
@@ -594,7 +625,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                         {/* Primary Accent */}
                         <div className="p-2 bg-slate-900 rounded-lg border border-slate-800">
-                          <label className="block text-slate-400 text-[11px] mb-1 truncate">{t.primaryAccent || 'Akzentfarbe'}</label>
+                          <label className="block text-slate-400 text-[0.6875rem] mb-1 truncate">{t.primaryAccent || 'Akzentfarbe'}</label>
                           <div className="flex items-center gap-2">
                             <input
                               type="color"
@@ -606,14 +637,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               type="text"
                               value={customTheme.accentColor}
                               onChange={(e) => setCustomTheme({ ...customTheme, accentColor: e.target.value })}
-                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 font-mono text-[10px] text-slate-200"
+                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 font-mono text-[0.625rem] text-slate-200"
                             />
                           </div>
                         </div>
 
                         {/* Background Tone */}
                         <div className="p-2 bg-slate-900 rounded-lg border border-slate-800">
-                          <label className="block text-slate-400 text-[11px] mb-1 truncate">{t.backgroundTone || 'Hintergrund'}</label>
+                          <label className="block text-slate-400 text-[0.6875rem] mb-1 truncate">{t.backgroundTone || 'Hintergrund'}</label>
                           <div className="flex items-center gap-2">
                             <input
                               type="color"
@@ -625,14 +656,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               type="text"
                               value={customTheme.bgTone}
                               onChange={(e) => setCustomTheme({ ...customTheme, bgTone: e.target.value })}
-                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 font-mono text-[10px] text-slate-200"
+                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 font-mono text-[0.625rem] text-slate-200"
                             />
                           </div>
                         </div>
 
                         {/* Surface Tone */}
                         <div className="p-2 bg-slate-900 rounded-lg border border-slate-800">
-                          <label className="block text-slate-400 text-[11px] mb-1 truncate">{t.surfaceTone || 'Oberfläche / Panele'}</label>
+                          <label className="block text-slate-400 text-[0.6875rem] mb-1 truncate">{t.surfaceTone || 'Oberfläche / Panele'}</label>
                           <div className="flex items-center gap-2">
                             <input
                               type="color"
@@ -644,14 +675,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               type="text"
                               value={customTheme.surfaceTone}
                               onChange={(e) => setCustomTheme({ ...customTheme, surfaceTone: e.target.value })}
-                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 font-mono text-[10px] text-slate-200"
+                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 font-mono text-[0.625rem] text-slate-200"
                             />
                           </div>
                         </div>
 
                         {/* Border Tone */}
                         <div className="p-2 bg-slate-900 rounded-lg border border-slate-800">
-                          <label className="block text-slate-400 text-[11px] mb-1 truncate">{t.borderTone || 'Rahmen / Linien'}</label>
+                          <label className="block text-slate-400 text-[0.6875rem] mb-1 truncate">{t.borderTone || 'Rahmen / Linien'}</label>
                           <div className="flex items-center gap-2">
                             <input
                               type="color"
@@ -663,14 +694,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               type="text"
                               value={customTheme.borderTone}
                               onChange={(e) => setCustomTheme({ ...customTheme, borderTone: e.target.value })}
-                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 font-mono text-[10px] text-slate-200"
+                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 font-mono text-[0.625rem] text-slate-200"
                             />
                           </div>
                         </div>
 
                         {/* Cut Line G1 */}
                         <div className="p-2 bg-slate-900 rounded-lg border border-slate-800">
-                          <label className="block text-slate-400 text-[11px] mb-1 truncate">{t.cutLineG1Color || 'Schnittbahn G1'}</label>
+                          <label className="block text-slate-400 text-[0.6875rem] mb-1 truncate">{t.cutLineG1Color || 'Schnittbahn G1'}</label>
                           <div className="flex items-center gap-2">
                             <input
                               type="color"
@@ -682,14 +713,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               type="text"
                               value={customTheme.cutLineColor}
                               onChange={(e) => setCustomTheme({ ...customTheme, cutLineColor: e.target.value })}
-                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 font-mono text-[10px] text-slate-200"
+                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 font-mono text-[0.625rem] text-slate-200"
                             />
                           </div>
                         </div>
 
                         {/* Rapid Line G0 */}
                         <div className="p-2 bg-slate-900 rounded-lg border border-slate-800">
-                          <label className="block text-slate-400 text-[11px] mb-1 truncate">{t.rapidLineG0Color || 'Eilgang G0'}</label>
+                          <label className="block text-slate-400 text-[0.6875rem] mb-1 truncate">{t.rapidLineG0Color || 'Eilgang G0'}</label>
                           <div className="flex items-center gap-2">
                             <input
                               type="color"
@@ -701,7 +732,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               type="text"
                               value={customTheme.rapidLineColor}
                               onChange={(e) => setCustomTheme({ ...customTheme, rapidLineColor: e.target.value })}
-                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 font-mono text-[10px] text-slate-200"
+                              className="w-16 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 font-mono text-[0.625rem] text-slate-200"
                             />
                           </div>
                         </div>
@@ -716,7 +747,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <Eye className="w-3.5 h-3.5 text-indigo-400" />
                             <span>{t.themeLivePreview || 'Live-Vorschau'}</span>
                           </span>
-                          <span className="text-[10px] text-slate-500 font-mono">100% Dynamisch</span>
+                          <span className="text-[0.625rem] text-slate-500 font-mono">100% Dynamisch</span>
                         </div>
 
                         {/* Interactive UI Mockup Box */}
@@ -730,7 +761,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         >
                           {/* Mock App Header */}
                           <div 
-                            className="flex items-center justify-between px-2 py-1 rounded border text-[10px]"
+                            className="flex items-center justify-between px-2 py-1 rounded border text-[0.625rem]"
                             style={{
                               backgroundColor: customTheme.surfaceTone,
                               borderColor: customTheme.borderTone,
@@ -740,7 +771,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <span className="font-bold" style={{ color: customTheme.textMain }}>PlotterCNC Studio</span>
                             <div className="flex items-center gap-1">
                               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: customTheme.accentColor }} />
-                              <span className="text-[9px]" style={{ color: customTheme.accentColor }}>BEREIT</span>
+                              <span className="text-[0.5625rem]" style={{ color: customTheme.accentColor }}>BEREIT</span>
                             </div>
                           </div>
 
@@ -773,7 +804,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                           {/* Live Buttons & Slider Sample Controls */}
                           <div className="space-y-1.5 pt-1">
-                            <div className="flex items-center justify-between text-[9px]">
+                            <div className="flex items-center justify-between text-[0.5625rem]">
                               <span style={{ color: customTheme.textMuted }}>Slider / Regler ({demoSliderVal}%):</span>
                               <span className="font-mono font-bold" style={{ color: customTheme.accentColor }}>{demoSliderVal} mm/s</span>
                             </div>
@@ -792,7 +823,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <div className="flex items-center gap-1.5 pt-0.5">
                               <button
                                 type="button"
-                                className="flex-1 py-1 rounded text-[10px] font-bold shadow-xs transition-transform active:scale-95"
+                                className="flex-1 py-1 rounded text-[0.625rem] font-bold shadow-xs transition-transform active:scale-95"
                                 style={{
                                   backgroundColor: customTheme.accentColor,
                                   color: customTheme.isDark && customTheme.accentColor !== '#e4e4e7' && customTheme.accentColor !== '#f5f5f7' ? '#ffffff' : '#09090b'
@@ -802,7 +833,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               </button>
                               <button
                                 type="button"
-                                className="px-2.5 py-1 rounded text-[10px] border transition-transform active:scale-95"
+                                className="px-2.5 py-1 rounded text-[0.625rem] border transition-transform active:scale-95"
                                 style={{
                                   backgroundColor: customTheme.surfaceTone,
                                   borderColor: customTheme.borderTone,
@@ -812,7 +843,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 Sekundär
                               </button>
                               <div
-                                className="px-1.5 py-0.5 rounded text-[9px] font-bold border"
+                                className="px-1.5 py-0.5 rounded text-[0.5625rem] font-bold border"
                                 style={{
                                   borderColor: customTheme.accentColor,
                                   color: customTheme.accentColor,
@@ -917,7 +948,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <div className="p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-2">
                 <h4 className="font-semibold text-xs text-slate-200">Maßeinheiten</h4>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[0.6875rem] text-slate-400">
                   Standardmäßig verwendet die Steuerung metrische Einheiten (Millimeter / mm, G21) gemäß CNC- und GRBL-Standard.
                 </p>
               </div>
@@ -965,7 +996,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="p-4 bg-slate-950/70 border border-slate-800 rounded-xl flex items-center justify-between">
                   <div>
                     <h4 className="font-semibold text-xs text-slate-200">Benutzerdefinierte Schnell-Buttons</h4>
-                    <p className="text-[11px] text-slate-400">Verwalte Makros, Framing und Tool-Tasten.</p>
+                    <p className="text-[0.6875rem] text-slate-400">Verwalte Makros, Framing und Tool-Tasten.</p>
                   </div>
                   <button
                     onClick={() => {
@@ -990,7 +1021,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <HardDriveDownload className="w-4 h-4 text-indigo-400" />
                   <span>{t.fullBackupTitle || 'Komplett-Backup & System-Export'}</span>
                 </h3>
-                <p className="text-slate-400 text-[11px] leading-relaxed">
+                <p className="text-slate-400 text-[0.6875rem] leading-relaxed">
                   {t.fullBackupDesc || 'Exportiere alle Maschinenkonfigurationen, Parameterdatenbanken, Materialbibliotheken und Custom Buttons in eine einzige Datei.'}
                 </p>
 
@@ -1027,7 +1058,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <AlertTriangle className="w-4 h-4" />
                   <h4 className="font-bold text-xs">Werkseinstellungen</h4>
                 </div>
-                <p className="text-rose-300/80 text-[11px]">
+                <p className="text-rose-300/80 text-[0.6875rem]">
                   Setzt alle gespeicherten Maschinenprofile, Laser-Materialdaten und benutzerdefinierten Einstellungen zurück.
                 </p>
                 <div className="pt-1">
@@ -1048,10 +1079,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="space-y-4">
               <div className="p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-2">
                 <h3 className="font-bold text-sm text-slate-100">PlotterCNC Studio</h3>
-                <p className="text-slate-400 text-[11px]">
+                <p className="text-slate-400 text-[0.6875rem]">
                   Professionelle Open-Source GRBL 1.1h Steuersoftware mit Stift-Plotter, Schleppmesser-Kompensation und Laser-Cutter Generator.
                 </p>
-                <div className="grid grid-cols-2 gap-2 pt-2 text-[11px] font-mono text-slate-400">
+                <div className="grid grid-cols-2 gap-2 pt-2 text-[0.6875rem] font-mono text-slate-400">
                   <div>Protokoll: GRBL 1.1h / 1.1f</div>
                   <div>Verbindung: WebSerial API (115200 Baud)</div>
                   <div>Planer-Puffer: 15 Blöcke (128 Bytes RX)</div>

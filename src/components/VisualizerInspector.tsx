@@ -109,7 +109,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
           <span className="font-bold text-sm text-slate-100">Werkzeug-Inspektor</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+          <span className="text-[0.6875rem] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
             {gcodeObjects.length} {gcodeObjects.length === 1 ? 'Objekt' : 'Objekte'}
           </span>
           <button
@@ -160,7 +160,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
       </div>
 
       {/* Target Indicator Sub-bar */}
-      <div className="px-4 py-1.5 bg-indigo-950/40 border-b border-indigo-900/30 flex items-center justify-between text-[11px] shrink-0">
+      <div className="px-4 py-1.5 bg-indigo-950/40 border-b border-indigo-900/30 flex items-center justify-between text-[0.6875rem] shrink-0">
         <span className="text-slate-400">Aktives Ziel:</span>
         <span className="font-semibold text-indigo-300 truncate max-w-[200px]">
           {selectedObjectIds.length === 0
@@ -179,17 +179,17 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
         {activeTab === 'objects' && (
           <div className="space-y-3">
             {/* Quick Multi-Select / Visibility bar */}
-            <div className="flex items-center justify-between gap-1 text-[11px] pb-1 border-b border-slate-800">
+            <div className="flex items-center justify-between gap-1 text-[0.6875rem] pb-1 border-b border-slate-800">
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setSelectedObjectIds(gcodeObjects.map(o => o.id))}
-                  className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px]"
+                  className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[0.6875rem]"
                 >
                   Alle wählen
                 </button>
                 <button
                   onClick={() => setSelectedObjectIds([])}
-                  className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded text-[11px]"
+                  className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded text-[0.6875rem]"
                 >
                   Leeren
                 </button>
@@ -290,12 +290,12 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono px-0.5">
+                    <div className="flex items-center justify-between text-[0.625rem] text-slate-400 font-mono px-0.5">
                       <span className="text-indigo-300 font-semibold">{w.toFixed(1)} × {h.toFixed(1)} mm</span>
                       <span>{obj.segmentCount} Segmente</span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1 pt-1 border-t border-slate-800/80 text-[10px]">
+                    <div className="grid grid-cols-3 gap-1 pt-1 border-t border-slate-800/80 text-[0.625rem]">
                       <button
                         onClick={() => handleCenterOnBed([obj.id])}
                         className="py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded font-medium transition-colors"
@@ -355,7 +355,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
           <div className="space-y-4 text-xs">
             {/* Quick Alignment: Center & Origin */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Schnell-Ausrichtung</label>
+              <label className="text-[0.625rem] font-semibold text-slate-400 uppercase tracking-wider">Schnell-Ausrichtung</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => handleCenterOnBed()}
@@ -379,13 +379,13 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
             {/* Position Nudge D-Pad */}
             <div className="space-y-2 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Schrittweise Verschieben</label>
+                <label className="text-[0.625rem] font-semibold text-slate-400 uppercase tracking-wider">Schrittweise Verschieben</label>
                 <div className="flex items-center gap-1">
                   {[1, 5, 10, 25, 50].map((step) => (
                     <button
                       key={step}
                       onClick={() => setShiftStep(step)}
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors ${
+                      className={`px-1.5 py-0.5 rounded text-[0.625rem] font-mono transition-colors ${
                         shiftStep === step
                           ? 'bg-indigo-600 text-white font-semibold'
                           : 'bg-slate-800 text-slate-400 hover:text-slate-200'
@@ -394,7 +394,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
                       {step}
                     </button>
                   ))}
-                  <span className="text-[10px] text-slate-500 font-mono">mm</span>
+                  <span className="text-[0.625rem] text-slate-500 font-mono">mm</span>
                 </div>
               </div>
 
@@ -417,7 +417,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
                 >
                   X-
                 </button>
-                <div className="flex items-center justify-center text-[10px] text-indigo-400 font-semibold">
+                <div className="flex items-center justify-center text-[0.625rem] text-indigo-400 font-semibold">
                   {shiftStep}mm
                 </div>
                 <button
@@ -440,7 +440,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
               </div>
 
               {/* Direct Offset Input */}
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-800 font-mono text-[11px]">
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-800 font-mono text-[0.6875rem]">
                 <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded border border-slate-800 flex-1">
                   <span className="text-rose-400 font-semibold">ΔX:</span>
                   <input
@@ -451,7 +451,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
                     className="w-full bg-transparent text-slate-100 text-right outline-none"
                     placeholder="0"
                   />
-                  <span className="text-slate-500 text-[10px]">mm</span>
+                  <span className="text-slate-500 text-[0.625rem]">mm</span>
                 </div>
                 <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded border border-slate-800 flex-1">
                   <span className="text-cyan-400 font-semibold">ΔY:</span>
@@ -463,7 +463,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
                     className="w-full bg-transparent text-slate-100 text-right outline-none"
                     placeholder="0"
                   />
-                  <span className="text-slate-500 text-[10px]">mm</span>
+                  <span className="text-slate-500 text-[0.625rem]">mm</span>
                 </div>
                 <button
                   onClick={() => {
@@ -490,7 +490,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
                 </div>
                 <button
                   onClick={() => setLockAspect(!lockAspect)}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border transition-colors ${
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[0.625rem] font-medium border transition-colors ${
                     lockAspect
                       ? 'bg-indigo-950/80 border-indigo-500/50 text-indigo-300 font-bold'
                       : 'bg-slate-800 border-slate-700 text-slate-400'
@@ -502,16 +502,16 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
                 </button>
               </div>
 
-              <div className="text-[10px] text-slate-400 flex justify-between font-mono">
+              <div className="text-[0.625rem] text-slate-400 flex justify-between font-mono">
                 <span>Ist-Maße:</span>
                 <span className="text-slate-300 font-bold">
                   {actualBounds.width.toFixed(1)} × {actualBounds.height.toFixed(1)} mm
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 font-mono text-[11px]">
+              <div className="grid grid-cols-3 gap-2 font-mono text-[0.6875rem]">
                 <div className="space-y-1">
-                  <span className="text-slate-400 text-[10px]">Breite X:</span>
+                  <span className="text-slate-400 text-[0.625rem]">Breite X:</span>
                   <input
                     type="number"
                     step="1"
@@ -522,7 +522,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-slate-400 text-[10px]">Höhe Y:</span>
+                  <span className="text-slate-400 text-[0.625rem]">Höhe Y:</span>
                   <input
                     type="number"
                     step="1"
@@ -533,7 +533,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-slate-400 text-[10px]">Tiefe Z:</span>
+                  <span className="text-slate-400 text-[0.625rem]">Tiefe Z:</span>
                   <input
                     type="number"
                     step="0.5"
@@ -562,8 +562,8 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
 
               {/* Scaling Presets */}
               <div className="pt-2 border-t border-slate-800 space-y-1.5">
-                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Schnell-Skalierung</label>
-                <div className="grid grid-cols-5 gap-1 font-mono text-[10px]">
+                <label className="text-[0.625rem] font-semibold text-slate-400 uppercase tracking-wider">Schnell-Skalierung</label>
+                <div className="grid grid-cols-5 gap-1 font-mono text-[0.625rem]">
                   {[50, 75, 125, 150, 200].map(pct => (
                     <button
                       key={pct}
@@ -574,7 +574,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
                     </button>
                   ))}
                 </div>
-                <div className="grid grid-cols-4 gap-1 font-mono text-[10px] pt-1">
+                <div className="grid grid-cols-4 gap-1 font-mono text-[0.625rem] pt-1">
                   {[-10, -5, 5, 10].map(delta => (
                     <button
                       key={delta}
@@ -602,7 +602,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
             {/* Free Rotation Slider */}
             <div className="space-y-2 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Freier Drehwinkel</label>
+                <label className="text-[0.625rem] font-semibold text-slate-400 uppercase tracking-wider">Freier Drehwinkel</label>
                 <span className="font-mono text-indigo-300 font-bold text-xs">{customRotDeg}°</span>
               </div>
               <input
@@ -629,8 +629,8 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
 
             {/* Quick Rotation Buttons */}
             <div className="space-y-2 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
-              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Schnell-Drehung</label>
-              <div className="grid grid-cols-4 gap-1.5 font-mono text-[11px]">
+              <label className="text-[0.625rem] font-semibold text-slate-400 uppercase tracking-wider">Schnell-Drehung</label>
+              <div className="grid grid-cols-4 gap-1.5 font-mono text-[0.6875rem]">
                 {[-90, -45, 45, 90].map(deg => (
                   <button
                     key={deg}
@@ -652,7 +652,7 @@ export const VisualizerInspector: React.FC<VisualizerInspectorProps> = ({
 
             {/* Mirroring / Flipping */}
             <div className="space-y-2 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
-              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Spiegeln</label>
+              <label className="text-[0.625rem] font-semibold text-slate-400 uppercase tracking-wider">Spiegeln</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => {

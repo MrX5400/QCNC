@@ -21,6 +21,10 @@ interface ThemeLanguageContextType {
   presetThemes: ThemeConfig[];
   updateCustomTheme: (partial: Partial<ThemeConfig>) => void;
   
+  // UI Scale
+  uiScale: number;
+  setUiScale: (scale: number) => void;
+
   // Language state & actions
   language: Language;
   setLanguage: (lang: Language) => void;
@@ -32,6 +36,15 @@ const ThemeLanguageContext = createContext<ThemeLanguageContextType | undefined>
 export const ThemeLanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<ThemeConfig>(() => getSavedTheme());
   const [language, setLanguageState] = useState<Language>(() => getSavedLanguage());
+  
+  const [uiScale, setUiScaleState] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('plottercnc_ui_scale');
+      return saved ? parseInt(saved, 10) : 100;
+    } catch {
+      return 100;
+    }
+  });
 
   // Apply theme to document on mount and change
   useEffect(() => {
@@ -46,6 +59,13 @@ export const ThemeLanguageProvider: React.FC<{ children: ReactNode }> = ({ child
     }
     root.setAttribute('data-theme', theme.id);
   }, [theme]);
+
+  // Apply ui scale to document on mount and change
+  useEffect(() => {
+    // 100% = 16px (default root font size)
+    const newFontSize = 16 * (uiScale / 100);
+    document.documentElement.style.fontSize = `${newFontSize}px`;
+  }, [uiScale]);
 
   const setTheme = (newTheme: ThemeConfig) => {
     setThemeState(newTheme);
@@ -67,6 +87,15 @@ export const ThemeLanguageProvider: React.FC<{ children: ReactNode }> = ({ child
     persistLanguage(newLang);
   };
 
+  const setUiScale = (scale: number) => {
+    setUiScaleState(scale);
+    try {
+      localStorage.setItem('plottercnc_ui_scale', scale.toString());
+    } catch {
+      // ignore
+    }
+  };
+
   const currentTranslations = translations[language] || translations.de;
 
   return (
@@ -76,6 +105,8 @@ export const ThemeLanguageProvider: React.FC<{ children: ReactNode }> = ({ child
         setTheme,
         presetThemes: PRESET_THEMES,
         updateCustomTheme,
+        uiScale,
+        setUiScale,
         language,
         setLanguage,
         t: currentTranslations,
@@ -95,8 +126,8 @@ export const useThemeLanguage = (): ThemeLanguageContextType => {
 };
 
 export const useTheme = () => {
-  const { theme, setTheme, presetThemes, updateCustomTheme } = useThemeLanguage();
-  return { theme, setTheme, presetThemes, updateCustomTheme };
+  const { theme, setTheme, presetThemes, updateCustomTheme, uiScale, setUiScale } = useThemeLanguage();
+  return { theme, setTheme, presetThemes, updateCustomTheme, uiScale, setUiScale };
 };
 
 export const useI18n = () => {

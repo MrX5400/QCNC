@@ -46,6 +46,35 @@ export default function App() {
     });
   };
 
+  const [rightPanelWidth, setRightPanelWidth] = useState<number>(380); // Default right panel width
+  
+  const handleResizeRightPanelStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    const startX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const startWidth = rightPanelWidth;
+
+    const handleMouseMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const currentX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : (moveEvent as MouseEvent).clientX;
+      const delta = startX - currentX; // Dragging left increases right panel width
+      const newWidth = Math.max(280, Math.min(800, startWidth + delta));
+      setRightPanelWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleMouseMove);
+      document.removeEventListener('touchend', handleMouseUp);
+      document.body.style.cursor = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleMouseMove, { passive: false });
+    document.addEventListener('touchend', handleMouseUp);
+  };
+
   // Apply stored theme on mount
   useEffect(() => {
     applyThemeCssVars(getSavedTheme());
@@ -149,11 +178,11 @@ G0 X0.000 Y0.000
       />
 
       {/* Main Workspace Body */}
-      <main className="flex-1 flex overflow-hidden p-3 gap-3 relative">
+      <main className="flex-1 flex overflow-hidden p-2 md:p-3 gap-2 md:gap-3 relative">
         {/* Visualizer Tab (Persistent) */}
-        <div className={`flex-1 grid-cols-1 lg:grid-cols-12 gap-3 h-full overflow-hidden ${activeTab === 'visualizer' ? 'grid' : 'hidden'}`}>
+        <div className={`flex-1 flex flex-col md:flex-row gap-2 md:gap-3 h-full overflow-hidden ${activeTab === 'visualizer' ? 'flex' : 'hidden'}`}>
           {/* Left: 2D/3D Real-time Path Visualizer + Custom Action Buttons Bar */}
-          <div className="lg:col-span-8 flex flex-col gap-2 h-full overflow-hidden">
+          <div className="flex-1 flex flex-col gap-2 h-full overflow-hidden min-w-[300px]">
             {/* Custom Macro Toolbar (Fully hideable to maximize workspace area) */}
             {showMacroBar && (
               <div className="shrink-0">
@@ -179,8 +208,20 @@ G0 X0.000 Y0.000
             </div>
           </div>
 
+          {/* Resizer */}
+          <div 
+            className="hidden md:flex w-2 -mx-1 hover:bg-indigo-500/50 cursor-col-resize justify-center items-center rounded transition-colors group z-10 shrink-0"
+            onMouseDown={handleResizeRightPanelStart}
+            onTouchStart={handleResizeRightPanelStart}
+          >
+            <div className="w-0.5 h-12 bg-slate-700 group-hover:bg-indigo-400 rounded-full transition-colors" />
+          </div>
+
           {/* Right: Jog Controller + G-Code Execution Streamer */}
-          <div className="lg:col-span-4 flex flex-col gap-3 h-full overflow-y-auto pr-1">
+          <div 
+            className="flex flex-col gap-2 md:gap-3 h-full overflow-y-auto pr-1 pb-2 shrink-0 md:max-w-[800px] w-full md:w-auto"
+            style={{ width: window.innerWidth >= 768 ? rightPanelWidth : '100%' }}
+          >
             <JogController
               currentProfile={currentProfile}
               liveState={liveState}
@@ -213,9 +254,9 @@ G0 X0.000 Y0.000
         </div>
 
         {/* Console View: Constrained to max 1/3 width with workspace visualizer visible in remaining 2/3 */}
-        <div className={`flex-1 grid-cols-1 lg:grid-cols-12 gap-3 h-full overflow-hidden ${activeTab === 'console' ? 'grid' : 'hidden'}`}>
-          {/* Left 2/3: Live 2D/3D Workspace Surface is fully visible */}
-          <div className="lg:col-span-8 flex flex-col gap-2 h-full overflow-hidden">
+        <div className={`flex-1 flex flex-col md:flex-row gap-2 md:gap-3 h-full overflow-hidden ${activeTab === 'console' ? 'flex' : 'hidden'}`}>
+          {/* Left: Live 2D/3D Workspace Surface is fully visible */}
+          <div className="flex-1 flex flex-col gap-2 h-full overflow-hidden min-w-[300px]">
             {showMacroBar && (
               <div className="shrink-0">
                 <CustomButtonsBar
@@ -238,8 +279,20 @@ G0 X0.000 Y0.000
             </div>
           </div>
 
-          {/* Right 1/3 (max 33% width): GRBL Terminal & Command Console */}
-          <div className="lg:col-span-4 h-full overflow-hidden border border-slate-800 rounded-xl bg-slate-900 shadow-xl">
+          {/* Resizer */}
+          <div 
+            className="hidden md:flex w-2 -mx-1 hover:bg-indigo-500/50 cursor-col-resize justify-center items-center rounded transition-colors group z-10 shrink-0"
+            onMouseDown={handleResizeRightPanelStart}
+            onTouchStart={handleResizeRightPanelStart}
+          >
+            <div className="w-0.5 h-12 bg-slate-700 group-hover:bg-indigo-400 rounded-full transition-colors" />
+          </div>
+
+          {/* Right: GRBL Terminal & Command Console */}
+          <div 
+            className="h-full overflow-hidden border border-slate-800 rounded-xl bg-slate-900 shadow-xl shrink-0 w-full md:w-auto"
+            style={{ width: window.innerWidth >= 768 ? rightPanelWidth : '100%' }}
+          >
             <GrblConsole />
           </div>
         </div>

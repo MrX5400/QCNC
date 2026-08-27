@@ -163,11 +163,11 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="hidden sm:block">
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-slate-100 text-sm tracking-tight">QCNC</span>
-              <span className="text-[9px] uppercase font-bold px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              <span className="text-[0.5625rem] uppercase font-bold px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                 PRO
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 leading-none">GRBL Controller and gcode Generator</p>
+            <p className="text-[0.625rem] text-slate-400 leading-none">GRBL Controller and gcode Generator</p>
           </div>
         </div>
 
@@ -179,7 +179,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Sliders className="w-3.5 h-3.5 text-indigo-400" />
           <span className="max-w-[110px] sm:max-w-[130px] truncate font-medium">{currentProfile.name}</span>
-          <span className="hidden md:inline text-[10px] text-slate-400 font-mono">({currentProfile.bedWidth}x{currentProfile.bedHeight}mm)</span>
+          <span className="hidden md:inline text-[0.625rem] text-slate-400 font-mono">({currentProfile.bedWidth}x{currentProfile.bedHeight}mm)</span>
         </button>
 
         {/* Live GRBL State Badge (Positioned in Left Section as requested) */}
@@ -187,7 +187,7 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="w-2 h-2 rounded-full bg-current" />
           <span>{grblState.status.toUpperCase()}</span>
           {connInfo.simulated && (
-            <span className="text-[9px] bg-slate-900 px-1 py-0.2 rounded text-slate-300 font-sans">SIM</span>
+            <span className="text-[0.5625rem] bg-slate-900 px-1 py-0.2 rounded text-slate-300 font-sans">SIM</span>
           )}
         </div>
       </div>
@@ -269,7 +269,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="absolute right-0 mt-1.5 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 z-50 space-y-1.5 text-xs animate-in fade-in-50 duration-100">
               {/* Import Section */}
               <div>
-                <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 flex items-center gap-1.5">
+                <div className="px-2 py-1 text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 flex items-center gap-1.5">
                   <Upload className="w-3 h-3 text-indigo-400" />
                   <span>Importieren</span>
                 </div>
@@ -284,7 +284,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <FileCode className="w-4 h-4 text-indigo-400 shrink-0" />
                     <div className="flex-1">
                       <div className="font-medium">G-Code laden...</div>
-                      <div className="text-[10px] text-slate-400">.nc, .gcode, .tap, .cnc</div>
+                      <div className="text-[0.625rem] text-slate-400">.nc, .gcode, .tap, .cnc</div>
                     </div>
                   </button>
 
@@ -298,7 +298,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <Compass className="w-4 h-4 text-cyan-400 shrink-0" />
                     <div className="flex-1">
                       <div className="font-medium">Vektor / Bild importieren</div>
-                      <div className="text-[10px] text-slate-400">.dxf, .svg, PNG, JPG (im Generator)</div>
+                      <div className="text-[0.625rem] text-slate-400">.dxf, .svg, PNG, JPG (im Generator)</div>
                     </div>
                   </button>
                 </div>
@@ -306,7 +306,7 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* Export Section */}
               <div>
-                <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 flex items-center gap-1.5">
+                <div className="px-2 py-1 text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 flex items-center gap-1.5">
                   <Download className="w-3 h-3 text-emerald-400" />
                   <span>Exportieren</span>
                 </div>
@@ -326,7 +326,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <Download className="w-4 h-4 text-cyan-400 shrink-0" />
                     <div className="flex-1">
                       <div className="font-medium">G-Code als .nc speichern</div>
-                      <div className="text-[10px] text-slate-400">Standard GRBL Format (.nc)</div>
+                      <div className="text-[0.625rem] text-slate-400">Standard GRBL Format (.nc)</div>
                     </div>
                   </button>
 
@@ -345,7 +345,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <Download className="w-4 h-4 text-emerald-400 shrink-0" />
                     <div className="flex-1">
                       <div className="font-medium">G-Code als .gcode speichern</div>
-                      <div className="text-[10px] text-slate-400">CNC/Plotter Format (.gcode)</div>
+                      <div className="text-[0.625rem] text-slate-400">CNC/Plotter Format (.gcode)</div>
                     </div>
                   </button>
                 </div>
@@ -427,7 +427,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <Palette className="w-4 h-4 text-cyan-400" />
                     <div>
                       <div className="font-semibold">{t.settingsTitle || 'Einstellungen'}</div>
-                      <div className="text-[10px] text-slate-400">Farben, Themes & Sprache</div>
+                      <div className="text-[0.625rem] text-slate-400">Farben, Themes & Sprache</div>
                     </div>
                   </button>
                 )}
@@ -443,7 +443,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <SlidersHorizontal className="w-4 h-4 text-indigo-400" />
                     <div>
                       <div className="font-semibold">{t.customButtonsTab || 'Makros verwalten'}</div>
-                      <div className="text-[10px] text-slate-400">Schnell-Buttons bearbeiten</div>
+                      <div className="text-[0.625rem] text-slate-400">Schnell-Buttons bearbeiten</div>
                     </div>
                   </button>
                 )}
@@ -452,7 +452,7 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Panel Visibility Section */}
               {panelVisibility && onTogglePanel && (
                 <div className="pt-1.5 border-t border-slate-800">
-                  <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                  <div className="px-2 py-1 text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
                     <span>Fenster & Leisten</span>
                     <LayoutGrid className="w-3 h-3 text-slate-500" />
                   </div>
@@ -470,7 +470,7 @@ export const Header: React.FC<HeaderProps> = ({
                       {panelVisibility.macros ? (
                         <Check className="w-3.5 h-3.5 text-emerald-400" />
                       ) : (
-                        <span className="text-[10px] text-slate-500">Aus</span>
+                        <span className="text-[0.625rem] text-slate-500">Aus</span>
                       )}
                     </button>
 
@@ -485,11 +485,11 @@ export const Header: React.FC<HeaderProps> = ({
                         onClick={() => onTogglePanel(item.key)}
                         className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-200 hover:bg-slate-800 transition-colors text-left"
                       >
-                        <span className="text-[11px]">{item.label}</span>
+                        <span className="text-[0.6875rem]">{item.label}</span>
                         {panelVisibility[item.key] ? (
                           <Check className="w-3.5 h-3.5 text-emerald-400" />
                         ) : (
-                          <span className="text-[10px] text-slate-500">Aus</span>
+                          <span className="text-[0.625rem] text-slate-500">Aus</span>
                         )}
                       </button>
                     ))}
