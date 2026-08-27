@@ -223,11 +223,11 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-slate-100 text-sm sm:text-base">Laser Material & Schnitt-Datenbank</h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-800/50 font-mono">
+                <span className="text-[0.625rem] px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-800/50 font-mono">
                   {presets.length} Profile
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[0.6875rem] text-slate-400">
                 Schnitt- und Gravurparameter für Holz, Acryl, Papier, Leder, Stein & Metalle
               </p>
             </div>
@@ -296,7 +296,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
               </div>
 
               {/* Category Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[0.6875rem] no-scrollbar">
                 {CATEGORIES.map(cat => (
                   <button
                     key={cat.id}
@@ -313,7 +313,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
               </div>
 
               {/* Operation Filter */}
-              <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800/80">
+              <div className="flex items-center justify-between text-[0.6875rem] pt-1 border-t border-slate-800/80">
                 <span className="text-slate-400">Verfahren:</span>
                 <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded border border-slate-800 font-medium">
                   <button
@@ -373,7 +373,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
                               {p.name}
                             </span>
                             {/* Operation Badge */}
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            <span className={`px-1.5 py-0.5 rounded text-[0.625rem] font-bold uppercase ${
                               isCut 
                                 ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                                 : isEngrave
@@ -383,14 +383,14 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
                               {isCut ? 'Schnitt' : isEngrave ? 'Gravur' : 'Anritzen'}
                             </span>
                             {p.thicknessMm > 0 && (
-                              <span className="text-[10px] text-slate-400 font-mono">
+                              <span className="text-[0.625rem] text-slate-400 font-mono">
                                 {p.thicknessMm} mm
                               </span>
                             )}
                           </div>
 
                           {/* Quick Parameters Badges */}
-                          <div className="flex items-center gap-3 font-mono text-[11px] text-slate-400 flex-wrap pt-0.5">
+                          <div className="flex items-center gap-3 font-mono text-[0.6875rem] text-slate-400 flex-wrap pt-0.5">
                             <span className="flex items-center gap-1 text-rose-300">
                               <Zap className="w-3 h-3 text-rose-400" />
                               <span>{p.powerPercent}% ({p.powerSValue || Math.round(p.powerPercent * 10)}S)</span>
@@ -404,7 +404,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
                               <span>{p.passes} {p.passes > 1 ? 'Durchgänge' : 'Durchgang'}</span>
                             </span>
                             {p.airAssist && (
-                              <span className="flex items-center gap-0.5 text-blue-300 text-[10px] bg-blue-950/60 px-1 py-0.5 rounded border border-blue-800/40">
+                              <span className="flex items-center gap-0.5 text-blue-300 text-[0.625rem] bg-blue-950/60 px-1 py-0.5 rounded border border-blue-800/40">
                                 <Wind className="w-2.5 h-2.5" />
                                 <span>Air Assist</span>
                               </span>
@@ -412,7 +412,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
                           </div>
 
                           {p.notes && (
-                            <p className="text-[10px] text-slate-400 italic line-clamp-1">
+                            <p className="text-[0.625rem] text-slate-400 italic line-clamp-1">
                               {p.notes}
                             </p>
                           )}
@@ -469,7 +469,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
               <span>{filteredPresets.length} von {presets.length} Materialien</span>
               <button
                 onClick={handleResetDefaults}
-                className="text-[11px] text-slate-500 hover:text-slate-300 flex items-center gap-1 transition-colors"
+                className="text-[0.6875rem] text-slate-500 hover:text-slate-300 flex items-center gap-1 transition-colors"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Standard-Preset zurücksetzen</span>
@@ -498,7 +498,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
               {/* Form Fields */}
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <span className="text-slate-400 text-[11px]">Material Name:</span>
+                  <span className="text-slate-400 text-[0.6875rem]">Material Name:</span>
                   <input
                     type="text"
                     value={editingPreset.name}
@@ -510,7 +510,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[11px]">Kategorie:</span>
+                    <span className="text-slate-400 text-[0.6875rem]">Kategorie:</span>
                     <select
                       value={editingPreset.category}
                       onChange={(e) => setEditingPreset({ ...editingPreset, category: e.target.value as LaserCategory })}
@@ -527,7 +527,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[11px]">Verfahren:</span>
+                    <span className="text-slate-400 text-[0.6875rem]">Verfahren:</span>
                     <select
                       value={editingPreset.operation}
                       onChange={(e) => setEditingPreset({ ...editingPreset, operation: e.target.value as LaserOperation })}
@@ -544,7 +544,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
                 <div className="p-3 bg-slate-950/80 rounded-lg border border-slate-800 space-y-3 font-mono">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[11px]">Laserleistung:</span>
+                      <span className="text-slate-400 text-[0.6875rem]">Laserleistung:</span>
                       <div className="flex items-center gap-1 bg-slate-900 px-2.5 py-1.5 rounded border border-slate-700">
                         <input
                           type="number"
@@ -559,7 +559,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
                     </div>
 
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[11px]">Vorschub (Speed):</span>
+                      <span className="text-slate-400 text-[0.6875rem]">Vorschub (Speed):</span>
                       <div className="flex items-center gap-1 bg-slate-900 px-2.5 py-1.5 rounded border border-slate-700">
                         <input
                           type="number"
@@ -567,14 +567,14 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
                           onChange={(e) => setEditingPreset({ ...editingPreset, feedrate: Number(e.target.value) })}
                           className="w-full bg-transparent text-cyan-300 font-bold focus:outline-none"
                         />
-                        <span className="text-slate-500 text-[10px]">mm/min</span>
+                        <span className="text-slate-500 text-[0.625rem]">mm/min</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Materialstärke:</span>
+                      <span className="text-slate-400 text-[0.625rem]">Materialstärke:</span>
                       <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded border border-slate-700">
                         <input
                           type="number"
@@ -583,12 +583,12 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
                           onChange={(e) => setEditingPreset({ ...editingPreset, thicknessMm: Number(e.target.value) })}
                           className="w-full bg-transparent text-slate-200 text-xs focus:outline-none"
                         />
-                        <span className="text-slate-500 text-[10px]">mm</span>
+                        <span className="text-slate-500 text-[0.625rem]">mm</span>
                       </div>
                     </div>
 
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Durchgänge (Passes):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Durchgänge (Passes):</span>
                       <input
                         type="number"
                         min={1}
@@ -600,7 +600,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
                     </div>
 
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Z-Zustellung/Pass:</span>
+                      <span className="text-slate-400 text-[0.625rem]">Z-Zustellung/Pass:</span>
                       <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded border border-slate-700">
                         <input
                           type="number"
@@ -609,7 +609,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
                           onChange={(e) => setEditingPreset({ ...editingPreset, zStepPerPass: Number(e.target.value) })}
                           className="w-full bg-transparent text-slate-200 text-xs focus:outline-none"
                         />
-                        <span className="text-slate-500 text-[10px]">mm</span>
+                        <span className="text-slate-500 text-[0.625rem]">mm</span>
                       </div>
                     </div>
                   </div>
@@ -617,7 +617,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
                   {/* Mode & Air Assist */}
                   <div className="grid grid-cols-2 gap-3 pt-1 border-t border-slate-800">
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Laser G-Code Modus:</span>
+                      <span className="text-slate-400 text-[0.625rem]">Laser G-Code Modus:</span>
                       <select
                         value={editingPreset.laserMode}
                         onChange={(e) => setEditingPreset({ ...editingPreset, laserMode: e.target.value as 'M3' | 'M4' })}
@@ -644,7 +644,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
 
                 {/* Laser Wattage & Notes */}
                 <div className="space-y-1">
-                  <span className="text-slate-400 text-[11px]">Empfohlene Laserleistung / Gerät:</span>
+                  <span className="text-slate-400 text-[0.6875rem]">Empfohlene Laserleistung / Gerät:</span>
                   <input
                     type="text"
                     value={editingPreset.recommendedLaserWattage || ''}
@@ -655,7 +655,7 @@ export const LaserDatabaseModal: React.FC<LaserDatabaseModalProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-slate-400 text-[11px]">Hinweise & Tipps:</span>
+                  <span className="text-slate-400 text-[0.6875rem]">Hinweise & Tipps:</span>
                   <textarea
                     rows={2}
                     value={editingPreset.notes || ''}

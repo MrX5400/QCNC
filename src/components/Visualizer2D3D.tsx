@@ -76,7 +76,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
   onGcodeUpdate,
   onOpenGenerator,
 }) => {
-  const { theme } = useThemeLanguage();
+  const { theme, uiScale } = useThemeLanguage();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -1185,7 +1185,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
       // Major grid (50mm) with coordinates labels
       ctx.strokeStyle = theme.gridColor ? theme.gridColor.replace(/0\.\d+\)/, '0.8)') : 'rgba(51, 65, 85, 0.75)';
       ctx.fillStyle = theme.textMuted || '#64748b';
-      ctx.font = '10px monospace';
+      ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
 
       for (let x = 0; x <= bedWidth; x += 50) {
         const p1 = mmToScreen(x, 0);
@@ -1260,7 +1260,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
       ctx.stroke();
       ctx.setLineDash([]);
 
-      ctx.font = '10px monospace';
+      ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
       ctx.fillStyle = 'rgba(56, 189, 248, 0.6)';
       ctx.fillText(`Z max: ${zHeight}mm`, d00.sx + 4, d00.sy - 4);
       ctx.restore();
@@ -1281,7 +1281,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
       ctx.moveTo(orig.sx, orig.sy);
       ctx.lineTo(xAx.sx, xAx.sy);
       ctx.stroke();
-      ctx.font = 'bold 11px monospace';
+      ctx.font = `bold ${Math.round(11 * (uiScale || 100) / 100)}px monospace`;
       ctx.fillText('X+', xAx.sx + 4, xAx.sy + 3);
 
       // Y-Axis (Green)
@@ -1608,7 +1608,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
             ctx.fillStyle = isHover ? 'rgba(8, 47, 73, 0.85)' : 'rgba(15, 23, 42, 0.75)';
             ctx.fillRect(bP1.sx, bP1.sy - 16, 54, 14);
             ctx.fillStyle = isHover ? '#38bdf8' : '#94a3b8';
-            ctx.font = '9px monospace';
+            ctx.font = `${Math.round(9 * (uiScale || 100) / 100)}px monospace`;
             ctx.fillText(obj.name || `Obj ${obj.id + 1}`, bP1.sx + 4, bP1.sy - 5);
           });
         }
@@ -1668,7 +1668,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
             objTitle = `${selectedObject.name} (${selectedObject.bounds.width.toFixed(1)}×${selectedObject.bounds.height.toFixed(1)} mm)`;
           }
 
-          ctx.font = 'bold 10px monospace';
+          ctx.font = `bold ${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
           const titleW = ctx.measureText(objTitle).width;
           ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
           ctx.fillRect(p1.sx, p1.sy - 20, titleW + 12, 18);
@@ -1680,7 +1680,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
           // Drag offset or rotation live tooltip tag
           if (dragMode === 'transform_drag' && (offX !== 0 || offY !== 0)) {
             const tag = `ΔX: ${offX > 0 ? '+' : ''}${offX.toFixed(1)} mm | ΔY: ${offY > 0 ? '+' : ''}${offY.toFixed(1)} mm`;
-            ctx.font = 'bold 11px monospace';
+            ctx.font = `bold ${Math.round(11 * (uiScale || 100) / 100)}px monospace`;
             const tagW = ctx.measureText(tag).width;
             ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
             ctx.fillRect(centerPt.sx - tagW / 2 - 6, centerPt.sy - 28, tagW + 12, 20);
@@ -1690,7 +1690,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
             ctx.fillText(tag, centerPt.sx - tagW / 2, centerPt.sy - 14);
           } else if (customRotDeg !== 0) {
             const tag = `Drehwinkel: ${customRotDeg > 0 ? '+' : ''}${customRotDeg}°`;
-            ctx.font = 'bold 11px monospace';
+            ctx.font = `bold ${Math.round(11 * (uiScale || 100) / 100)}px monospace`;
             const tagW = ctx.measureText(tag).width;
             ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
             ctx.fillRect(centerPt.sx - tagW / 2 - 6, centerPt.sy - 28, tagW + 12, 20);
@@ -1826,9 +1826,9 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
       const label1 = `Länge: ${distMm.toFixed(2)} mm`;
       const label2 = `ΔX: ${dxMm.toFixed(2)} mm | ΔY: ${dyMm.toFixed(2)} mm (${angleDeg.toFixed(1)}°)`;
 
-      ctx.font = 'bold 12px monospace';
+      ctx.font = `bold ${Math.round(12 * (uiScale || 100) / 100)}px monospace`;
       const w1 = ctx.measureText(label1).width;
-      ctx.font = '10px monospace';
+      ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
       const w2 = ctx.measureText(label2).width;
       const badgeW = Math.max(w1, w2) + 20;
       const badgeH = 34;
@@ -1840,12 +1840,12 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
       ctx.strokeRect(midX - badgeW / 2, midY - badgeH / 2, badgeW, badgeH);
 
       ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 12px monospace';
+      ctx.font = `bold ${Math.round(12 * (uiScale || 100) / 100)}px monospace`;
       ctx.textAlign = 'center';
       ctx.fillText(label1, midX, midY - 3);
 
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '10px monospace';
+      ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
       ctx.textAlign = 'center';
       ctx.fillText(label2, midX, midY + 11);
       ctx.restore();
@@ -1971,7 +1971,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
                 setOrbitPitch(55);
                 fitToView('3d');
               }}
-              className="px-2.5 py-1.5 ml-1 text-slate-400/70 hover:text-slate-200 hover:bg-white/5 rounded text-[11px] transition-colors"
+              className="px-2.5 py-1.5 ml-1 text-slate-400/70 hover:text-slate-200 hover:bg-white/5 rounded text-[0.6875rem] transition-colors"
               title="3D Ansicht zurücksetzen"
             >
               3D Reset
@@ -1985,7 +1985,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
               setMeasureStart(null);
               setMeasureEnd(null);
             }}
-            className={`px-2.5 py-1.5 ml-1 rounded text-[11px] font-semibold flex items-center gap-1.5 transition-all ${
+            className={`px-2.5 py-1.5 ml-1 rounded text-[0.6875rem] font-semibold flex items-center gap-1.5 transition-all ${
               isMeasureActive
                 ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]'
                 : 'text-slate-400/70 hover:text-cyan-300 hover:bg-white/5'
@@ -2009,7 +2009,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           <button
             onClick={() => setShowRapid(!showRapid)}
-            className={`px-2.5 py-1.5 rounded text-[11px] font-mono transition-colors ${
+            className={`px-2.5 py-1.5 rounded text-[0.6875rem] font-mono transition-colors ${
               showRapid ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]' : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
             }`}
             title="Leerfahrten (G0 Rapid) anzeigen"
@@ -2020,7 +2020,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
           {currentProfile.dragKnife?.enabled && (
             <button
               onClick={() => setShowSwivelArcs(!showSwivelArcs)}
-              className={`px-2.5 py-1.5 rounded text-[11px] font-mono transition-colors ${
+              className={`px-2.5 py-1.5 rounded text-[0.6875rem] font-mono transition-colors ${
                 showSwivelArcs ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]' : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
               }`}
               title="Schleppmesser-Drehbögen (Swivel Arcs) hervorheben"
@@ -2032,7 +2032,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
           {/* Farb-Legende Toggle Button */}
           <button
             onClick={() => setShowLegend(prev => !prev)}
-            className={`px-2.5 py-1.5 ml-1 rounded text-[11px] font-semibold flex items-center gap-1.5 transition-all ${
+            className={`px-2.5 py-1.5 ml-1 rounded text-[0.6875rem] font-semibold flex items-center gap-1.5 transition-all ${
               showLegend
                 ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.6)]'
                 : 'text-slate-400/70 hover:text-slate-200 hover:bg-white/5'
@@ -2058,7 +2058,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
             >
               <Sliders className="w-4 h-4" />
               <span className="hidden sm:inline">Inspektor</span>
-              <span className="bg-indigo-950/50 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] text-indigo-200 font-mono">
+              <span className="bg-indigo-950/50 backdrop-blur-md px-1.5 py-0.5 rounded text-[0.625rem] text-indigo-200 font-mono">
                 {gcodeObjects.length}
               </span>
             </button>
@@ -2079,7 +2079,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
               <span className="text-cyan-200 font-bold bg-cyan-950/40 backdrop-blur-sm px-2 py-0.5 rounded-md drop-shadow-sm">
                 {Math.hypot(measureEnd.x - measureStart.x, measureEnd.y - measureStart.y).toFixed(2)} mm
               </span>
-              <span className="text-slate-300 drop-shadow-md text-[11px]">
+              <span className="text-slate-300 drop-shadow-md text-[0.6875rem]">
                 ΔX: {(measureEnd.x - measureStart.x).toFixed(2)} mm | ΔY: {(measureEnd.y - measureStart.y).toFixed(2)} mm ({(Math.atan2(measureEnd.y - measureStart.y, measureEnd.x - measureStart.x) * 180 / Math.PI).toFixed(1)}°)
               </span>
             </div>
@@ -2091,14 +2091,14 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
             {measureStart && (
               <button
                 onClick={() => { setMeasureStart(null); setMeasureEnd(null); }}
-                className="px-2 py-0.5 bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-200 rounded-md text-[11px] font-medium transition-colors"
+                className="px-2 py-0.5 bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-200 rounded-md text-[0.6875rem] font-medium transition-colors"
               >
                 Messung löschen
               </button>
             )}
             <button
               onClick={() => { setIsMeasureActive(false); setMeasureStart(null); setMeasureEnd(null); }}
-              className="px-2 py-0.5 bg-black/20 hover:bg-black/40 text-slate-300 rounded-md text-[11px] transition-colors"
+              className="px-2 py-0.5 bg-black/20 hover:bg-black/40 text-slate-300 rounded-md text-[0.6875rem] transition-colors"
               title="Messmodus beenden"
             >
               Beenden
@@ -2249,7 +2249,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
           
           {/* Interactive Live Color Legend Overlay */}
           {showLegend && (
-            <div className="flex items-center gap-1.5 animate-in fade-in select-none text-[9px] pointer-events-auto bg-black/5 backdrop-blur-[2px] rounded-full px-1.5 py-0.5">
+            <div className="flex items-center gap-1.5 animate-in fade-in select-none text-[0.5625rem] pointer-events-auto bg-black/5 backdrop-blur-[2px] rounded-full px-1.5 py-0.5">
               <button
                 onClick={() => setShowCutPaths(prev => !prev)}
                 className={`flex items-center gap-1 px-1 py-0.5 rounded transition-all cursor-pointer ${
@@ -2306,7 +2306,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
               <button
                 onClick={() => setShowLegend(false)}
-                className="text-slate-400 hover:text-slate-200 text-[9px] pl-1 border-l border-slate-700/50 cursor-pointer"
+                className="text-slate-400 hover:text-slate-200 text-[0.5625rem] pl-1 border-l border-slate-700/50 cursor-pointer"
                 title="Legende minimieren"
               >
                 ✕
@@ -2315,7 +2315,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
           )}
 
           {/* Bottom Left Coordinate & Nav HUD */}
-          <div className="flex items-center gap-2.5 text-[9px] font-mono drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-black/5 backdrop-blur-[2px] rounded-full px-2 py-0.5">
+          <div className="flex items-center gap-2.5 text-[0.5625rem] font-mono drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-black/5 backdrop-blur-[2px] rounded-full px-2 py-0.5">
             <div className="flex items-center gap-1">
               <span className="text-slate-400/80">Maus:</span>
               <span className="text-slate-200">{cursorPosMm.x.toFixed(1)}, {cursorPosMm.y.toFixed(1)}</span>
@@ -2326,7 +2326,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
                 {(liveState?.wpos?.x ?? 0).toFixed(1)}, {(liveState?.wpos?.y ?? 0).toFixed(1)}
               </span>
             </div>
-            <div className="hidden sm:flex items-center gap-1 text-[9px] text-emerald-400/90 ml-1 border-l border-slate-700/50 pl-2">
+            <div className="hidden sm:flex items-center gap-1 text-[0.5625rem] text-emerald-400/90 ml-1 border-l border-slate-700/50 pl-2">
               <MousePointerClick className="w-2.5 h-2.5 text-emerald-400 drop-shadow-[0_0_3px_rgba(52,211,153,0.8)]" />
               <span>Doppelklick = Fahren</span>
             </div>
@@ -2357,21 +2357,21 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
                     <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
                     Statistik
                   </span>
-                  <span className="text-[10px] text-indigo-300 font-mono bg-indigo-950/40 px-1.5 py-0.5 rounded-md drop-shadow-sm">{parsedGcode.stats.lineCount} Zeilen</span>
+                  <span className="text-[0.625rem] text-indigo-300 font-mono bg-indigo-950/40 px-1.5 py-0.5 rounded-md drop-shadow-sm">{parsedGcode.stats.lineCount} Zeilen</span>
                 </div>
-                <div className="flex justify-between items-center text-[11px]">
+                <div className="flex justify-between items-center text-[0.6875rem]">
                   <span className="text-slate-400/90">Schnitt/Zeichnen:</span>
                   <span className="text-emerald-400 font-mono font-semibold drop-shadow-[0_0_3px_rgba(52,211,153,0.8)]">{(parsedGcode.stats.cutLength / 10).toFixed(1)} cm</span>
                 </div>
-                <div className="flex justify-between items-center text-[11px]">
+                <div className="flex justify-between items-center text-[0.6875rem]">
                   <span className="text-slate-400/90">Leerfahrt:</span>
                   <span className="text-rose-400 font-mono font-semibold drop-shadow-[0_0_3px_rgba(251,113,133,0.8)]">{(parsedGcode.stats.travelLength / 10).toFixed(1)} cm</span>
                 </div>
-                <div className="flex justify-between items-center text-[11px]">
+                <div className="flex justify-between items-center text-[0.6875rem]">
                   <span className="text-slate-400/90">Stift-Hebungen:</span>
                   <span className="text-amber-400 font-mono font-semibold drop-shadow-[0_0_3px_rgba(251,191,36,0.8)]">{parsedGcode.stats.penLifts}x</span>
                 </div>
-                <div className="flex justify-between items-center text-[11px] pt-1.5 border-t border-white/10">
+                <div className="flex justify-between items-center text-[0.6875rem] pt-1.5 border-t border-white/10">
                   <span className="text-slate-300 flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5 text-indigo-400 drop-shadow-[0_0_3px_rgba(99,102,241,0.8)]" />
                     Dauer:
@@ -2476,7 +2476,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
           {/* Timeline Slider with Live Scrubbing */}
           <div className="flex-1 flex items-center gap-2 md:gap-3 px-2">
-            <span className="text-slate-300 font-mono text-[10px] md:text-[11px] min-w-[70px] md:min-w-[90px] drop-shadow-md">
+            <span className="text-slate-300 font-mono text-[0.625rem] md:text-[0.6875rem] min-w-[70px] md:min-w-[90px] drop-shadow-md">
               Seg {simIndex} / {parsedGcode.segments.length - 1}
             </span>
             <input
@@ -2490,14 +2490,14 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
               }}
               className="flex-1 accent-indigo-500 h-1.5 bg-black/30 rounded-full cursor-pointer transition-all hover:h-2"
             />
-            <span className="text-indigo-300 font-mono font-semibold text-[10px] md:text-[11px] min-w-[35px] md:min-w-[40px] text-right drop-shadow-[0_0_3px_rgba(99,102,241,0.8)]">
+            <span className="text-indigo-300 font-mono font-semibold text-[0.625rem] md:text-[0.6875rem] min-w-[35px] md:min-w-[40px] text-right drop-shadow-[0_0_3px_rgba(99,102,241,0.8)]">
               {Math.round((simIndex / Math.max(1, parsedGcode.segments.length - 1)) * 100)}%
             </span>
           </div>
 
           {/* Current Segment Coordinate Details */}
           {parsedGcode.segments[simIndex] && (
-            <div className="hidden lg:flex items-center gap-2 bg-black/20 px-2.5 py-1 rounded-full border border-white/5 font-mono text-[11px] text-slate-200 drop-shadow-sm">
+            <div className="hidden lg:flex items-center gap-2 bg-black/20 px-2.5 py-1 rounded-full border border-white/5 font-mono text-[0.6875rem] text-slate-200 drop-shadow-sm">
               <span className="text-slate-400">{parsedGcode.segments[simIndex].type}:</span>
               <span>X{parsedGcode.segments[simIndex].to.x.toFixed(1)}</span>
               <span>Y{parsedGcode.segments[simIndex].to.y.toFixed(1)}</span>
@@ -2511,7 +2511,7 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
               <button
                 key={s}
                 onClick={() => setSimSpeed(s)}
-                className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded-full text-[9px] md:text-[10px] font-mono font-medium transition-all ${
+                className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded-full text-[0.5625rem] md:text-[0.625rem] font-mono font-medium transition-all ${
                   simSpeed === s ? 'bg-indigo-600 text-white shadow-[0_0_6px_rgba(99,102,241,0.6)]' : 'text-slate-400 hover:text-slate-200 hover:bg-white/10'
                 }`}
               >

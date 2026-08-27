@@ -156,12 +156,12 @@ export const GrblConsole: React.FC = () => {
 
       {/* Quick Macros */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-        <span className="text-[11px] text-slate-500 uppercase font-semibold mr-1">Makros:</span>
+        <span className="text-[0.6875rem] text-slate-500 uppercase font-semibold mr-1">Makros:</span>
         {quickMacros.map((m) => (
           <button
             key={m.cmd}
             onClick={() => handleSendCommand(m.cmd)}
-            className="px-2 py-1 bg-slate-950 hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 font-mono text-[11px] rounded border border-slate-800 transition-colors whitespace-nowrap"
+            className="px-2 py-1 bg-slate-950 hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 font-mono text-[0.6875rem] rounded border border-slate-800 transition-colors whitespace-nowrap"
           >
             {m.label}
           </button>
@@ -195,7 +195,7 @@ export const GrblConsole: React.FC = () => {
 
             return (
               <div key={log.id} className="flex items-start gap-2 hover:bg-slate-900/60 px-1 py-0.5 rounded">
-                <span className="text-[10px] text-slate-600 select-none">{log.time}</span>
+                <span className="text-[0.625rem] text-slate-600 select-none">{log.time}</span>
                 <span className="text-slate-500 select-none w-3 text-center">{prefix}</span>
                 <span className={`flex-1 break-all ${color}`}>{log.text}</span>
               </div>

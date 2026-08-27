@@ -186,7 +186,7 @@ export const JogController: React.FC<JogControllerProps> = ({
           </div>
           <div>
             <h3 className="font-bold text-sm text-slate-100">{t.manualJog || 'Manuelle Achsensteuerung'}</h3>
-            <div className="flex items-center gap-2 text-[10px] text-slate-400">
+            <div className="flex items-center gap-2 text-[0.625rem] text-slate-400">
               <span className="font-mono">F: {feedrate} mm/min</span>
               <span>•</span>
               <span className="font-mono">Δ: {stepSize} mm</span>
@@ -205,7 +205,7 @@ export const JogController: React.FC<JogControllerProps> = ({
 
           <button
             onClick={() => setIsCompact(!isCompact)}
-            className={`px-2 py-1 rounded-md text-[10px] font-semibold border transition-colors cursor-pointer ${
+            className={`px-2 py-1 rounded-md text-[0.625rem] font-semibold border transition-colors cursor-pointer ${
               isCompact
                 ? 'bg-indigo-600 text-white border-indigo-500 shadow-xs'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
@@ -246,7 +246,7 @@ export const JogController: React.FC<JogControllerProps> = ({
       {/* Step Size Slider & Presets */}
       {jogMode === 'step' && (
         <div className="space-y-2 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
-          <div className="flex items-center justify-between text-[11px]">
+          <div className="flex items-center justify-between text-[0.6875rem]">
             <span className="text-slate-300 font-medium flex items-center gap-1.5">
               <Ruler className="w-3.5 h-3.5 text-indigo-400" />
               {t.stepDistance || 'Schrittweite'}:
@@ -261,7 +261,7 @@ export const JogController: React.FC<JogControllerProps> = ({
                 onChange={(e) => setStepSize(Math.max(0.01, Number(e.target.value)))}
                 className="w-14 bg-transparent text-right font-mono text-xs text-indigo-300 focus:outline-none"
               />
-              <span className="text-[10px] text-slate-500 font-mono">mm</span>
+              <span className="text-[0.625rem] text-slate-500 font-mono">mm</span>
             </div>
           </div>
 
@@ -277,12 +277,12 @@ export const JogController: React.FC<JogControllerProps> = ({
                 onChange={(e) => setStepSize(Number(e.target.value))}
                 className="flex-1 accent-indigo-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
               />
-              <span className="font-mono text-[10px] text-indigo-300 w-12 text-right">{stepSize} mm</span>
+              <span className="font-mono text-[0.625rem] text-indigo-300 w-12 text-right">{stepSize} mm</span>
             </div>
           )}
 
           {/* Quick Step Preset Buttons */}
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-1 pt-1 font-mono text-[10px]">
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-1 pt-1 font-mono text-[0.625rem]">
             {stepOptions.map((s) => (
               <button
                 key={s}
@@ -303,7 +303,7 @@ export const JogController: React.FC<JogControllerProps> = ({
       {/* Feedrate Speed Slider & Presets (Full view only) */}
       {!isCompact && (
         <div className="space-y-2 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
-          <div className="flex items-center justify-between text-[11px]">
+          <div className="flex items-center justify-between text-[0.6875rem]">
             <span className="text-slate-300 font-medium flex items-center gap-1.5">
               <Gauge className="w-3.5 h-3.5 text-amber-400" />
               {t.feedrateSpeed || 'Jog-Geschwindigkeit'}:
@@ -318,7 +318,7 @@ export const JogController: React.FC<JogControllerProps> = ({
                 onChange={(e) => setFeedrate(Math.max(50, Number(e.target.value)))}
                 className="w-16 bg-transparent text-right font-mono text-xs text-amber-300 focus:outline-none"
               />
-              <span className="text-[10px] text-slate-500 font-mono">mm/min</span>
+              <span className="text-[0.625rem] text-slate-500 font-mono">mm/min</span>
             </div>
           </div>
 
@@ -333,11 +333,11 @@ export const JogController: React.FC<JogControllerProps> = ({
               onChange={(e) => setFeedrate(Number(e.target.value))}
               className="flex-1 accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
             />
-            <span className="font-mono text-[10px] text-amber-300 w-16 text-right">{feedrate} mm/min</span>
+            <span className="font-mono text-[0.625rem] text-amber-300 w-16 text-right">{feedrate} mm/min</span>
           </div>
 
           {/* Quick Speed Preset Buttons */}
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 font-mono text-[10px]">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 font-mono text-[0.625rem]">
             {feedrateOptions.map((f) => (
               <button
                 key={f}
@@ -418,7 +418,7 @@ export const JogController: React.FC<JogControllerProps> = ({
           >
             <div className="flex items-center">
               <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
-              <span className="text-[10px] font-bold font-mono tracking-wider -ml-0.5">X-</span>
+              <span className="text-[0.625rem] font-bold font-mono tracking-wider -ml-0.5">X-</span>
             </div>
           </button>
 
@@ -438,7 +438,7 @@ export const JogController: React.FC<JogControllerProps> = ({
             title={jogMode === 'continuous' ? 'Gedrückt halten für Dauer-X+' : 'X+ (Rechts) [Pfeil Rechts]'}
           >
             <div className="flex items-center">
-              <span className="text-[10px] font-bold font-mono tracking-wider -mr-0.5">X+</span>
+              <span className="text-[0.625rem] font-bold font-mono tracking-wider -mr-0.5">X+</span>
               <ChevronRight className="w-5 h-5 stroke-[2.5]" />
             </div>
           </button>
@@ -551,7 +551,7 @@ export const JogController: React.FC<JogControllerProps> = ({
           {/* Pen / Tool state toggle in middle */}
           <button
             onClick={handleTogglePen}
-            className={`w-11 h-11 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-lg flex flex-col items-center justify-center text-[9px] font-bold transition-all shadow-sm select-none touch-none ${
+            className={`w-11 h-11 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-lg flex flex-col items-center justify-center text-[0.5625rem] font-bold transition-all shadow-sm select-none touch-none ${
               isPenDown
                 ? 'bg-emerald-600 text-white border border-emerald-400 shadow-emerald-500/30 shadow-lg'
                 : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
@@ -583,7 +583,7 @@ export const JogController: React.FC<JogControllerProps> = ({
       </div>
 
       {/* Keyboard Shortcut Hint */}
-      <div className="flex items-center justify-between px-2 py-1 bg-slate-950/40 rounded-lg text-[10px] text-slate-400 border border-slate-800/50">
+      <div className="flex items-center justify-between px-2 py-1 bg-slate-950/40 rounded-lg text-[0.625rem] text-slate-400 border border-slate-800/50">
         <div className="flex items-center gap-1.5">
           <Keyboard className="w-3 h-3 text-indigo-400" />
           <span>Tastatur: Pfeiltasten (XY), BildAuf/Ab (Z), Home (X0 Y0)</span>
@@ -601,7 +601,7 @@ export const JogController: React.FC<JogControllerProps> = ({
 
       {/* Work Zero & Machine Operations */}
       <div className="space-y-2 pt-1 border-t border-slate-800/60">
-        <label className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+        <label className="text-[0.6875rem] font-medium text-slate-400 uppercase tracking-wider">
           {t.setWorkZero || 'Nullpunkt setzen (WPos Zero)'}
         </label>
         <div className="grid grid-cols-4 gap-1.5 text-xs font-mono">

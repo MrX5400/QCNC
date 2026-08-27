@@ -112,7 +112,7 @@ import { parseGcode } from '../services/gcodeParser';
 import { parseDxf } from '../services/dxfParser';
 import { LaserDatabaseModal } from './LaserDatabaseModal';
 import { LaserMaterialPreset } from '../services/laserDatabaseService';
-import { useI18n } from '../contexts/ThemeLanguageContext';
+import { useI18n, useThemeLanguage } from '../contexts/ThemeLanguageContext';
 import { ViewCube } from './ViewCube';
 
 interface GeneratorSuiteProps {
@@ -148,6 +148,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
   onSwitchToVisualizer,
 }) => {
   const { t } = useI18n();
+  const { uiScale } = useThemeLanguage();
 
   // --- Multi-Element Composition Workspace State (Multi-Selection Support) ---
   const [compositionElements, setCompositionElements] = useState<CompositionElement[]>([]);
@@ -650,7 +651,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
     if (!polylines || polylines.length === 0) {
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '12px monospace';
+      ctx.font = `${Math.round(12 * (uiScale || 100) / 100)}px monospace`;
       ctx.textAlign = 'center';
       ctx.fillText('Keine Vektoren gefunden / Schwellenwert anpassen', w / 2, h / 2);
       return;
@@ -1975,7 +1976,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
       ctx.stroke();
       ctx.setLineDash([]);
 
-      ctx.font = '10px monospace';
+      ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
       ctx.fillStyle = 'rgba(56, 189, 248, 0.6)';
       ctx.fillText(`Z max: ${zHeight}mm`, d00.sx + 4, d00.sy - 4);
       ctx.restore();
@@ -1995,7 +1996,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
         ctx.moveTo(orig3d.sx, orig3d.sy);
         ctx.lineTo(xAx3d.sx, xAx3d.sy);
         ctx.stroke();
-        ctx.font = 'bold 11px monospace';
+        ctx.font = `bold ${Math.round(11 * (uiScale || 100) / 100)}px monospace`;
         ctx.fillText('X+', xAx3d.sx + 3, xAx3d.sy + 3);
 
         // Y-Axis (Green)
@@ -2791,7 +2792,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               ctx.setLineDash([]);
 
               ctx.fillStyle = '#c084fc';
-              ctx.font = '10px sans-serif';
+              ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px sans-serif`;
               ctx.fillText(el.name, sbx, sby - 4);
             }
           }
@@ -2814,7 +2815,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
           ctx.fillRect(mbx, mby, mbw, mbh);
 
           ctx.fillStyle = '#818cf8';
-          ctx.font = 'bold 10px monospace';
+          ctx.font = `bold ${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
           ctx.fillText(`Gruppe (${selectedElementIds.length} Objekte)`, mbx, mby - 6);
         }
       }
@@ -2862,7 +2863,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
         if (compositionElements.length === 0) {
           const singleLabel = `⚡ Live-Vorschau: ${draftTitle} (${stats.width} × ${stats.height} mm)`;
-          ctx.font = 'bold 11px monospace';
+          ctx.font = `bold ${Math.round(11 * (uiScale || 100) / 100)}px monospace`;
           const bTextW = ctx.measureText(singleLabel).width;
           const bW = bTextW + 16;
           const bH = 22;
@@ -2923,9 +2924,9 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
         const label1 = `Länge: ${distMm.toFixed(2)} mm`;
         const label2 = `ΔX: ${dxMm.toFixed(2)} mm | ΔY: ${dyMm.toFixed(2)} mm (${angleDeg.toFixed(1)}°)`;
 
-        ctx.font = 'bold 12px monospace';
+        ctx.font = `bold ${Math.round(12 * (uiScale || 100) / 100)}px monospace`;
         const w1 = ctx.measureText(label1).width;
-        ctx.font = '10px monospace';
+        ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
         const w2 = ctx.measureText(label2).width;
         const badgeW = Math.max(w1, w2) + 20;
         const badgeH = 34;
@@ -2937,12 +2938,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
         ctx.strokeRect(midX - badgeW / 2, midY - badgeH / 2, badgeW, badgeH);
 
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 12px monospace';
+        ctx.font = `bold ${Math.round(12 * (uiScale || 100) / 100)}px monospace`;
         ctx.textAlign = 'center';
         ctx.fillText(label1, midX, midY - 3);
 
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '10px monospace';
+        ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
         ctx.fillText(label2, midX, midY + 11);
         ctx.textAlign = 'start';
       }
@@ -3828,12 +3829,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             <Sparkles className="w-4 h-4 text-indigo-400" />
             <div>
               <h2 className="font-bold text-slate-100 text-sm">{t.vectorRasterGenerator || 'Vektor & Raster Generator'}</h2>
-              <p className="text-[11px] text-slate-400">Motiv wählen, Werkzeug definieren & G-Code live generieren</p>
+              <p className="text-[0.6875rem] text-slate-400">Motiv wählen, Werkzeug definieren & G-Code live generieren</p>
             </div>
           </div>
           <button
             onClick={resetView}
-            className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-md text-[11px] flex items-center gap-1 transition-colors"
+            className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-md text-[0.6875rem] flex items-center gap-1 transition-colors"
             title="Ansicht zurücksetzen"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -3847,8 +3848,8 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
           {/* ------------------------------------------------------------- */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
-                <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">1</span>
+              <span className="text-[0.6875rem] font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[0.625rem]">1</span>
                 Motiv & Eingabequelle
               </span>
             </div>
@@ -3910,8 +3911,8 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {/* Mode Selector: Single-Line vs Outline Contour */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-slate-400 text-[10px] font-semibold">Linienführung / Modus:</label>
-                    <span className="text-[10px] text-indigo-400 font-mono">
+                    <label className="text-slate-400 text-[0.625rem] font-semibold">Linienführung / Modus:</label>
+                    <span className="text-[0.625rem] text-indigo-400 font-mono">
                       {textMode === 'single_line' ? 'Echte 1-Linien Plotter-Schrift' : 'Vektorisierte Außenkontur'}
                     </span>
                   </div>
@@ -3923,7 +3924,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                           setTextFontFamily('Hershey Simplex');
                         }
                       }}
-                      className={`py-1.5 px-2 rounded text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                      className={`py-1.5 px-2 rounded text-[0.6875rem] font-semibold flex items-center justify-center gap-1.5 transition-all ${
                         textMode === 'single_line'
                           ? 'bg-indigo-600 text-white shadow-sm'
                           : 'text-slate-400 hover:text-slate-200'
@@ -3939,7 +3940,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                           setTextFontFamily('Arial');
                         }
                       }}
-                      className={`py-1.5 px-2 rounded text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                      className={`py-1.5 px-2 rounded text-[0.6875rem] font-semibold flex items-center justify-center gap-1.5 transition-all ${
                         textMode === 'outline'
                           ? 'bg-indigo-600 text-white shadow-sm'
                           : 'text-slate-400 hover:text-slate-200'
@@ -3954,8 +3955,8 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {/* Text Content Input (Multi-line supported) */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-slate-400 text-[10px] font-semibold">Textinhalt (auch mehrzeilig):</label>
-                    <span className="text-[10px] text-slate-500">{textValue.length} Zeichen</span>
+                    <label className="text-slate-400 text-[0.625rem] font-semibold">Textinhalt (auch mehrzeilig):</label>
+                    <span className="text-[0.625rem] text-slate-500">{textValue.length} Zeichen</span>
                   </div>
                   <textarea
                     rows={2}
@@ -3968,7 +3969,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                 {/* Font Family Selection */}
                 <div className="space-y-1">
-                  <label className="text-slate-400 text-[10px] font-semibold">Schriftart (Font Family):</label>
+                  <label className="text-slate-400 text-[0.625rem] font-semibold">Schriftart (Font Family):</label>
                   <select
                     value={textFontFamily}
                     onChange={(e) => setTextFontFamily(e.target.value)}
@@ -4028,7 +4029,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {/* Custom Font Name Input (if selected) */}
                 {textFontFamily === 'custom' && textMode === 'outline' && (
                   <div className="space-y-1 bg-slate-900/80 p-2 rounded border border-indigo-500/40">
-                    <label className="text-indigo-300 text-[10px] font-semibold">Installierter Schriftart-Name (z.B. "Bahnschrift", "Futura", "Caveat"):</label>
+                    <label className="text-indigo-300 text-[0.625rem] font-semibold">Installierter Schriftart-Name (z.B. "Bahnschrift", "Futura", "Caveat"):</label>
                     <input
                       type="text"
                       value={customFontFamily}
@@ -4084,7 +4085,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       <select
                         value={textFontWeight}
                         onChange={(e) => setTextFontWeight(e.target.value as any)}
-                        className="bg-slate-900 px-2 py-1 rounded border border-slate-700 text-slate-200 text-[11px] focus:outline-none"
+                        className="bg-slate-900 px-2 py-1 rounded border border-slate-700 text-slate-200 text-[0.6875rem] focus:outline-none"
                         title="Schriftstärke (Font Weight)"
                       >
                         <option value="normal">Normal (400)</option>
@@ -4123,9 +4124,9 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 </div>
 
                 {/* Geometry & Spacing Grid */}
-                <div className="grid grid-cols-3 gap-2 font-mono text-[11px]">
+                <div className="grid grid-cols-3 gap-2 font-mono text-[0.6875rem]">
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Größe (mm):</span>
+                    <span className="text-slate-400 text-[0.625rem]">Größe (mm):</span>
                     <input
                       type="number"
                       min="3"
@@ -4136,7 +4137,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     />
                   </div>
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Zeichenabst. (mm):</span>
+                    <span className="text-slate-400 text-[0.625rem]">Zeichenabst. (mm):</span>
                     <input
                       type="number"
                       step="0.5"
@@ -4149,7 +4150,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     />
                   </div>
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Zeilenabst. (x):</span>
+                    <span className="text-slate-400 text-[0.625rem]">Zeilenabst. (x):</span>
                     <input
                       type="number"
                       step="0.1"
@@ -4165,7 +4166,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                 {/* Slant / Oblique Degrees Slider */}
                 <div className="space-y-1 bg-slate-900/50 p-2 rounded border border-slate-800/80">
-                  <div className="flex items-center justify-between text-[10px]">
+                  <div className="flex items-center justify-between text-[0.625rem]">
                     <span className="text-slate-400">Kursiv-Neigung (Slant):</span>
                     <span className="text-indigo-300 font-mono">{textItalicSlantDeg}°</span>
                   </div>
@@ -4181,7 +4182,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     />
                     <button
                       onClick={() => setTextItalicSlantDeg(0)}
-                      className="text-[10px] px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 rounded"
+                      className="text-[0.625rem] px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 rounded"
                       title="Neigung auf 0° zurücksetzen"
                     >
                       0°
@@ -4190,9 +4191,9 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 </div>
 
                 {/* Position X / Y */}
-                <div className="grid grid-cols-2 gap-2 font-mono text-[11px]">
+                <div className="grid grid-cols-2 gap-2 font-mono text-[0.6875rem]">
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Position X (mm):</span>
+                    <span className="text-slate-400 text-[0.625rem]">Position X (mm):</span>
                     <input
                       type="number"
                       value={textPosX}
@@ -4201,7 +4202,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     />
                   </div>
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Position Y (mm):</span>
+                    <span className="text-slate-400 text-[0.625rem]">Position Y (mm):</span>
                     <input
                       type="number"
                       value={textPosY}
@@ -4217,17 +4218,17 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {textMode === 'outline' && (
                   <div className="p-2.5 bg-slate-900/90 rounded-lg border border-indigo-500/30 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-indigo-300 flex items-center gap-1.5">
+                      <span className="text-[0.6875rem] font-bold text-indigo-300 flex items-center gap-1.5">
                         <PaintBucket className="w-3.5 h-3.5 text-indigo-400" />
                         Buchstaben-Musterfüllung (Infill)
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 font-mono">
+                      <span className="text-[0.625rem] px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 font-mono">
                         {textInfillPattern === 'none' ? 'Keine Füllung' : textInfillPattern.toUpperCase()}
                       </span>
                     </div>
 
                     {/* Pattern Type Buttons */}
-                    <div className="grid grid-cols-3 gap-1 text-[10px]">
+                    <div className="grid grid-cols-3 gap-1 text-[0.625rem]">
                       {[
                         { id: 'none', label: 'Nur Kontur', icon: Type },
                         { id: 'hatch_linear', label: 'Schraffur', icon: Sliders },
@@ -4257,10 +4258,10 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                     {/* Pattern Parameters (if pattern selected) */}
                     {textInfillPattern !== 'none' && (
-                      <div className="space-y-2 pt-2 border-t border-slate-800 font-mono text-[11px]">
+                      <div className="space-y-2 pt-2 border-t border-slate-800 font-mono text-[0.6875rem]">
                         {/* Infill Line Spacing */}
                         <div className="space-y-1">
-                          <div className="flex items-center justify-between text-[10px]">
+                          <div className="flex items-center justify-between text-[0.625rem]">
                             <span className="text-slate-400">Linienabstand / Dichte:</span>
                             <span className="text-indigo-300 font-bold">{textInfillSpacing} mm</span>
                           </div>
@@ -4281,7 +4282,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                               step="0.1"
                               value={textInfillSpacing}
                               onChange={(e) => setTextInfillSpacing(Math.max(0.2, Number(e.target.value)))}
-                              className="w-14 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-700 text-slate-100 text-[10px]"
+                              className="w-14 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-700 text-slate-100 text-[0.625rem]"
                             />
                           </div>
                         </div>
@@ -4289,7 +4290,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         {/* Infill Angle (for linear, cross-hatch, zigzag) */}
                         {(textInfillPattern === 'hatch_linear' || textInfillPattern === 'cross_hatch' || textInfillPattern === 'zigzag') && (
                           <div className="space-y-1">
-                            <div className="flex items-center justify-between text-[10px]">
+                            <div className="flex items-center justify-between text-[0.625rem]">
                               <span className="text-slate-400">Schraffur-Winkel:</span>
                               <span className="text-indigo-300 font-bold">{textInfillAngle}°</span>
                             </div>
@@ -4308,7 +4309,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                                   <button
                                     key={deg}
                                     onClick={() => setTextInfillAngle(deg)}
-                                    className={`px-1.5 py-0.5 rounded text-[9px] ${
+                                    className={`px-1.5 py-0.5 rounded text-[0.5625rem] ${
                                       textInfillAngle === deg
                                         ? 'bg-indigo-600 text-white'
                                         : 'bg-slate-800 text-slate-400 hover:text-slate-200'
@@ -4323,7 +4324,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         )}
 
                         {/* Include Outline Checkbox */}
-                        <label className="flex items-center gap-2 cursor-pointer pt-1 text-slate-300 text-[11px]">
+                        <label className="flex items-center gap-2 cursor-pointer pt-1 text-slate-300 text-[0.6875rem]">
                           <input
                             type="checkbox"
                             checked={textIncludeOutline}
@@ -4354,7 +4355,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 <label className="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-lg p-3 flex flex-col items-center justify-center cursor-pointer transition-colors text-center bg-slate-900/40">
                   <FileCode className="w-5 h-5 text-indigo-400 mb-1" />
                   <span className="font-semibold text-slate-200 text-xs">DXF oder SVG Datei wählen</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5">Unterstützt CAD-DXF (R12-2018) & Standard-SVG</span>
+                  <span className="text-[0.625rem] text-slate-500 mt-0.5">Unterstützt CAD-DXF (R12-2018) & Standard-SVG</span>
                   <input
                     type="file"
                     accept=".dxf,.svg"
@@ -4365,9 +4366,9 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                 {uploadedFileName && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between bg-slate-900 px-2.5 py-1.5 rounded border border-slate-800 text-[11px]">
+                    <div className="flex items-center justify-between bg-slate-900 px-2.5 py-1.5 rounded border border-slate-800 text-[0.6875rem]">
                       <span className="text-indigo-300 font-mono truncate max-w-[240px]">{uploadedFileName}</span>
-                      <span className="text-[10px] uppercase font-bold px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-300">
+                      <span className="text-[0.625rem] uppercase font-bold px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-300">
                         {fileFileType}
                       </span>
                     </div>
@@ -4386,7 +4387,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             {/* 1C: Geometric Shapes */}
             {sourceType === 'shapes' && (
               <div className="p-3 bg-slate-950/70 rounded-lg border border-slate-800/80 space-y-3">
-                <div className="grid grid-cols-3 gap-1 text-[11px]">
+                <div className="grid grid-cols-3 gap-1 text-[0.6875rem]">
                   {(['star', 'circle', 'rect', 'polygon', 'grid', 'spiral'] as const).map((st) => (
                     <button
                       key={st}
@@ -4404,7 +4405,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                 <div className="grid grid-cols-2 gap-2 font-mono">
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Position X / Y:</span>
+                    <span className="text-slate-400 text-[0.625rem]">Position X / Y:</span>
                     <div className="flex gap-1">
                       <input
                         type="number"
@@ -4423,7 +4424,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                   {(shapeType === 'rect' || shapeType === 'grid') ? (
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Breite / Höhe (mm):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Breite / Höhe (mm):</span>
                       <div className="flex gap-1">
                         <input
                           type="number"
@@ -4441,7 +4442,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     </div>
                   ) : (
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Radius (mm):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Radius (mm):</span>
                       <input
                         type="number"
                         value={shapeRadius}
@@ -4471,7 +4472,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 <label className="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-lg p-2.5 flex flex-col items-center justify-center cursor-pointer transition-colors text-center bg-slate-900/40">
                   <ImageIcon className="w-5 h-5 text-indigo-400 mb-1" />
                   <span className="font-semibold text-slate-200 text-xs">Bitmap-Grafik hochladen (PNG, JPG, WebP, BMP)</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5">Vektorisiert Grafiken, Logos, Skizzen &amp; Handschriften</span>
+                  <span className="text-[0.625rem] text-slate-500 mt-0.5">Vektorisiert Grafiken, Logos, Skizzen &amp; Handschriften</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -4483,14 +4484,14 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {/* LIVE INTERACTIVE IMAGE & VECTOR PREVIEW PANEL */}
                 {rasterImage && (
                   <div className="space-y-2 bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center justify-between text-[0.6875rem]">
                       <span className="font-bold text-slate-200 flex items-center gap-1.5">
                         <Eye className="w-3.5 h-3.5 text-cyan-400" />
                         Live Vektor- &amp; Filter-Vorschau
                       </span>
                       <button
                         onClick={() => setShowImageLightbox(true)}
-                        className="px-2 py-0.5 bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/50 text-indigo-200 rounded text-[10px] font-medium flex items-center gap-1 transition-colors"
+                        className="px-2 py-0.5 bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/50 text-indigo-200 rounded text-[0.625rem] font-medium flex items-center gap-1 transition-colors"
                         title="Echtbildvorschau vergrößern & im Detail ansehen"
                       >
                         <Expand className="w-3 h-3 text-indigo-300" />
@@ -4499,7 +4500,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     </div>
 
                     {/* Preview Mode Tabs */}
-                    <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[10px]">
+                    <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[0.625rem]">
                       <button
                         onClick={() => setTracingPreviewTab('vectors')}
                         className={`flex-1 py-1 rounded font-medium transition-colors ${
@@ -4558,7 +4559,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                     {/* Background Original Image Opacity Slider in Vector Tab */}
                     {tracingPreviewTab === 'vectors' && (
-                      <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 bg-slate-950/80 px-2 py-1 rounded-lg border border-slate-800">
+                      <div className="flex items-center justify-between text-[0.5625rem] font-mono text-slate-400 bg-slate-950/80 px-2 py-1 rounded-lg border border-slate-800">
                         <span className="flex items-center gap-1 text-slate-300">
                           <Layers className="w-3 h-3 text-cyan-400" />
                           <span>Hintergrundbild:</span>
@@ -4582,12 +4583,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     {/* Vector Trace Metrics Badges & Live Status */}
                     <div className="flex items-center justify-between pt-1">
                       {isTracing ? (
-                        <div className="w-full bg-cyan-950/60 border border-cyan-500/50 text-cyan-200 px-2 py-1 rounded text-[10px] font-bold flex items-center justify-center gap-1.5 animate-pulse shadow-sm">
+                        <div className="w-full bg-cyan-950/60 border border-cyan-500/50 text-cyan-200 px-2 py-1 rounded text-[0.625rem] font-bold flex items-center justify-center gap-1.5 animate-pulse shadow-sm">
                           <Loader2 className="w-3 h-3 animate-spin text-cyan-400" />
                           <span>Vektorisiere Konturen...</span>
                         </div>
                       ) : rawPolylines.length > 0 ? (
-                        <div className="w-full grid grid-cols-3 gap-1 font-mono text-[9px] text-center">
+                        <div className="w-full grid grid-cols-3 gap-1 font-mono text-[0.5625rem] text-center">
                           <div className="bg-slate-950 px-1.5 py-1 rounded border border-slate-800">
                             <span className="text-slate-500 block">Pfade:</span>
                             <span className="text-cyan-300 font-bold">{rawPolylines.length}</span>
@@ -4607,7 +4608,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 )}
 
                 {/* 1. ZIELGRÖSSE & SEITENVERHÄLTNIS-SPERRE (GANZ NACH OBEN VERSCHOBEN) */}
-                <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 font-mono text-[10px]">
+                <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 font-mono text-[0.625rem]">
                   <div className="flex items-center justify-between text-slate-300 font-semibold border-b border-slate-800 pb-1">
                     <span className="flex items-center gap-1.5 font-bold text-slate-200">
                       <Ruler className="w-3.5 h-3.5 text-cyan-400" />
@@ -4615,7 +4616,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     </span>
                     <button
                       onClick={() => setRasterLockAspect(!rasterLockAspect)}
-                      className={`px-2 py-0.5 rounded flex items-center gap-1 text-[10px] font-semibold border transition-all ${
+                      className={`px-2 py-0.5 rounded flex items-center gap-1 text-[0.625rem] font-semibold border transition-all ${
                         rasterLockAspect
                           ? 'bg-cyan-600/30 text-cyan-200 border-cyan-500/50'
                           : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
@@ -4657,11 +4658,11 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {/* 2. VEKTORISIERUNGS- & SCHRAFFUR-MODUS */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-300 text-[11px] font-bold flex items-center gap-1.5">
+                    <span className="text-slate-300 text-[0.6875rem] font-bold flex items-center gap-1.5">
                       <Workflow className="w-3.5 h-3.5 text-cyan-400" />
                       Vektorisierungs-Modus:
                     </span>
-                    <span className="text-[10px] text-cyan-400/90 font-mono">
+                    <span className="text-[0.625rem] text-cyan-400/90 font-mono">
                       {rasterSettings.mode === 'contour_trace' ? 'Außen/Innen' : rasterSettings.mode === 'centerline_trace' ? 'Mittellinie' : 'Schraffur'}
                     </span>
                   </div>
@@ -4708,7 +4709,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       <button
                         key={m.id}
                         onClick={() => setRasterSettings(s => ({ ...s, mode: m.id as any }))}
-                        className={`p-2 rounded-lg border text-left text-[10px] transition-all flex flex-col justify-between ${
+                        className={`p-2 rounded-lg border text-left text-[0.625rem] transition-all flex flex-col justify-between ${
                           rasterSettings.mode === m.id
                             ? `${m.accent} ring-1 font-semibold shadow-sm`
                             : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
@@ -4716,7 +4717,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         title={m.desc}
                       >
                         <span className="font-semibold text-slate-100">{m.label}</span>
-                        <span className="text-[9px] text-slate-500 line-clamp-1 mt-0.5">{m.desc}</span>
+                        <span className="text-[0.5625rem] text-slate-500 line-clamp-1 mt-0.5">{m.desc}</span>
                       </button>
                     ))}
                   </div>
@@ -4724,13 +4725,13 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                 {/* 2b. MUSTERFÜLLUNG / PATTERN FILL (Wenn Outline-Kontur aktiv) */}
                 {rasterSettings.mode === 'contour_trace' && (
-                  <div className="space-y-2 bg-gradient-to-br from-cyan-950/40 to-slate-900/90 p-2.5 rounded-lg border border-cyan-500/30 font-mono text-[10px]">
+                  <div className="space-y-2 bg-gradient-to-br from-cyan-950/40 to-slate-900/90 p-2.5 rounded-lg border border-cyan-500/30 font-mono text-[0.625rem]">
                     <div className="flex items-center justify-between border-b border-cyan-500/20 pb-1">
                       <span className="font-bold text-cyan-300 flex items-center gap-1.5">
                         <GridIcon className="w-3.5 h-3.5 text-cyan-400" />
                         <span>Musterfüllung (Infill):</span>
                       </span>
-                      <span className="text-[9px] text-cyan-400/80 font-bold">
+                      <span className="text-[0.5625rem] text-cyan-400/80 font-bold">
                         {rasterSettings.fillPattern && rasterSettings.fillPattern !== 'none' ? 'Aktiv' : 'Keine'}
                       </span>
                     </div>
@@ -4748,7 +4749,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         <button
                           key={pat.id}
                           onClick={() => setRasterSettings(s => ({ ...s, fillPattern: pat.id as any }))}
-                          className={`px-2 py-1 rounded text-[9px] font-semibold border transition-all text-left truncate ${
+                          className={`px-2 py-1 rounded text-[0.5625rem] font-semibold border transition-all text-left truncate ${
                             (rasterSettings.fillPattern || 'none') === pat.id
                               ? 'bg-cyan-600 text-white border-cyan-400 shadow-sm'
                               : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -4799,7 +4800,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                           <span className="text-slate-300">Außenkontur behalten:</span>
                           <button
                             onClick={() => setRasterSettings(s => ({ ...s, fillIncludeContour: !(s.fillIncludeContour ?? true) }))}
-                            className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-all ${
+                            className={`px-2 py-0.5 rounded text-[0.5625rem] font-semibold border transition-all ${
                               (rasterSettings.fillIncludeContour ?? true)
                                 ? 'bg-cyan-600 text-white border-cyan-400 shadow-sm'
                                 : 'bg-slate-900 border-slate-700 text-slate-400'
@@ -4815,7 +4816,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                 {/* 2c. SPEZIFISCHE PARAMETER FÜR SCHRAFFUR / DITHER / WELLEN */}
                 {(rasterSettings.mode === 'hatch_linear' || rasterSettings.mode === 'cross_hatch') && (
-                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-indigo-500/30 font-mono text-[10px]">
+                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-indigo-500/30 font-mono text-[0.625rem]">
                     <div className="flex items-center justify-between border-b border-indigo-500/20 pb-1">
                       <span className="font-bold text-indigo-300 flex items-center gap-1.5">
                         <SlidersIcon className="w-3.5 h-3.5 text-indigo-400" />
@@ -4856,7 +4857,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 )}
 
                 {rasterSettings.mode === 'stipple_dither' && (
-                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-purple-500/30 font-mono text-[10px]">
+                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-purple-500/30 font-mono text-[0.625rem]">
                     <div className="flex items-center justify-between border-b border-purple-500/20 pb-1">
                       <span className="font-bold text-purple-300 flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-purple-400" />
@@ -4897,7 +4898,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 )}
 
                 {rasterSettings.mode === 'spiral_wave' && (
-                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-purple-500/30 font-mono text-[10px]">
+                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-purple-500/30 font-mono text-[0.625rem]">
                     <div className="flex items-center justify-between border-b border-purple-500/20 pb-1">
                       <span className="font-bold text-purple-300 flex items-center gap-1.5">
                         <Spline className="w-3.5 h-3.5 text-purple-400" />
@@ -4938,7 +4939,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 )}
 
                 {/* 3. KERN-PARAMETER: SCHWELLENWERT & KANTENGLÄTTUNG */}
-                <div className="space-y-2.5 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 font-mono text-[10px]">
+                <div className="space-y-2.5 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 font-mono text-[0.625rem]">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
                     <span className="font-bold text-slate-200 flex items-center gap-1.5">
                       <SlidersIcon className="w-3.5 h-3.5 text-cyan-400" />
@@ -4946,7 +4947,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     </span>
                     <button
                       onClick={handleAutoOtsuThreshold}
-                      className="px-2 py-0.5 bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-500/50 text-cyan-200 rounded text-[10px] font-medium flex items-center gap-1 transition-colors shadow-sm"
+                      className="px-2 py-0.5 bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-500/50 text-cyan-200 rounded text-[0.625rem] font-medium flex items-center gap-1 transition-colors shadow-sm"
                       title="Berechnet automatisch die optimale Schwarz/Weiß-Trennung mittels Otsu-Algorithmus"
                     >
                       <Wand2 className="w-3 h-3 text-cyan-300" />
@@ -4977,7 +4978,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         <Sparkles className="w-3 h-3 text-amber-400" />
                         <span>Detailgrad (Feinschrift):</span>
                       </span>
-                      <span className="text-[9px] text-slate-500">1: Filter | 10: Max Details</span>
+                      <span className="text-[0.5625rem] text-slate-500">1: Filter | 10: Max Details</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <input
@@ -5001,7 +5002,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         <Spline className="w-3 h-3 text-emerald-400" />
                         <span>Kantenglättung:</span>
                       </span>
-                      <span className="text-[9px] text-slate-500">Douglas-Peucker</span>
+                      <span className="text-[0.5625rem] text-slate-500">Douglas-Peucker</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <input
@@ -5019,7 +5020,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 </div>
 
                 {/* 4. PROGRESSIVE DISCLOSURE ACCORDION: ⚙️ Erweiterte Einstellungen */}
-                <div className="border border-slate-800 rounded-lg overflow-hidden font-mono text-[10px] bg-slate-950/40">
+                <div className="border border-slate-800 rounded-lg overflow-hidden font-mono text-[0.625rem] bg-slate-950/40">
                   <button
                     onClick={() => setShowAdvancedRasterSettings(!showAdvancedRasterSettings)}
                     className="w-full px-3 py-2 bg-slate-900/90 hover:bg-slate-800/90 flex items-center justify-between text-slate-300 font-medium transition-colors"
@@ -5100,7 +5101,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       {/* Black & White levels */}
                       <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
                         <div className="space-y-1">
-                          <span className="text-slate-500 text-[9px]">Schwarzwerte: {rasterSettings.blackLevel || 0}</span>
+                          <span className="text-slate-500 text-[0.5625rem]">Schwarzwerte: {rasterSettings.blackLevel || 0}</span>
                           <input
                             type="range"
                             min={0}
@@ -5111,7 +5112,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                           />
                         </div>
                         <div className="space-y-1">
-                          <span className="text-slate-500 text-[9px]">Weißwert: {rasterSettings.whiteLevel ?? 255}</span>
+                          <span className="text-slate-500 text-[0.5625rem]">Weißwert: {rasterSettings.whiteLevel ?? 255}</span>
                           <input
                             type="range"
                             min={100}
@@ -5148,7 +5149,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         </span>
                         <button
                           onClick={() => setRasterSettings(s => ({ ...s, enhanceSmallText: !(s.enhanceSmallText ?? true) }))}
-                          className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-all ${
+                          className={`px-2 py-0.5 rounded text-[0.625rem] font-semibold border transition-all ${
                             (rasterSettings.enhanceSmallText ?? true)
                               ? 'bg-amber-600 text-white border-amber-400 shadow-sm'
                               : 'bg-slate-900 border-slate-700 text-slate-400'
@@ -5163,7 +5164,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         <span className="text-slate-400">Farben invertieren:</span>
                         <button
                           onClick={() => setRasterSettings(s => ({ ...s, invert: !s.invert }))}
-                          className={`px-2.5 py-0.5 rounded text-[10px] font-semibold border transition-all ${
+                          className={`px-2.5 py-0.5 rounded text-[0.625rem] font-semibold border transition-all ${
                             rasterSettings.invert
                               ? 'bg-rose-600 text-white border-rose-400 shadow-sm'
                               : 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800'
@@ -5237,8 +5238,8 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
           {/* SCHRITT 2: WERKZEUG / ZIEL-MODUS WÄHLEN                       */}
           {/* ------------------------------------------------------------- */}
           <div className="space-y-2.5 pt-2 border-t border-slate-800">
-            <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
-              <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">2</span>
+            <span className="text-[0.6875rem] font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[0.625rem]">2</span>
               Werkzeug & Betriebsmodus
             </span>
 
@@ -5256,7 +5257,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                   <PenTool className="w-4 h-4 text-cyan-400" />
                   <span className="font-semibold text-xs text-slate-200">Stift</span>
                 </div>
-                <p className="text-[10px] text-slate-400 leading-tight">Zeichnen mit Stift & Servo / Z-Achse</p>
+                <p className="text-[0.625rem] text-slate-400 leading-tight">Zeichnen mit Stift & Servo / Z-Achse</p>
               </button>
 
               {/* Mode: Drag Knife */}
@@ -5272,7 +5273,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                   <Scissors className="w-4 h-4 text-amber-400" />
                   <span className="font-semibold text-xs text-slate-200">Messer</span>
                 </div>
-                <p className="text-[10px] text-slate-400 leading-tight">Schleppmesser mit Klingen-Offset</p>
+                <p className="text-[0.625rem] text-slate-400 leading-tight">Schleppmesser mit Klingen-Offset</p>
               </button>
 
               {/* Mode: Laser Diode */}
@@ -5288,7 +5289,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                   <Flame className="w-4 h-4 text-rose-400" />
                   <span className="font-semibold text-xs text-slate-200">Laser</span>
                 </div>
-                <p className="text-[10px] text-slate-400 leading-tight">Gravieren & Schneiden mit M3/M4</p>
+                <p className="text-[0.625rem] text-slate-400 leading-tight">Gravieren & Schneiden mit M3/M4</p>
               </button>
             </div>
           </div>
@@ -5298,8 +5299,8 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
           {/* ------------------------------------------------------------- */}
           <div className="space-y-3 pt-2 border-t border-slate-800">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
-                <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">3</span>
+              <span className="text-[0.6875rem] font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[0.625rem]">3</span>
                 Parameter ({targetMode === 'pen' ? 'Stift' : targetMode === 'dragknife' ? 'Schleppmesser' : 'Laser'})
               </span>
             </div>
@@ -5309,8 +5310,8 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               <div className="p-3.5 bg-slate-950/80 rounded-lg border border-cyan-800/40 space-y-3">
                 {/* Actuator Type Switch */}
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aktor-Typ / Stift-Ansteuerung:</span>
-                  <div className="grid grid-cols-3 gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[11px]">
+                  <span className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider">Aktor-Typ / Stift-Ansteuerung:</span>
+                  <div className="grid grid-cols-3 gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[0.6875rem]">
                     <button
                       type="button"
                       onClick={() => {
@@ -5376,7 +5377,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {penOptions.actuatorType === 'servo' ? (
                   <div className="grid grid-cols-3 gap-2 font-mono bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Stift HOCH (S):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Stift HOCH (S):</span>
                       <input
                         type="number"
                         value={penOptions.servoUpValue ?? 30}
@@ -5392,7 +5393,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Stift RUNTER (S):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Stift RUNTER (S):</span>
                       <input
                         type="number"
                         value={penOptions.servoDownValue ?? 80}
@@ -5408,7 +5409,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Pause (ms):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Pause (ms):</span>
                       <input
                         type="number"
                         value={penOptions.servoDelayMs ?? 100}
@@ -5420,7 +5421,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 ) : penOptions.actuatorType === 'custom' ? (
                   <div className="grid grid-cols-2 gap-3 font-mono bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Befehl HOCH (z.B. M3 S30):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Befehl HOCH (z.B. M3 S30):</span>
                       <input
                         type="text"
                         value={penOptions.penUpCommand}
@@ -5429,7 +5430,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Befehl RUNTER (z.B. M3 S80):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Befehl RUNTER (z.B. M3 S80):</span>
                       <input
                         type="text"
                         value={penOptions.penDownCommand}
@@ -5441,7 +5442,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 ) : (
                   <div className="grid grid-cols-3 gap-2 font-mono bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Z-Hop Höhe (mm):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Z-Hop Höhe (mm):</span>
                       <input
                         type="number"
                         step={0.5}
@@ -5458,7 +5459,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Z-Zeichentiefe (mm):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Z-Zeichentiefe (mm):</span>
                       <input
                         type="number"
                         step={0.1}
@@ -5476,7 +5477,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Eintauch-F (mm/min):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Eintauch-F (mm/min):</span>
                       <input
                         type="number"
                         step={50}
@@ -5499,7 +5500,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {/* Feedrates */}
                 <div className="grid grid-cols-2 gap-3 font-mono">
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Zeichen-Vorschub:</span>
+                    <span className="text-slate-400 text-[0.625rem]">Zeichen-Vorschub:</span>
                     <div className="flex items-center gap-1 bg-slate-900 px-2 py-1.5 rounded border border-slate-700">
                       <input
                         type="number"
@@ -5507,12 +5508,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         onChange={(e) => setPenOptions(p => ({ ...p, drawingFeedrate: Number(e.target.value) }))}
                         className="w-full bg-transparent text-slate-100 text-xs focus:outline-none"
                       />
-                      <span className="text-[10px] text-slate-500">mm/min</span>
+                      <span className="text-[0.625rem] text-slate-500">mm/min</span>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Eilgang (G0):</span>
+                    <span className="text-slate-400 text-[0.625rem]">Eilgang (G0):</span>
                     <div className="flex items-center gap-1 bg-slate-900 px-2 py-1.5 rounded border border-slate-700">
                       <input
                         type="number"
@@ -5520,7 +5521,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         onChange={(e) => setPenOptions(p => ({ ...p, travelFeedrate: Number(e.target.value) }))}
                         className="w-full bg-transparent text-slate-100 text-xs focus:outline-none"
                       />
-                      <span className="text-[10px] text-slate-500">mm/min</span>
+                      <span className="text-[0.625rem] text-slate-500">mm/min</span>
                     </div>
                   </div>
                 </div>
@@ -5532,8 +5533,8 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               <div className="p-3.5 bg-slate-950/80 rounded-lg border border-amber-800/40 space-y-3">
                 {/* Actuator Type Switch (same as Pen) */}
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Aktor-Typ / Messer-Zustellung:</span>
-                  <div className="grid grid-cols-3 gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[11px]">
+                  <span className="text-[0.625rem] font-bold text-amber-400 uppercase tracking-wider">Aktor-Typ / Messer-Zustellung:</span>
+                  <div className="grid grid-cols-3 gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[0.6875rem]">
                     <button
                       type="button"
                       onClick={() => {
@@ -5600,7 +5601,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {dragKnifeOptions.actuatorType === 'servo' ? (
                   <div className="grid grid-cols-3 gap-2 font-mono bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Messer HOCH (S):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Messer HOCH (S):</span>
                       <input
                         type="number"
                         value={dragKnifeOptions.servoUpValue ?? 30}
@@ -5616,7 +5617,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Messer RUNTER (S):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Messer RUNTER (S):</span>
                       <input
                         type="number"
                         value={dragKnifeOptions.servoDownValue ?? 80}
@@ -5632,7 +5633,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Pause (ms):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Pause (ms):</span>
                       <input
                         type="number"
                         value={dragKnifeOptions.servoDelayMs ?? 80}
@@ -5644,7 +5645,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 ) : dragKnifeOptions.actuatorType === 'custom' ? (
                   <div className="grid grid-cols-2 gap-3 font-mono bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Befehl HOCH (z.B. M3 S30):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Befehl HOCH (z.B. M3 S30):</span>
                       <input
                         type="text"
                         value={dragKnifeOptions.penUpCommand}
@@ -5653,7 +5654,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Befehl RUNTER (z.B. M3 S80):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Befehl RUNTER (z.B. M3 S80):</span>
                       <input
                         type="text"
                         value={dragKnifeOptions.penDownCommand}
@@ -5665,7 +5666,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 ) : (
                   <div className="grid grid-cols-3 gap-2 font-mono bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Z-Hop Höhe (mm):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Z-Hop Höhe (mm):</span>
                       <input
                         type="number"
                         step={0.5}
@@ -5683,7 +5684,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Z-Schneidtiefe (mm):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Z-Schneidtiefe (mm):</span>
                       <input
                         type="number"
                         step={0.1}
@@ -5701,7 +5702,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Eintauch-F (mm/min):</span>
+                      <span className="text-slate-400 text-[0.625rem]">Eintauch-F (mm/min):</span>
                       <input
                         type="number"
                         step={50}
@@ -5724,12 +5725,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {/* Arc Mode Switch: G2/G3 vs G1 Linear */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Schwenkbogen-Modus:</span>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[0.625rem] font-bold text-amber-300 uppercase tracking-wider">Schwenkbogen-Modus:</span>
+                    <span className="text-[0.625rem] text-slate-400 font-mono">
                       {dragKnifeOptions.arcMode === 'linear_g1' ? 'Lineare G1 Segmente' : 'Echte G2/G3 Kreisbögen'}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[11px]">
+                  <div className="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[0.6875rem]">
                     <button
                       type="button"
                       onClick={() => setDragKnifeOptions(p => ({ ...p, arcMode: 'g2_g3' }))}
@@ -5758,7 +5759,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {/* Blade Geometry */}
                 <div className="grid grid-cols-3 gap-2 font-mono">
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Klingen-Offset:</span>
+                    <span className="text-slate-400 text-[0.625rem]">Klingen-Offset:</span>
                     <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded border border-slate-700">
                       <input
                         type="number"
@@ -5767,12 +5768,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         onChange={(e) => setDragKnifeOptions(p => ({ ...p, bladeOffset: Number(e.target.value) }))}
                         className="w-full bg-transparent text-amber-300 text-xs focus:outline-none"
                       />
-                      <span className="text-[10px] text-slate-500">mm</span>
+                      <span className="text-[0.625rem] text-slate-500">mm</span>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Überchnitt:</span>
+                    <span className="text-slate-400 text-[0.625rem]">Überchnitt:</span>
                     <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded border border-slate-700">
                       <input
                         type="number"
@@ -5781,12 +5782,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         onChange={(e) => setDragKnifeOptions(p => ({ ...p, overcut: Number(e.target.value) }))}
                         className="w-full bg-transparent text-slate-100 text-xs focus:outline-none"
                       />
-                      <span className="text-[10px] text-slate-500">mm</span>
+                      <span className="text-[0.625rem] text-slate-500">mm</span>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Schwenkwinkel:</span>
+                    <span className="text-slate-400 text-[0.625rem]">Schwenkwinkel:</span>
                     <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded border border-slate-700">
                       <input
                         type="number"
@@ -5794,7 +5795,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         onChange={(e) => setDragKnifeOptions(p => ({ ...p, swivelAngleThreshold: Number(e.target.value) }))}
                         className="w-full bg-transparent text-slate-100 text-xs focus:outline-none"
                       />
-                      <span className="text-[10px] text-slate-500">°</span>
+                      <span className="text-[0.625rem] text-slate-500">°</span>
                     </div>
                   </div>
                 </div>
@@ -5802,7 +5803,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {/* Feedrates: Swivel, Cut, Travel */}
                 <div className="grid grid-cols-3 gap-2 font-mono">
                   <div className="space-y-1">
-                    <span className="text-amber-300 text-[10px] font-semibold">Schwenk-F:</span>
+                    <span className="text-amber-300 text-[0.625rem] font-semibold">Schwenk-F:</span>
                     <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded border border-amber-700/60">
                       <input
                         type="number"
@@ -5812,12 +5813,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         className="w-full bg-transparent text-amber-200 text-xs focus:outline-none"
                         title="Vorschub bei G2/G3 Messerschwenk-Bögen in mm/min"
                       />
-                      <span className="text-[9px] text-slate-500">mm/min</span>
+                      <span className="text-[0.5625rem] text-slate-500">mm/min</span>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Schnitt-F:</span>
+                    <span className="text-slate-400 text-[0.625rem]">Schnitt-F:</span>
                     <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded border border-slate-700">
                       <input
                         type="number"
@@ -5826,12 +5827,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         onChange={(e) => setDragKnifeOptions(p => ({ ...p, cuttingFeedrate: Number(e.target.value) }))}
                         className="w-full bg-transparent text-slate-100 text-xs focus:outline-none"
                       />
-                      <span className="text-[9px] text-slate-500">mm/min</span>
+                      <span className="text-[0.5625rem] text-slate-500">mm/min</span>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Eilgang-F:</span>
+                    <span className="text-slate-400 text-[0.625rem]">Eilgang-F:</span>
                     <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded border border-slate-700">
                       <input
                         type="number"
@@ -5840,7 +5841,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         onChange={(e) => setDragKnifeOptions(p => ({ ...p, travelFeedrate: Number(e.target.value) }))}
                         className="w-full bg-transparent text-slate-100 text-xs focus:outline-none"
                       />
-                      <span className="text-[9px] text-slate-500">mm/min</span>
+                      <span className="text-[0.5625rem] text-slate-500">mm/min</span>
                     </div>
                   </div>
                 </div>
@@ -5854,11 +5855,11 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       onChange={(e) => setDragKnifeOptions(p => ({ ...p, liftOnSwivel: e.target.checked }))}
                       className="rounded border-slate-700 text-amber-600 focus:ring-amber-500"
                     />
-                    <span className="text-[11px] text-slate-300">Klinge bei Schwenkung leicht anheben (reduziert Reibung)</span>
+                    <span className="text-[0.6875rem] text-slate-300">Klinge bei Schwenkung leicht anheben (reduziert Reibung)</span>
                   </label>
 
                   {dragKnifeOptions.liftOnSwivel && (
-                    <div className="space-y-1 col-span-2 flex items-center justify-between text-[11px]">
+                    <div className="space-y-1 col-span-2 flex items-center justify-between text-[0.6875rem]">
                       <span className="text-slate-400">Schwenk-Hub (Z):</span>
                       <div className="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded border border-slate-700">
                         <input
@@ -5868,7 +5869,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                           onChange={(e) => setDragKnifeOptions(p => ({ ...p, swivelLiftZ: Number(e.target.value) }))}
                           className="w-14 bg-transparent text-amber-300 text-xs focus:outline-none text-right"
                         />
-                        <span className="text-[10px] text-slate-500">mm</span>
+                        <span className="text-[0.625rem] text-slate-500">mm</span>
                       </div>
                     </div>
                   )}
@@ -5882,11 +5883,11 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                   <div className="flex items-center gap-1.5">
                     <Database className="w-3.5 h-3.5 text-rose-400" />
-                    <span className="font-semibold text-[11px] text-slate-200">Material-Vorgaben &amp; G-Code Setup:</span>
+                    <span className="font-semibold text-[0.6875rem] text-slate-200">Material-Vorgaben &amp; G-Code Setup:</span>
                   </div>
                   <button
                     onClick={() => setShowLaserDbModal(true)}
-                    className="px-2.5 py-1 bg-rose-950/60 hover:bg-rose-900 border border-rose-800/60 text-rose-300 rounded text-[10px] font-medium flex items-center gap-1 transition-colors"
+                    className="px-2.5 py-1 bg-rose-950/60 hover:bg-rose-900 border border-rose-800/60 text-rose-300 rounded text-[0.625rem] font-medium flex items-center gap-1 transition-colors"
                   >
                     <SlidersHorizontal className="w-3 h-3" />
                     <span>Material-Datenbank</span>
@@ -5894,7 +5895,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 </div>
 
                 {activeMaterialName && (
-                  <div className="flex items-center justify-between bg-rose-950/30 px-2.5 py-1 rounded border border-rose-800/30 text-[10px] text-rose-300">
+                  <div className="flex items-center justify-between bg-rose-950/30 px-2.5 py-1 rounded border border-rose-800/30 text-[0.625rem] text-rose-300">
                     <span>Aktiv: <strong>{activeMaterialName}</strong></span>
                     <button
                       onClick={() => setActiveMaterialName(null)}
@@ -5909,12 +5910,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {/* Laser Mode Switch: M4 Dynamic vs M3 Constant */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Laser-Modus (G-Code):</span>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[0.625rem] font-bold text-rose-400 uppercase tracking-wider">Laser-Modus (G-Code):</span>
+                    <span className="text-[0.625rem] text-slate-400 font-mono">
                       {laserOptions.laserMode === 'M4' ? 'M4 (Dynamische Leistung)' : 'M3 (Konstante Leistung)'}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[11px]">
+                  <div className="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[0.6875rem]">
                     <button
                       type="button"
                       onClick={() => setLaserOptions(p => ({ ...p, laserMode: 'M4', laserOnCommand: 'M4 S{S}' }))}
@@ -5943,7 +5944,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {/* Power Min / Max (S-Value) & Feedrates */}
                 <div className="grid grid-cols-3 gap-2 font-mono">
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Min. Power (S):</span>
+                    <span className="text-slate-400 text-[0.625rem]">Min. Power (S):</span>
                     <input
                       type="number"
                       min={0}
@@ -5955,7 +5956,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-rose-300 text-[10px] font-semibold">Max. Power (S):</span>
+                    <span className="text-rose-300 text-[0.625rem] font-semibold">Max. Power (S):</span>
                     <input
                       type="number"
                       min={0}
@@ -5967,7 +5968,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Schnitt-F:</span>
+                    <span className="text-slate-400 text-[0.625rem]">Schnitt-F:</span>
                     <input
                       type="number"
                       step={50}
@@ -5981,7 +5982,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {/* Passes & Z-Stepdown */}
                 <div className="grid grid-cols-3 gap-2 font-mono bg-slate-900/60 p-2 rounded-lg border border-slate-800">
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Durchgänge:</span>
+                    <span className="text-slate-400 text-[0.625rem]">Durchgänge:</span>
                     <input
                       type="number"
                       min={1}
@@ -5993,7 +5994,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Z-Zustellung:</span>
+                    <span className="text-slate-400 text-[0.625rem]">Z-Zustellung:</span>
                     <div className="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded border border-slate-700">
                       <input
                         type="number"
@@ -6003,12 +6004,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         onChange={(e) => setLaserOptions(p => ({ ...p, zStepdown: Number(e.target.value) }))}
                         className="w-full bg-transparent text-rose-300 text-xs focus:outline-none text-right"
                       />
-                      <span className="text-[9px] text-slate-500">mm</span>
+                      <span className="text-[0.5625rem] text-slate-500">mm</span>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-slate-400 text-[10px]">Eilgang-F:</span>
+                    <span className="text-slate-400 text-[0.625rem]">Eilgang-F:</span>
                     <input
                       type="number"
                       step={200}
@@ -6020,7 +6021,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 </div>
 
                 {/* Air Assist & Custom Commands */}
-                <div className="space-y-2 font-mono bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 text-[11px]">
+                <div className="space-y-2 font-mono bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 text-[0.6875rem]">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -6033,7 +6034,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Laser EIN Befehl:</span>
+                      <span className="text-slate-400 text-[0.625rem]">Laser EIN Befehl:</span>
                       <input
                         type="text"
                         value={laserOptions.laserOnCommand || `${laserOptions.laserMode} S{S}`}
@@ -6043,7 +6044,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Laser AUS Befehl:</span>
+                      <span className="text-slate-400 text-[0.625rem]">Laser AUS Befehl:</span>
                       <input
                         type="text"
                         value={laserOptions.laserOffCommand || 'M5'}
@@ -6057,7 +6058,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                   {/* Start & End G-Code */}
                   <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">Start-G-Code:</span>
+                      <span className="text-slate-400 text-[0.625rem]">Start-G-Code:</span>
                       <input
                         type="text"
                         value={laserOptions.startGcode || ''}
@@ -6067,7 +6068,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="text-slate-400 text-[10px]">End-G-Code:</span>
+                      <span className="text-slate-400 text-[0.625rem]">End-G-Code:</span>
                       <input
                         type="text"
                         value={laserOptions.endGcode || ''}
@@ -6088,7 +6089,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                   <Route className="w-3.5 h-3.5 text-indigo-400" />
                   <span>Leerfahrt & Bearbeitungsreihenfolge</span>
                 </span>
-                <label className="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-[0.6875rem] text-slate-400 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={optimizeOrder}
@@ -6103,12 +6104,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 <div className="space-y-2 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80 text-xs">
                   {/* Übergeordnete Objekt-Reihenfolge */}
                   <div className="space-y-1">
-                    <div className="text-[11px] text-slate-400 font-medium">Übergeordnete Reihenfolge:</div>
+                    <div className="text-[0.6875rem] text-slate-400 font-medium">Übergeordnete Reihenfolge:</div>
                     <div className="grid grid-cols-2 gap-1.5">
                       <button
                         type="button"
                         onClick={() => setObjectOrderMode('object_by_object')}
-                        className={`py-1 px-2 rounded text-[11px] font-semibold border transition-all ${
+                        className={`py-1 px-2 rounded text-[0.6875rem] font-semibold border transition-all ${
                           objectOrderMode === 'object_by_object'
                             ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
                             : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
@@ -6119,7 +6120,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       <button
                         type="button"
                         onClick={() => setObjectOrderMode('fastest_global')}
-                        className={`py-1 px-2 rounded text-[11px] font-semibold border transition-all ${
+                        className={`py-1 px-2 rounded text-[0.6875rem] font-semibold border transition-all ${
                           objectOrderMode === 'fastest_global'
                             ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
                             : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
@@ -6132,12 +6133,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                   {/* Kontur-/Leerfahrt-Strategie */}
                   <div className="space-y-1 pt-1 border-t border-slate-800/70">
-                    <div className="text-[11px] text-slate-400 font-medium">Leerfahrt- & Konturstrategie:</div>
+                    <div className="text-[0.6875rem] text-slate-400 font-medium">Leerfahrt- & Konturstrategie:</div>
                     <div className="grid grid-cols-3 gap-1">
                       <button
                         type="button"
                         onClick={() => setPathOrderStrategy('fastest')}
-                        className={`py-1 px-1 rounded text-[10px] font-semibold border text-center transition-all ${
+                        className={`py-1 px-1 rounded text-[0.625rem] font-semibold border text-center transition-all ${
                           pathOrderStrategy === 'fastest'
                             ? 'bg-emerald-600 text-white border-emerald-400 shadow-sm'
                             : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
@@ -6148,7 +6149,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       <button
                         type="button"
                         onClick={() => setPathOrderStrategy('inside_to_outside')}
-                        className={`py-1 px-1 rounded text-[10px] font-semibold border text-center transition-all ${
+                        className={`py-1 px-1 rounded text-[0.625rem] font-semibold border text-center transition-all ${
                           pathOrderStrategy === 'inside_to_outside'
                             ? 'bg-emerald-600 text-white border-emerald-400 shadow-sm'
                             : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
@@ -6159,7 +6160,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       <button
                         type="button"
                         onClick={() => setPathOrderStrategy('outside_to_inside')}
-                        className={`py-1 px-1 rounded text-[10px] font-semibold border text-center transition-all ${
+                        className={`py-1 px-1 rounded text-[0.625rem] font-semibold border text-center transition-all ${
                           pathOrderStrategy === 'outside_to_inside'
                             ? 'bg-emerald-600 text-white border-emerald-400 shadow-sm'
                             : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
@@ -6249,7 +6250,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             {/* Menu 1: Position / Größe */}
             <button
               onClick={() => setActiveGenMenu(curr => curr === 'pos_size' ? 'none' : 'pos_size')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 border transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-[0.6875rem] font-semibold flex items-center gap-1.5 border transition-all ${
                 activeGenMenu === 'pos_size'
                   ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-900/40'
                   : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-purple-300'
@@ -6263,7 +6264,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             {/* Menu 2: Drehung */}
             <button
               onClick={() => setActiveGenMenu(curr => curr === 'rotation' ? 'none' : 'rotation')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 border transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-[0.6875rem] font-semibold flex items-center gap-1.5 border transition-all ${
                 activeGenMenu === 'rotation'
                   ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-900/40'
                   : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-amber-300'
@@ -6301,7 +6302,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 setGenMeasureStart(null);
                 setGenMeasureEnd(null);
               }}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 border transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-[0.6875rem] font-semibold flex items-center gap-1.5 border transition-all ${
                 isMeasureActive
                   ? 'bg-cyan-600 text-white border-cyan-400 shadow-md shadow-cyan-900/40'
                   : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-cyan-300'
@@ -6315,7 +6316,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             {/* OBJECT BROWSER BUTTON (USER REQUEST) */}
             <button
               onClick={() => setActiveGenMenu(curr => curr === 'obj_browser' ? 'none' : 'obj_browser')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 border transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-[0.6875rem] font-semibold flex items-center gap-1.5 border transition-all ${
                 activeGenMenu === 'obj_browser'
                   ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-900/40'
                   : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-indigo-300'
@@ -6325,7 +6326,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               <Layers className="w-3.5 h-3.5 text-indigo-400" />
               <span>Objektbrowser</span>
               {compositionElements.length > 0 && (
-                <span className="px-1.5 py-0.2 bg-indigo-500/40 text-indigo-200 rounded-full text-[10px] font-bold">
+                <span className="px-1.5 py-0.2 bg-indigo-500/40 text-indigo-200 rounded-full text-[0.625rem] font-bold">
                   {compositionElements.length}
                 </span>
               )}
@@ -6335,7 +6336,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             {compositionElements.length > 0 && (
               <button
                 onClick={() => setShowLiveDraftPreview(prev => !prev)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 border transition-all ${
+                className={`px-2.5 py-1 rounded-lg text-[0.6875rem] font-semibold flex items-center gap-1.5 border transition-all ${
                   showLiveDraftPreview
                     ? 'bg-cyan-950/80 border-cyan-500/80 text-cyan-300 shadow-sm'
                     : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -6349,7 +6350,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
           </div>
 
           {/* Quick Metrics & Zoom */}
-          <div className="flex items-center gap-3 font-mono text-[11px] text-slate-400">
+          <div className="flex items-center gap-3 font-mono text-[0.6875rem] text-slate-400">
             <span title="Objekt-Abmessungen" className="hidden sm:inline">
               B: <strong className="text-slate-200">{stats.width}</strong> x H: <strong className="text-slate-200">{stats.height}</strong> mm
             </span>
@@ -6383,7 +6384,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               >
                 <ZoomOut className="w-3.5 h-3.5" />
               </button>
-              <span className="text-[10px] font-mono text-slate-400 w-10 text-center">{Math.round(zoom * 100)}%</span>
+              <span className="text-[0.625rem] font-mono text-slate-400 w-10 text-center">{Math.round(zoom * 100)}%</span>
               <button
                 onClick={() => {
                   const canvas = previewCanvasRef.current;
@@ -6423,7 +6424,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                   <Scaling className="w-4 h-4 text-purple-400" />
                   <span>Position &amp; Größe überarbeiten</span>
                 </span>
-                <span className="bg-slate-900 px-2 py-0.5 rounded text-[11px] font-mono text-slate-300 border border-slate-800">
+                <span className="bg-slate-900 px-2 py-0.5 rounded text-[0.6875rem] font-mono text-slate-300 border border-slate-800">
                   {selectedElementId ? `Ausgewähltes Element` : `Gesamtes Motiv (Alle Elemente)`}
                 </span>
               </div>
@@ -6439,13 +6440,13 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 flex flex-wrap items-center justify-between gap-3">
               {/* Nudge step selector & buttons */}
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-slate-300 text-[11px]">Position (Nudge):</span>
+                <span className="font-semibold text-slate-300 text-[0.6875rem]">Position (Nudge):</span>
                 <div className="flex items-center gap-0.5 bg-slate-950 p-0.5 rounded border border-slate-800">
                   {[0.5, 1, 5, 10, 25, 50].map(s => (
                     <button
                       key={s}
                       onClick={() => setGenShiftStep(s)}
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                      className={`px-1.5 py-0.5 rounded text-[0.625rem] font-mono ${
                         genShiftStep === s ? 'bg-purple-600 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
@@ -6464,7 +6465,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     >
                       X-
                     </button>
-                    <span className="px-1 text-[10px] text-slate-400">X</span>
+                    <span className="px-1 text-[0.625rem] text-slate-400">X</span>
                     <button
                       onClick={() => handleNudgeObject(genShiftStep, 0)}
                       className="px-2 py-0.5 bg-slate-800 hover:bg-rose-900/60 text-rose-400 rounded font-bold transition-colors"
@@ -6483,7 +6484,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     >
                       Y-
                     </button>
-                    <span className="px-1 text-[10px] text-slate-400">Y</span>
+                    <span className="px-1 text-[0.625rem] text-slate-400">Y</span>
                     <button
                       onClick={() => handleNudgeObject(0, genShiftStep)}
                       className="px-2 py-0.5 bg-slate-800 hover:bg-cyan-900/60 text-cyan-400 rounded font-bold transition-colors"
@@ -6496,7 +6497,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               </div>
 
               {/* Direct Offset X & Y Inputs */}
-              <div className="flex items-center gap-2 font-mono text-[11px]">
+              <div className="flex items-center gap-2 font-mono text-[0.6875rem]">
                 <div className="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded border border-slate-800">
                   <span className="text-rose-400 font-bold">X-Offset:</span>
                   <input
@@ -6513,7 +6514,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     className="w-12 bg-transparent text-slate-100 text-right focus:outline-none"
                     title="X-Verschiebung in mm"
                   />
-                  <span className="text-slate-500 text-[10px]">mm</span>
+                  <span className="text-slate-500 text-[0.625rem]">mm</span>
                 </div>
 
                 <div className="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded border border-slate-800">
@@ -6532,7 +6533,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     className="w-12 bg-transparent text-slate-100 text-right focus:outline-none"
                     title="Y-Verschiebung in mm"
                   />
-                  <span className="text-slate-500 text-[10px]">mm</span>
+                  <span className="text-slate-500 text-[0.625rem]">mm</span>
                 </div>
               </div>
 
@@ -6540,7 +6541,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={handleCenterObjectOnBed}
-                  className="px-2.5 py-1 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 hover:text-white rounded border border-indigo-500/40 font-medium text-[11px] flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 hover:text-white rounded border border-indigo-500/40 font-medium text-[0.6875rem] flex items-center gap-1 transition-colors"
                   title="Objekt mittig auf der Arbeitsfläche platzieren"
                 >
                   <Crosshair className="w-3.5 h-3.5" />
@@ -6548,7 +6549,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 </button>
                 <button
                   onClick={handleMoveObjectToOrigin}
-                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 font-medium text-[11px] flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 font-medium text-[0.6875rem] flex items-center gap-1 transition-colors"
                   title="Verschiebt nach unten links"
                 >
                   <CornerDownLeft className="w-3.5 h-3.5 text-indigo-400" />
@@ -6558,10 +6559,10 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             </div>
 
             {/* Row 2: Größe & Soll-Maße (Soll-XYZ, Presets, Fine Adjust, Einpassen) */}
-            <div className="bg-slate-900/80 p-2.5 rounded-lg border border-purple-500/30 flex flex-wrap items-center justify-between gap-3 font-mono text-[11px]">
+            <div className="bg-slate-900/80 p-2.5 rounded-lg border border-purple-500/30 flex flex-wrap items-center justify-between gap-3 font-mono text-[0.6875rem]">
               {/* Ist-Maße Info */}
               <div className="flex items-center gap-2">
-                <span className="text-slate-400 text-[10px]">Aktuelle Maße:</span>
+                <span className="text-slate-400 text-[0.625rem]">Aktuelle Maße:</span>
                 <span className="text-slate-200 font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
                   {stats.width.toFixed(1)} × {stats.height.toFixed(1)} mm
                 </span>
@@ -6581,7 +6582,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     className="w-14 bg-transparent text-slate-100 text-right focus:outline-none focus:text-purple-200"
                     title="Soll-Breite (X) in mm"
                   />
-                  <span className="text-slate-500 text-[10px]">mm</span>
+                  <span className="text-slate-500 text-[0.625rem]">mm</span>
                 </div>
 
                 <div className="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded border border-purple-500/40">
@@ -6596,7 +6597,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     className="w-14 bg-transparent text-slate-100 text-right focus:outline-none focus:text-purple-200"
                     title="Soll-Höhe (Y) in mm"
                   />
-                  <span className="text-slate-500 text-[10px]">mm</span>
+                  <span className="text-slate-500 text-[0.625rem]">mm</span>
                 </div>
 
                 <div className="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded border border-slate-700">
@@ -6609,13 +6610,13 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     className="w-12 bg-transparent text-slate-100 text-right focus:outline-none focus:text-cyan-200"
                     title="Soll-Tiefe / Z-Eintauchtiefe in mm"
                   />
-                  <span className="text-slate-500 text-[10px]">mm</span>
+                  <span className="text-slate-500 text-[0.625rem]">mm</span>
                 </div>
 
                 {/* Aspect Lock */}
                 <button
                   onClick={() => setLockAspectDimensions(!lockAspectDimensions)}
-                  className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium border transition-colors ${
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-[0.6875rem] font-medium border transition-colors ${
                     lockAspectDimensions
                       ? 'bg-purple-950/70 border-purple-500/60 text-purple-300 font-bold'
                       : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -6633,7 +6634,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                   <button
                     key={pct}
                     onClick={() => handleScaleUniformChange(pct)}
-                    className="px-1.5 py-1 bg-slate-950 hover:bg-slate-800 text-purple-300 rounded border border-slate-800 text-[10px] font-semibold"
+                    className="px-1.5 py-1 bg-slate-950 hover:bg-slate-800 text-purple-300 rounded border border-slate-800 text-[0.625rem] font-semibold"
                     title={`Auf ${pct}% skalieren`}
                   >
                     {pct}%
@@ -6646,28 +6647,28 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 <div className="flex items-center gap-0.5">
                   <button
                     onClick={() => handleScaleUniformChange(Math.max(5, Number((scaleX * 0.9).toFixed(1))))}
-                    className="px-1.5 py-1 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 text-[10px]"
+                    className="px-1.5 py-1 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 text-[0.625rem]"
                     title="-10% verkleinern"
                   >
                     -10%
                   </button>
                   <button
                     onClick={() => handleScaleUniformChange(Math.max(5, Number((scaleX * 0.95).toFixed(1))))}
-                    className="px-1.5 py-1 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 text-[10px]"
+                    className="px-1.5 py-1 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 text-[0.625rem]"
                     title="-5% verkleinern"
                   >
                     -5%
                   </button>
                   <button
                     onClick={() => handleScaleUniformChange(Number((scaleX * 1.05).toFixed(1)))}
-                    className="px-1.5 py-1 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 text-[10px]"
+                    className="px-1.5 py-1 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 text-[0.625rem]"
                     title="+5% vergrößern"
                   >
                     +5%
                   </button>
                   <button
                     onClick={() => handleScaleUniformChange(Number((scaleX * 1.1).toFixed(1)))}
-                    className="px-1.5 py-1 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 text-[10px]"
+                    className="px-1.5 py-1 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 text-[0.625rem]"
                     title="+10% vergrößern"
                   >
                     +10%
@@ -6676,7 +6677,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                 <button
                   onClick={handleFitGeneratorToBed}
-                  className="flex items-center gap-1 px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded font-medium text-[11px] transition-colors shadow"
+                  className="flex items-center gap-1 px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded font-medium text-[0.6875rem] transition-colors shadow"
                   title="Skaliert und zentriert das Motiv passend auf die Bauplatte"
                 >
                   <Maximize2 className="w-3 h-3" />
@@ -6685,7 +6686,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                 <button
                   onClick={handleResetObjectTransform}
-                  className="px-2 py-1 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded border border-slate-800 text-[11px] transition-colors"
+                  className="px-2 py-1 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded border border-slate-800 text-[0.6875rem] transition-colors"
                   title="Transformation zurücksetzen"
                 >
                   Reset
@@ -6713,7 +6714,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 font-mono text-[11px]">
+            <div className="flex flex-wrap items-center justify-between gap-3 font-mono text-[0.6875rem]">
               {/* Rotation Slider & Input */}
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded border border-slate-700">
@@ -6732,7 +6733,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     className="w-12 bg-transparent text-slate-100 text-right focus:outline-none"
                     title="Drehwinkel in Grad"
                   />
-                  <span className="text-slate-500 text-[10px]">°</span>
+                  <span className="text-slate-500 text-[0.625rem]">°</span>
                 </div>
 
                 <input
@@ -6764,7 +6765,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         setCompositionElements(prev => prev.map(el => el.id === selectedElementId ? { ...el, rotation: val } : el));
                       }
                     }}
-                    className="px-2 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 text-[11px] font-semibold"
+                    className="px-2 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 text-[0.6875rem] font-semibold"
                   >
                     {deg > 0 ? `+${deg}°` : `${deg}°`}
                   </button>
@@ -6781,7 +6782,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       setCompositionElements(prev => prev.map(el => el.id === selectedElementId ? { ...el, flipX: val } : el));
                     }
                   }}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded border text-[11px] font-medium transition-all ${
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded border text-[0.6875rem] font-medium transition-all ${
                     objFlipX
                       ? 'bg-amber-600 text-white border-amber-400'
                       : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -6800,7 +6801,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       setCompositionElements(prev => prev.map(el => el.id === selectedElementId ? { ...el, flipY: val } : el));
                     }
                   }}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded border text-[11px] font-medium transition-all ${
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded border text-[0.6875rem] font-medium transition-all ${
                     objFlipY
                       ? 'bg-amber-600 text-white border-amber-400'
                       : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -6824,19 +6825,19 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-indigo-400" />
                 <span className="font-bold text-indigo-200 text-sm">Objekt-Browser &amp; Ebenenverwaltung</span>
-                <span className="text-slate-500 font-mono text-[11px]">({compositionElements.length} Objekte, {selectedElementIds.length} ausgewählt)</span>
+                <span className="text-slate-500 font-mono text-[0.6875rem]">({compositionElements.length} Objekte, {selectedElementIds.length} ausgewählt)</span>
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <button
                   onClick={() => setSelectedElementIds(compositionElements.map(e => e.id))}
-                  className="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-amber-300 rounded text-[11px] font-medium"
+                  className="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-amber-300 rounded text-[0.6875rem] font-medium"
                   title="Alle Objekte in der Arbeitsfläche markieren"
                 >
                   Alle auswählen
                 </button>
                 <button
                   onClick={() => setSelectedElementIds([])}
-                  className="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded text-[11px]"
+                  className="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded text-[0.6875rem]"
                   title="Auswahl aufheben"
                 >
                   Auswahl leeren
@@ -6844,14 +6845,14 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 <span className="text-slate-700">|</span>
                 <button
                   onClick={() => handleSetAllElementsVisibility(true)}
-                  className="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 rounded text-[11px]"
+                  className="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 rounded text-[0.6875rem]"
                   title="Alle Objekte einblenden"
                 >
                   Alle an
                 </button>
                 <button
                   onClick={() => handleSetAllElementsVisibility(false)}
-                  className="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded text-[11px]"
+                  className="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded text-[0.6875rem]"
                   title="Alle Objekte ausblenden"
                 >
                   Alle aus
@@ -6946,7 +6947,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         />
 
                         {/* Details badge */}
-                        <span className="font-mono text-[10px] text-slate-500 hidden sm:inline">
+                        <span className="font-mono text-[0.625rem] text-slate-500 hidden sm:inline">
                           X:{el.offsetX} Y:{el.offsetY} mm ({el.polylines.length} Pfade)
                         </span>
                       </div>
@@ -6958,7 +6959,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                             setSelectedElementId(el.id);
                             setSelectedElementIds([el.id]);
                           }}
-                          className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                          className={`px-2 py-0.5 rounded text-[0.6875rem] font-medium transition-colors ${
                             isSelected
                               ? 'bg-indigo-600 text-white'
                               : 'bg-slate-800 text-slate-400 hover:text-slate-200'
@@ -7013,7 +7014,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 <div className="flex items-center justify-between pt-2">
                   <button
                     onClick={handleAddCurrentToComposition}
-                    className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[11px] font-medium flex items-center gap-1 shadow transition-colors"
+                    className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[0.6875rem] font-medium flex items-center gap-1 shadow transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Weiteres Element hinzufügen</span>
@@ -7026,7 +7027,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                           setCompositionElements(prev => prev.filter(e => !selectedElementIds.includes(e.id)));
                           setSelectedElementIds([]);
                         }}
-                        className="px-2.5 py-1 bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700/60 rounded text-[11px] font-medium flex items-center gap-1"
+                        className="px-2.5 py-1 bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700/60 rounded text-[0.6875rem] font-medium flex items-center gap-1"
                       >
                         <Trash2 className="w-3 h-3" />
                         <span>{selectedElementIds.length} Ausgewählte löschen</span>
@@ -7034,7 +7035,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     )}
                     <button
                       onClick={handleClearComposition}
-                      className="px-2.5 py-1 bg-slate-900 hover:bg-rose-950 hover:text-rose-300 text-slate-400 rounded text-[11px] border border-slate-800 transition-colors"
+                      className="px-2.5 py-1 bg-slate-900 hover:bg-rose-950 hover:text-rose-300 text-slate-400 rounded text-[0.6875rem] border border-slate-800 transition-colors"
                     >
                       Komposition leeren
                     </button>
@@ -7132,7 +7133,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               </span>
               
               {genMeasureStart && genMeasureEnd && (
-                <span className="text-[11px] text-slate-300 drop-shadow-md">
+                <span className="text-[0.6875rem] text-slate-300 drop-shadow-md">
                    (ΔX: {(genMeasureEnd.x - genMeasureStart.x).toFixed(2)}, ΔY: {(genMeasureEnd.y - genMeasureStart.y).toFixed(2)})
                 </span>
               )}
@@ -7144,7 +7145,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       setGenMeasureStart(null);
                       setGenMeasureEnd(null);
                     }}
-                    className="px-2 py-0.5 bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-200 rounded-md text-[10px] transition-colors"
+                    className="px-2 py-0.5 bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-200 rounded-md text-[0.625rem] transition-colors"
                   >
                     Messung löschen
                   </button>
@@ -7155,7 +7156,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     setGenMeasureStart(null);
                     setGenMeasureEnd(null);
                   }}
-                  className="px-2 py-0.5 bg-black/20 hover:bg-black/40 text-slate-300 rounded-md text-[10px] transition-colors"
+                  className="px-2 py-0.5 bg-black/20 hover:bg-black/40 text-slate-300 rounded-md text-[0.625rem] transition-colors"
                   title="Messmodus beenden"
                 >
                   Beenden
@@ -7182,7 +7183,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
           />
 
           {/* Interactive Live Legend Overlay with Standardized Color Scheme */}
-          <div className="absolute bottom-4 left-3 bg-black/10 backdrop-blur-md px-3 py-1.5 rounded-full drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] text-[10px] text-slate-100 flex items-center gap-2 z-20 pointer-events-auto transition-opacity opacity-50 hover:opacity-100">
+          <div className="absolute bottom-4 left-3 bg-black/10 backdrop-blur-md px-3 py-1.5 rounded-full drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] text-[0.625rem] text-slate-100 flex items-center gap-2 z-20 pointer-events-auto transition-opacity opacity-50 hover:opacity-100">
             <span className="text-slate-300 font-semibold mr-1 hidden sm:inline drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]">Ebenen:</span>
             
             {/* Bearbeitung / Cut Paths */}
@@ -7376,7 +7377,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                   </button>
                   <button
                     onClick={() => setLightboxZoom(1)}
-                    className={`px-2 py-0.5 text-[10px] rounded ml-1 transition-colors ${
+                    className={`px-2 py-0.5 text-[0.625rem] rounded ml-1 transition-colors ${
                       lightboxZoom === 1 ? 'bg-cyan-600/40 text-cyan-200 border border-cyan-500/50' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
                     }`}
                     title="Zoom auf 100% Einpassen zurücksetzen"
@@ -7479,7 +7480,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         className="absolute top-0 bottom-0 w-0.5 bg-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.8)] pointer-events-none"
                         style={{ left: `${lightboxSplitPos}%` }}
                       >
-                        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-cyan-500 text-black flex items-center justify-center font-bold text-[10px] shadow-lg">
+                        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-cyan-500 text-black flex items-center justify-center font-bold text-[0.625rem] shadow-lg">
                           ↔
                         </div>
                       </div>
@@ -7535,7 +7536,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                   </div>
                   <button
                     onClick={handleAutoOtsuThreshold}
-                    className="px-2 py-1 bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-500/50 text-cyan-200 rounded text-[10px] font-medium flex items-center gap-1 transition-colors shadow-sm"
+                    className="px-2 py-1 bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-500/50 text-cyan-200 rounded text-[0.625rem] font-medium flex items-center gap-1 transition-colors shadow-sm"
                     title="Optimalen Schwellenwert automatisch ermitteln"
                   >
                     <Wand2 className="w-3 h-3 text-cyan-300" />
@@ -7544,7 +7545,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 </div>
 
                 {/* 2. Zielabmessungen & Skalierung (Ganz oben) */}
-                <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 font-mono text-[10px]">
+                <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 font-mono text-[0.625rem]">
                   <div className="flex items-center justify-between text-slate-300 font-semibold border-b border-slate-800 pb-1">
                     <span className="flex items-center gap-1.5 font-bold text-slate-200">
                       <Ruler className="w-3.5 h-3.5 text-cyan-400" />
@@ -7552,7 +7553,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     </span>
                     <button
                       onClick={() => setRasterLockAspect(!rasterLockAspect)}
-                      className={`px-2 py-0.5 rounded flex items-center gap-1 text-[10px] font-semibold border transition-all ${
+                      className={`px-2 py-0.5 rounded flex items-center gap-1 text-[0.625rem] font-semibold border transition-all ${
                         rasterLockAspect
                           ? 'bg-cyan-600/30 text-cyan-200 border-cyan-500/50'
                           : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
@@ -7592,7 +7593,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 </div>
 
                 {/* 3. Hintergrundbild-Transparenz */}
-                <div className="space-y-1.5 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 font-mono text-[11px]">
+                <div className="space-y-1.5 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 font-mono text-[0.6875rem]">
                   <div className="flex justify-between text-slate-300 font-medium">
                     <span className="flex items-center gap-1.5 text-cyan-300 font-semibold">
                       <Layers className="w-3.5 h-3.5 text-cyan-400" />
@@ -7610,7 +7611,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                     className="w-full accent-cyan-400 cursor-pointer"
                     title="Deckkraft des Originalbildes im Hintergrund der Pfadansicht"
                   />
-                  <div className="flex justify-between text-[9px] text-slate-500">
+                  <div className="flex justify-between text-[0.5625rem] text-slate-500">
                     <span>0% (Nur Vektoren)</span>
                     <span>100% (Voll überlagert)</span>
                   </div>
@@ -7619,7 +7620,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 {/* 4. Vektorisierungs- & Schraffur-Modi (Alle 6 Modi) */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-300 text-[11px] font-bold flex items-center gap-1.5">
+                    <span className="text-slate-300 text-[0.6875rem] font-bold flex items-center gap-1.5">
                       <Workflow className="w-3.5 h-3.5 text-cyan-400" />
                       Vektorisierungs-Verfahren:
                     </span>
@@ -7667,7 +7668,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                       <button
                         key={m.id}
                         onClick={() => setRasterSettings(s => ({ ...s, mode: m.id as any }))}
-                        className={`p-2 rounded-lg border text-left text-[10px] transition-all flex flex-col justify-between ${
+                        className={`p-2 rounded-lg border text-left text-[0.625rem] transition-all flex flex-col justify-between ${
                           rasterSettings.mode === m.id
                             ? `${m.accent} ring-1 font-semibold shadow-sm`
                             : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
@@ -7675,7 +7676,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         title={m.desc}
                       >
                         <span className="font-semibold text-slate-100">{m.label}</span>
-                        <span className="text-[9px] text-slate-500 line-clamp-1 mt-0.5">{m.desc}</span>
+                        <span className="text-[0.5625rem] text-slate-500 line-clamp-1 mt-0.5">{m.desc}</span>
                       </button>
                     ))}
                   </div>
@@ -7683,13 +7684,13 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                 {/* 5. MUSTERFÜLLUNG (Infill) wenn Outline-Kontur aktiv */}
                 {rasterSettings.mode === 'contour_trace' && (
-                  <div className="space-y-2 bg-gradient-to-br from-cyan-950/40 to-slate-900/90 p-2.5 rounded-lg border border-cyan-500/30 font-mono text-[10px]">
+                  <div className="space-y-2 bg-gradient-to-br from-cyan-950/40 to-slate-900/90 p-2.5 rounded-lg border border-cyan-500/30 font-mono text-[0.625rem]">
                     <div className="flex items-center justify-between border-b border-cyan-500/20 pb-1">
                       <span className="font-bold text-cyan-300 flex items-center gap-1.5">
                         <GridIcon className="w-3.5 h-3.5 text-cyan-400" />
                         <span>Musterfüllung (Infill):</span>
                       </span>
-                      <span className="text-[9px] text-cyan-400/80 font-bold">
+                      <span className="text-[0.5625rem] text-cyan-400/80 font-bold">
                         {rasterSettings.fillPattern && rasterSettings.fillPattern !== 'none' ? 'Aktiv' : 'Keine'}
                       </span>
                     </div>
@@ -7707,7 +7708,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         <button
                           key={pat.id}
                           onClick={() => setRasterSettings(s => ({ ...s, fillPattern: pat.id as any }))}
-                          className={`px-2 py-1 rounded text-[9px] font-semibold border transition-all text-left truncate ${
+                          className={`px-2 py-1 rounded text-[0.5625rem] font-semibold border transition-all text-left truncate ${
                             (rasterSettings.fillPattern || 'none') === pat.id
                               ? 'bg-cyan-600 text-white border-cyan-400 shadow-sm'
                               : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -7758,7 +7759,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                           <span className="text-slate-300">Außenkontur behalten:</span>
                           <button
                             onClick={() => setRasterSettings(s => ({ ...s, fillIncludeContour: !(s.fillIncludeContour ?? true) }))}
-                            className={`px-2 py-0.5 rounded text-[9px] font-semibold border transition-all ${
+                            className={`px-2 py-0.5 rounded text-[0.5625rem] font-semibold border transition-all ${
                               (rasterSettings.fillIncludeContour ?? true)
                                 ? 'bg-cyan-600 text-white border-cyan-400 shadow-sm'
                                 : 'bg-slate-900 border-slate-700 text-slate-400'
@@ -7774,7 +7775,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                 {/* 6. SPEZIFISCHE PARAMETER FÜR SCHRAFFUR / DITHER / WELLEN */}
                 {(rasterSettings.mode === 'hatch_linear' || rasterSettings.mode === 'cross_hatch') && (
-                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-indigo-500/30 font-mono text-[10px]">
+                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-indigo-500/30 font-mono text-[0.625rem]">
                     <div className="flex items-center justify-between border-b border-indigo-500/20 pb-1">
                       <span className="font-bold text-indigo-300 flex items-center gap-1.5">
                         <SlidersIcon className="w-3.5 h-3.5 text-indigo-400" />
@@ -7815,7 +7816,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 )}
 
                 {rasterSettings.mode === 'stipple_dither' && (
-                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-purple-500/30 font-mono text-[10px]">
+                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-purple-500/30 font-mono text-[0.625rem]">
                     <div className="flex items-center justify-between border-b border-purple-500/20 pb-1">
                       <span className="font-bold text-purple-300 flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-purple-400" />
@@ -7856,7 +7857,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 )}
 
                 {rasterSettings.mode === 'spiral_wave' && (
-                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-purple-500/30 font-mono text-[10px]">
+                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-purple-500/30 font-mono text-[0.625rem]">
                     <div className="flex items-center justify-between border-b border-purple-500/20 pb-1">
                       <span className="font-bold text-purple-300 flex items-center gap-1.5">
                         <Spline className="w-3.5 h-3.5 text-purple-400" />
@@ -7897,7 +7898,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 )}
 
                 {/* 7. Kern-Parameter: Schwellenwert, Detailgrad, Kantenglättung */}
-                <div className="space-y-2.5 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 font-mono text-[10px]">
+                <div className="space-y-2.5 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 font-mono text-[0.625rem]">
                   {/* Threshold */}
                   <div className="flex items-center justify-between">
                     <span className="text-slate-300 font-semibold">SW-Schwellenwert:</span>
@@ -7921,7 +7922,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         <Sparkles className="w-3 h-3 text-amber-400" />
                         <span>Detailgrad (Feinschrift):</span>
                       </span>
-                      <span className="text-[9px] text-slate-500">1: Filter | 10: Max Details</span>
+                      <span className="text-[0.5625rem] text-slate-500">1: Filter | 10: Max Details</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <input
@@ -7945,7 +7946,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         <Spline className="w-3 h-3 text-emerald-400" />
                         <span>Kantenglättung:</span>
                       </span>
-                      <span className="text-[9px] text-slate-500">Douglas-Peucker</span>
+                      <span className="text-[0.5625rem] text-slate-500">Douglas-Peucker</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <input
@@ -7963,7 +7964,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 </div>
 
                 {/* 8. Progressive Disclosure Accordion: ⚙️ Erweiterte Einstellungen */}
-                <div className="border border-slate-800 rounded-lg overflow-hidden font-mono text-[10px] bg-slate-950/40">
+                <div className="border border-slate-800 rounded-lg overflow-hidden font-mono text-[0.625rem] bg-slate-950/40">
                   <button
                     onClick={() => setShowLightboxAdvanced(!showLightboxAdvanced)}
                     className="w-full px-3 py-2 bg-slate-900/90 hover:bg-slate-800/90 flex items-center justify-between text-slate-300 font-medium transition-colors"
@@ -8018,7 +8019,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         </span>
                         <button
                           onClick={() => setRasterSettings(s => ({ ...s, enhanceSmallText: !(s.enhanceSmallText ?? true) }))}
-                          className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-all ${
+                          className={`px-2 py-0.5 rounded text-[0.625rem] font-semibold border transition-all ${
                             (rasterSettings.enhanceSmallText ?? true)
                               ? 'bg-amber-600 text-white border-amber-400 shadow-sm'
                               : 'bg-slate-900 border-slate-700 text-slate-400'
@@ -8083,7 +8084,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => setRasterSettings(s => ({ ...s, mirrorX: !s.mirrorX }))}
-                            className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-all ${
+                            className={`px-2 py-0.5 rounded text-[0.625rem] font-semibold border transition-all ${
                               rasterSettings.mirrorX
                                 ? 'bg-cyan-600 text-white border-cyan-400'
                                 : 'bg-slate-900 border-slate-700 text-slate-400'
@@ -8093,7 +8094,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                           </button>
                           <button
                             onClick={() => setRasterSettings(s => ({ ...s, mirrorY: !s.mirrorY }))}
-                            className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-all ${
+                            className={`px-2 py-0.5 rounded text-[0.625rem] font-semibold border transition-all ${
                               rasterSettings.mirrorY
                                 ? 'bg-cyan-600 text-white border-cyan-400'
                                 : 'bg-slate-900 border-slate-700 text-slate-400'
@@ -8122,7 +8123,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
                 {/* Metrics in Lightbox */}
                 {rawPolylines.length > 0 && (
-                  <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800 font-mono text-[10px] space-y-1">
+                  <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800 font-mono text-[0.625rem] space-y-1">
                     <div className="text-slate-400 font-bold flex items-center justify-between">
                       <span>Vektor-Statistik:</span>
                       <span className="text-cyan-400">{rawPolylines.length} Pfade</span>
