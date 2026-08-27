@@ -43,8 +43,8 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
       if (!isDragging) return;
       const dx = e.clientX - dragStartRef.current.x;
       const dy = e.clientY - dragStartRef.current.y;
-      const newYaw = (dragStartRef.current.yaw + dx * 0.8) % 360;
-      const newPitch = Math.max(5, Math.min(85, dragStartRef.current.pitch + dy * 0.8));
+      const newYaw = (dragStartRef.current.yaw - dx * 0.8) % 360;
+      const newPitch = Math.max(5, Math.min(85, dragStartRef.current.pitch - dy * 0.8));
       onOrientationChange(newYaw, newPitch, '3d');
     };
 
@@ -143,7 +143,7 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
           {/* RIGHT Face (Rechts) */}
           <div
             onClick={(e) => handleFaceClick(90, 15, '3d', e)}
-            className="absolute inset-0 bg-slate-800/90 border border-cyan-500/60 hover:bg-cyan-600 hover:text-white text-slate-200 font-bold text-[9px] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+            className="absolute inset-0 bg-slate-800/90 border border-sky-500/60 hover:bg-sky-600 hover:text-white text-slate-200 font-bold text-[9px] flex items-center justify-center transition-colors cursor-pointer shadow-sm"
             style={{ transform: 'rotateY(90deg) translateZ(24px)' }}
           >
             RECHTS
@@ -161,20 +161,20 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
       </div>
 
       {/* Quick View Switch Buttons below Cube */}
-      <div className="grid grid-cols-2 gap-1 w-full pt-1 border-t border-slate-800/80">
+      <div className="grid grid-cols-2 gap-1.5 w-full pointer-events-auto bg-black/10 backdrop-blur-md p-1 rounded-lg drop-shadow-md">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onOrientationChange(0, 90, '2d');
           }}
-          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
             viewMode === '2d'
-              ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-              : 'bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              ? 'bg-indigo-600/80 text-white shadow-sm drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/10'
           }`}
           title="2D Draufsicht"
         >
-          2D Oben
+          2D
         </button>
 
         <button
@@ -182,14 +182,14 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
             e.stopPropagation();
             onOrientationChange(45, 55, '3d');
           }}
-          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
             viewMode === '3d'
-              ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-              : 'bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              ? 'bg-indigo-600/80 text-white shadow-sm drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/10'
           }`}
           title="3D Isometrisch"
         >
-          3D Iso
+          3D
         </button>
       </div>
     </div>
