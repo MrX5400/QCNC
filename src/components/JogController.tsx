@@ -111,6 +111,31 @@ export const JogController: React.FC<JogControllerProps> = ({
     }
   };
 
+  const handleTouchStartAxis = (e: React.TouchEvent, key: string, axis: 'X' | 'Y' | 'Z', dir: number) => {
+    if (e.cancelable) e.preventDefault();
+    if (jogMode === 'continuous') {
+      handleStartContinuous(key, axis, dir);
+    } else {
+      handleStepJog(axis, dir);
+    }
+  };
+
+  const handleTouchEndAxis = (e: React.TouchEvent) => {
+    if (e.cancelable) e.preventDefault();
+    if (jogMode === 'continuous') {
+      handleStopContinuous();
+    }
+  };
+
+  const handleTouchStartDiag = (e: React.TouchEvent, key: string, dirX: number, dirY: number) => {
+    if (e.cancelable) e.preventDefault();
+    if (jogMode === 'continuous') {
+      handleStartContinuousDiagonal(key, dirX, dirY);
+    } else {
+      handleStepDiagonalJog(dirX, dirY);
+    }
+  };
+
   // Keyboard Jogging Listener (when not inside input/textarea)
   useEffect(() => {
     if (!enableKeyboardJog) return;
@@ -345,10 +370,10 @@ export const JogController: React.FC<JogControllerProps> = ({
             onMouseDown={jogMode === 'continuous' ? () => handleStartContinuous('Y+', 'Y', 1) : undefined}
             onMouseUp={jogMode === 'continuous' ? handleStopContinuous : undefined}
             onMouseLeave={jogMode === 'continuous' ? handleStopContinuous : undefined}
-            onTouchStart={jogMode === 'continuous' ? () => handleStartContinuous('Y+', 'Y', 1) : undefined}
-            onTouchEnd={jogMode === 'continuous' ? handleStopContinuous : undefined}
+            onTouchStart={(e) => handleTouchStartAxis(e, 'Y+', 'Y', 1)}
+            onTouchEnd={handleTouchEndAxis}
             onClick={jogMode === 'step' ? () => handleStepJog('Y', 1) : undefined}
-            className={`absolute top-2 left-1/2 -translate-x-1/2 w-14 h-12 rounded-t-2xl rounded-b-md flex flex-col items-center justify-center transition-all shadow-md active:scale-95 select-none ${
+            className={`absolute top-2 left-1/2 -translate-x-1/2 w-14 h-14 rounded-t-2xl rounded-b-md flex flex-col items-center justify-center transition-all shadow-md active:scale-95 select-none touch-none ${
               activeContinuousKey === 'Y+'
                 ? 'bg-cyan-500 text-slate-950 shadow-cyan-500/50 scale-95 ring-2 ring-cyan-300'
                 : 'bg-gradient-to-b from-cyan-950/80 to-slate-900 hover:from-cyan-900 hover:to-slate-800 border border-cyan-800/50 text-cyan-400 hover:text-cyan-200'
@@ -364,10 +389,10 @@ export const JogController: React.FC<JogControllerProps> = ({
             onMouseDown={jogMode === 'continuous' ? () => handleStartContinuous('Y-', 'Y', -1) : undefined}
             onMouseUp={jogMode === 'continuous' ? handleStopContinuous : undefined}
             onMouseLeave={jogMode === 'continuous' ? handleStopContinuous : undefined}
-            onTouchStart={jogMode === 'continuous' ? () => handleStartContinuous('Y-', 'Y', -1) : undefined}
-            onTouchEnd={jogMode === 'continuous' ? handleStopContinuous : undefined}
+            onTouchStart={(e) => handleTouchStartAxis(e, 'Y-', 'Y', -1)}
+            onTouchEnd={handleTouchEndAxis}
             onClick={jogMode === 'step' ? () => handleStepJog('Y', -1) : undefined}
-            className={`absolute bottom-2 left-1/2 -translate-x-1/2 w-14 h-12 rounded-b-2xl rounded-t-md flex flex-col items-center justify-center transition-all shadow-md active:scale-95 select-none ${
+            className={`absolute bottom-2 left-1/2 -translate-x-1/2 w-14 h-14 rounded-b-2xl rounded-t-md flex flex-col items-center justify-center transition-all shadow-md active:scale-95 select-none touch-none ${
               activeContinuousKey === 'Y-'
                 ? 'bg-cyan-500 text-slate-950 shadow-cyan-500/50 scale-95 ring-2 ring-cyan-300'
                 : 'bg-gradient-to-t from-cyan-950/80 to-slate-900 hover:from-cyan-900 hover:to-slate-800 border border-cyan-800/50 text-cyan-400 hover:text-cyan-200'
@@ -383,10 +408,10 @@ export const JogController: React.FC<JogControllerProps> = ({
             onMouseDown={jogMode === 'continuous' ? () => handleStartContinuous('X-', 'X', -1) : undefined}
             onMouseUp={jogMode === 'continuous' ? handleStopContinuous : undefined}
             onMouseLeave={jogMode === 'continuous' ? handleStopContinuous : undefined}
-            onTouchStart={jogMode === 'continuous' ? () => handleStartContinuous('X-', 'X', -1) : undefined}
-            onTouchEnd={jogMode === 'continuous' ? handleStopContinuous : undefined}
+            onTouchStart={(e) => handleTouchStartAxis(e, 'X-', 'X', -1)}
+            onTouchEnd={handleTouchEndAxis}
             onClick={jogMode === 'step' ? () => handleStepJog('X', -1) : undefined}
-            className={`absolute left-2 top-1/2 -translate-y-1/2 w-12 h-14 rounded-l-2xl rounded-r-md flex flex-col items-center justify-center transition-all shadow-md active:scale-95 select-none ${
+            className={`absolute left-2 top-1/2 -translate-y-1/2 w-14 h-14 rounded-l-2xl rounded-r-md flex flex-col items-center justify-center transition-all shadow-md active:scale-95 select-none touch-none ${
               activeContinuousKey === 'X-'
                 ? 'bg-rose-500 text-slate-950 shadow-rose-500/50 scale-95 ring-2 ring-rose-300'
                 : 'bg-gradient-to-r from-rose-950/80 to-slate-900 hover:from-rose-900 hover:to-slate-800 border border-rose-800/50 text-rose-400 hover:text-rose-200'
@@ -404,10 +429,10 @@ export const JogController: React.FC<JogControllerProps> = ({
             onMouseDown={jogMode === 'continuous' ? () => handleStartContinuous('X+', 'X', 1) : undefined}
             onMouseUp={jogMode === 'continuous' ? handleStopContinuous : undefined}
             onMouseLeave={jogMode === 'continuous' ? handleStopContinuous : undefined}
-            onTouchStart={jogMode === 'continuous' ? () => handleStartContinuous('X+', 'X', 1) : undefined}
-            onTouchEnd={jogMode === 'continuous' ? handleStopContinuous : undefined}
+            onTouchStart={(e) => handleTouchStartAxis(e, 'X+', 'X', 1)}
+            onTouchEnd={handleTouchEndAxis}
             onClick={jogMode === 'step' ? () => handleStepJog('X', 1) : undefined}
-            className={`absolute right-2 top-1/2 -translate-y-1/2 w-12 h-14 rounded-r-2xl rounded-l-md flex flex-col items-center justify-center transition-all shadow-md active:scale-95 select-none ${
+            className={`absolute right-2 top-1/2 -translate-y-1/2 w-14 h-14 rounded-r-2xl rounded-l-md flex flex-col items-center justify-center transition-all shadow-md active:scale-95 select-none touch-none ${
               activeContinuousKey === 'X+'
                 ? 'bg-rose-500 text-slate-950 shadow-rose-500/50 scale-95 ring-2 ring-rose-300'
                 : 'bg-gradient-to-l from-rose-950/80 to-slate-900 hover:from-rose-900 hover:to-slate-800 border border-rose-800/50 text-rose-400 hover:text-rose-200'
@@ -426,10 +451,10 @@ export const JogController: React.FC<JogControllerProps> = ({
             onMouseDown={jogMode === 'continuous' ? () => handleStartContinuousDiagonal('NW', -1, 1) : undefined}
             onMouseUp={jogMode === 'continuous' ? handleStopContinuous : undefined}
             onMouseLeave={jogMode === 'continuous' ? handleStopContinuous : undefined}
-            onTouchStart={jogMode === 'continuous' ? () => handleStartContinuousDiagonal('NW', -1, 1) : undefined}
-            onTouchEnd={jogMode === 'continuous' ? handleStopContinuous : undefined}
+            onTouchStart={(e) => handleTouchStartDiag(e, 'NW', -1, 1)}
+            onTouchEnd={handleTouchEndAxis}
             onClick={jogMode === 'step' ? () => handleStepDiagonalJog(-1, 1) : undefined}
-            className={`absolute top-4 left-4 w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-sm active:scale-90 ${
+            className={`absolute top-4 left-4 w-11 h-11 rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-90 touch-none select-none ${
               activeContinuousKey === 'NW'
                 ? 'bg-amber-500 text-slate-950'
                 : 'bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-800'
@@ -444,10 +469,10 @@ export const JogController: React.FC<JogControllerProps> = ({
             onMouseDown={jogMode === 'continuous' ? () => handleStartContinuousDiagonal('NE', 1, 1) : undefined}
             onMouseUp={jogMode === 'continuous' ? handleStopContinuous : undefined}
             onMouseLeave={jogMode === 'continuous' ? handleStopContinuous : undefined}
-            onTouchStart={jogMode === 'continuous' ? () => handleStartContinuousDiagonal('NE', 1, 1) : undefined}
-            onTouchEnd={jogMode === 'continuous' ? handleStopContinuous : undefined}
+            onTouchStart={(e) => handleTouchStartDiag(e, 'NE', 1, 1)}
+            onTouchEnd={handleTouchEndAxis}
             onClick={jogMode === 'step' ? () => handleStepDiagonalJog(1, 1) : undefined}
-            className={`absolute top-4 right-4 w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-sm active:scale-90 ${
+            className={`absolute top-4 right-4 w-11 h-11 rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-90 touch-none select-none ${
               activeContinuousKey === 'NE'
                 ? 'bg-amber-500 text-slate-950'
                 : 'bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-800'
@@ -462,10 +487,10 @@ export const JogController: React.FC<JogControllerProps> = ({
             onMouseDown={jogMode === 'continuous' ? () => handleStartContinuousDiagonal('SW', -1, -1) : undefined}
             onMouseUp={jogMode === 'continuous' ? handleStopContinuous : undefined}
             onMouseLeave={jogMode === 'continuous' ? handleStopContinuous : undefined}
-            onTouchStart={jogMode === 'continuous' ? () => handleStartContinuousDiagonal('SW', -1, -1) : undefined}
-            onTouchEnd={jogMode === 'continuous' ? handleStopContinuous : undefined}
+            onTouchStart={(e) => handleTouchStartDiag(e, 'SW', -1, -1)}
+            onTouchEnd={handleTouchEndAxis}
             onClick={jogMode === 'step' ? () => handleStepDiagonalJog(-1, -1) : undefined}
-            className={`absolute bottom-4 left-4 w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-sm active:scale-90 ${
+            className={`absolute bottom-4 left-4 w-11 h-11 rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-90 touch-none select-none ${
               activeContinuousKey === 'SW'
                 ? 'bg-amber-500 text-slate-950'
                 : 'bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-800'
@@ -480,10 +505,10 @@ export const JogController: React.FC<JogControllerProps> = ({
             onMouseDown={jogMode === 'continuous' ? () => handleStartContinuousDiagonal('SE', 1, -1) : undefined}
             onMouseUp={jogMode === 'continuous' ? handleStopContinuous : undefined}
             onMouseLeave={jogMode === 'continuous' ? handleStopContinuous : undefined}
-            onTouchStart={jogMode === 'continuous' ? () => handleStartContinuousDiagonal('SE', 1, -1) : undefined}
-            onTouchEnd={jogMode === 'continuous' ? handleStopContinuous : undefined}
+            onTouchStart={(e) => handleTouchStartDiag(e, 'SE', 1, -1)}
+            onTouchEnd={handleTouchEndAxis}
             onClick={jogMode === 'step' ? () => handleStepDiagonalJog(1, -1) : undefined}
-            className={`absolute bottom-4 right-4 w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-sm active:scale-90 ${
+            className={`absolute bottom-4 right-4 w-11 h-11 rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-90 touch-none select-none ${
               activeContinuousKey === 'SE'
                 ? 'bg-amber-500 text-slate-950'
                 : 'bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-800'
@@ -496,7 +521,7 @@ export const JogController: React.FC<JogControllerProps> = ({
           {/* CENTER: Return to Zero / Reticle */}
           <button
             onClick={() => grbl.returnToZero()}
-            className="w-12 h-12 rounded-full bg-indigo-600/30 hover:bg-indigo-600 active:bg-indigo-700 border-2 border-indigo-500/60 flex flex-col items-center justify-center text-indigo-300 hover:text-white transition-all shadow-lg hover:shadow-indigo-500/50 active:scale-90 select-none z-10"
+            className="w-12 h-12 rounded-full bg-indigo-600/30 hover:bg-indigo-600 active:bg-indigo-700 border-2 border-indigo-500/60 flex flex-col items-center justify-center text-indigo-300 hover:text-white transition-all shadow-lg hover:shadow-indigo-500/50 active:scale-90 select-none touch-none z-10"
             title="Fahre zu Nullpunkt (G0 X0 Y0) [Home-Taste]"
           >
             <Crosshair className="w-5 h-5" />
@@ -516,10 +541,10 @@ export const JogController: React.FC<JogControllerProps> = ({
             onMouseDown={jogMode === 'continuous' ? () => handleStartContinuous('Z+', 'Z', 1) : undefined}
             onMouseUp={jogMode === 'continuous' ? handleStopContinuous : undefined}
             onMouseLeave={jogMode === 'continuous' ? handleStopContinuous : undefined}
-            onTouchStart={jogMode === 'continuous' ? () => handleStartContinuous('Z+', 'Z', 1) : undefined}
-            onTouchEnd={jogMode === 'continuous' ? handleStopContinuous : undefined}
+            onTouchStart={(e) => handleTouchStartAxis(e, 'Z+', 'Z', 1)}
+            onTouchEnd={handleTouchEndAxis}
             onClick={jogMode === 'step' ? () => handleStepJog('Z', 1) : undefined}
-            className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center font-bold transition-all shadow-md active:scale-95 select-none ${
+            className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center font-bold transition-all shadow-md active:scale-95 select-none touch-none ${
               activeContinuousKey === 'Z+'
                 ? 'bg-indigo-500 text-white scale-95 shadow-indigo-500/50 ring-2 ring-indigo-300'
                 : 'bg-gradient-to-b from-indigo-950/80 to-slate-900 hover:from-indigo-900 hover:to-slate-800 border border-indigo-800/50 text-indigo-400 hover:text-indigo-200'
@@ -533,7 +558,7 @@ export const JogController: React.FC<JogControllerProps> = ({
           {/* Pen / Tool state toggle in middle */}
           <button
             onClick={handleTogglePen}
-            className={`w-12 h-10 rounded-lg flex flex-col items-center justify-center text-[9px] font-bold transition-all shadow-sm ${
+            className={`w-14 h-12 rounded-lg flex flex-col items-center justify-center text-[9px] font-bold transition-all shadow-sm select-none touch-none ${
               isPenDown
                 ? 'bg-emerald-600 text-white border border-emerald-400 shadow-emerald-500/30 shadow-lg'
                 : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
@@ -549,10 +574,10 @@ export const JogController: React.FC<JogControllerProps> = ({
             onMouseDown={jogMode === 'continuous' ? () => handleStartContinuous('Z-', 'Z', -1) : undefined}
             onMouseUp={jogMode === 'continuous' ? handleStopContinuous : undefined}
             onMouseLeave={jogMode === 'continuous' ? handleStopContinuous : undefined}
-            onTouchStart={jogMode === 'continuous' ? () => handleStartContinuous('Z-', 'Z', -1) : undefined}
-            onTouchEnd={jogMode === 'continuous' ? handleStopContinuous : undefined}
+            onTouchStart={(e) => handleTouchStartAxis(e, 'Z-', 'Z', -1)}
+            onTouchEnd={handleTouchEndAxis}
             onClick={jogMode === 'step' ? () => handleStepJog('Z', -1) : undefined}
-            className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center font-bold transition-all shadow-md active:scale-95 select-none ${
+            className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center font-bold transition-all shadow-md active:scale-95 select-none touch-none ${
               activeContinuousKey === 'Z-'
                 ? 'bg-indigo-500 text-white scale-95 shadow-indigo-500/50 ring-2 ring-indigo-300'
                 : 'bg-gradient-to-t from-indigo-950/80 to-slate-900 hover:from-indigo-900 hover:to-slate-800 border border-indigo-800/50 text-indigo-400 hover:text-indigo-200'

@@ -189,15 +189,15 @@ export const CustomButtonsBar: React.FC<CustomButtonsBarProps> = ({
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
+            className="p-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors touch-none"
             title={isCollapsed ? 'Makroleiste aufklappen' : 'Makroleiste minimieren'}
           >
-            {isCollapsed ? <ChevronRight className="w-3.5 h-3.5 text-amber-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+            {isCollapsed ? <ChevronRight className="w-5 h-5 text-amber-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
           </button>
 
           <div 
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="flex items-center gap-1 cursor-pointer font-semibold text-[11px] text-slate-300 hover:text-white transition-colors"
+            className="flex items-center gap-1 cursor-pointer font-semibold text-[11px] text-slate-300 hover:text-white transition-colors min-h-[44px] select-none touch-none"
             title="Klicken zum Ein-/Ausklappen"
           >
             <Zap className="w-3.5 h-3.5 text-amber-400" />
@@ -244,7 +244,7 @@ export const CustomButtonsBar: React.FC<CustomButtonsBarProps> = ({
                   key={btn.id}
                   onClick={() => handleButtonClick(btn)}
                   disabled={!!executingMacroId}
-                  className={`h-7 px-2.5 rounded text-[11px] font-medium border flex items-center gap-1.5 shrink-0 transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer ${getColorClasses(
+                  className={`min-h-[44px] px-4 rounded text-[11px] font-medium border flex items-center gap-1.5 shrink-0 transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer touch-none ${getColorClasses(
                     btn.color,
                     isRunning
                   )}`}
@@ -273,7 +273,7 @@ export const CustomButtonsBar: React.FC<CustomButtonsBarProps> = ({
           {!isCollapsed && (
             <button
               onClick={() => setIsWrapMode(!isWrapMode)}
-              className={`p-1 rounded text-xs transition-colors ${
+              className={`min-h-[44px] min-w-[44px] flex items-center justify-center p-1 rounded text-xs transition-colors touch-none ${
                 isWrapMode 
                   ? 'bg-purple-900/60 text-purple-300 border border-purple-700' 
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
@@ -286,7 +286,7 @@ export const CustomButtonsBar: React.FC<CustomButtonsBarProps> = ({
 
           <button
             onClick={onOpenManageModal}
-            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded border border-slate-700 font-medium text-[11px] flex items-center gap-1 transition-colors"
+            className="min-h-[44px] px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded border border-slate-700 font-medium text-[11px] flex items-center justify-center gap-1.5 transition-colors touch-none"
             title="Makros verwalten, anordnen oder neue erstellen"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" />
@@ -296,7 +296,7 @@ export const CustomButtonsBar: React.FC<CustomButtonsBarProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded text-slate-400 hover:text-rose-300 hover:bg-rose-950/50 border border-transparent hover:border-rose-800/40 transition-colors"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center p-1 rounded text-slate-400 hover:text-rose-300 hover:bg-rose-950/50 border border-transparent hover:border-rose-800/40 transition-colors touch-none"
               title="Makroleiste komplett ausblenden (mehr Baufläche)"
             >
               <X className="w-3.5 h-3.5" />

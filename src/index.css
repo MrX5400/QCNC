@@ -30,6 +30,15 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   overflow: hidden;
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+button, canvas {
+  touch-action: none !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* ========================================================================= */
