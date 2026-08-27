@@ -879,9 +879,14 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // A. TOUCHPAD PINCH-TO-ZOOM (Modern trackpads send wheel events with e.ctrlKey=true on pinch)
-    if (e.ctrlKey || e.metaKey) {
-      const zoomDelta = -e.deltaY * 0.012;
+    // Drastically reduced speeds for smooth OrbitControls-like touchpad usage
+    // Native trackpad momentum acts as our "enableDamping = true" physics engine
+    const PAN_SPEED = 0.4;
+    const ROTATE_SPEED = 0.15;
+    const ZOOM_SPEED = 0.003;
+
+    const applyZoom = (deltaY: number) => {
+      const zoomDelta = -deltaY * ZOOM_SPEED;
       const zoomFactor = Math.exp(zoomDelta);
       const newZoom = Math.min(25.0, Math.max(0.12, zoom * zoomFactor));
 
@@ -890,45 +895,44 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
       setZoom(newZoom);
       setPan({ x: newPanX, y: newPanY });
+    };
+
+    // 1. ZOOM: Ctrl/Cmd + Pinch/Scroll
+    if (e.ctrlKey || e.metaKey) {
+      applyZoom(e.deltaY);
       return;
     }
 
-    // B. TOUCHPAD 2-FINGER PAN / ORBIT SWIPE (e.ctrlKey === false)
+    // 2. PAN: Shift + 2-Finger Swipe / Scroll
+    if (e.shiftKey) {
+      // Standard mouse: shift+scroll = horizontal pan. Trackpad = 2D pan.
+      const dx = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+      const dy = e.deltaX !== 0 ? e.deltaY : 0;
+      setPan(prev => ({ x: prev.x - dx * PAN_SPEED, y: prev.y - dy * PAN_SPEED }));
+      return;
+    }
+
+    // 3. DEFAULT (No modifiers)
+    // Detect standard mouse wheel (large vertical steps) vs touchpad (smooth 2D swiping)
+    const isMouseWheel = Math.abs(e.deltaX) === 0 && Math.abs(e.deltaY) >= 20 && e.deltaY % 1 === 0;
+
     if (viewMode === '2d') {
-      // If horizontal delta exists or shift is held, pan continuously
-      if (Math.abs(e.deltaX) > 0 || e.shiftKey) {
-        const dx = e.shiftKey ? -e.deltaY : -e.deltaX;
-        const dy = e.shiftKey ? 0 : -e.deltaY;
-        setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-        return;
+      if (isMouseWheel) {
+        // Standard mouse wheel zooms in 2D
+        applyZoom(e.deltaY);
+      } else {
+        // Touchpad swipe pans in 2D
+        setPan(prev => ({ x: prev.x - e.deltaX * PAN_SPEED, y: prev.y - e.deltaY * PAN_SPEED }));
       }
-
-      // Vertical wheel: Standard mouse wheel zoom centered at cursor
-      const zoomFactor = e.deltaY > 0 ? 0.88 : 1.14;
-      const newZoom = Math.min(25.0, Math.max(0.12, zoom * zoomFactor));
-      const newPanX = mouseX - (mouseX - pan.x) * (newZoom / zoom);
-      const newPanY = mouseY - (mouseY - pan.y) * (newZoom / zoom);
-
-      setZoom(newZoom);
-      setPan({ x: newPanX, y: newPanY });
     } else {
       // 3D Isometric Mode
-      if (e.shiftKey) {
-        // Shift + Trackpad swipe: 3D Pan
-        setPan(prev => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
-      } else if (Math.abs(e.deltaX) > 0 && Math.abs(e.deltaX) > Math.abs(e.deltaY) * 0.5) {
-        // 2-finger horizontal swipe rotates 3D Orbit
-        setOrbitYaw(prev => prev + e.deltaX * 0.4);
-        setOrbitPitch(prev => Math.min(85, Math.max(10, prev - e.deltaY * 0.4)));
+      if (isMouseWheel) {
+        // Standard mouse wheel zooms in 3D
+        applyZoom(e.deltaY);
       } else {
-        // Standard zoom in 3D centered at cursor
-        const zoomFactor = e.deltaY > 0 ? 0.88 : 1.14;
-        const newZoom = Math.min(25.0, Math.max(0.12, zoom * zoomFactor));
-        const newPanX = mouseX - (mouseX - pan.x) * (newZoom / zoom);
-        const newPanY = mouseY - (mouseY - pan.y) * (newZoom / zoom);
-
-        setZoom(newZoom);
-        setPan({ x: newPanX, y: newPanY });
+        // Touchpad swipe rotates in 3D
+        setOrbitYaw(prev => prev + e.deltaX * ROTATE_SPEED);
+        setOrbitPitch(prev => Math.min(85, Math.max(10, prev - e.deltaY * ROTATE_SPEED)));
       }
     }
   };
