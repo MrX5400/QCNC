@@ -453,6 +453,35 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
   const [pathOrderStrategy, setPathOrderStrategy] = useState<PathOrderStrategy>('fastest');
 
   // --- Interactive Preview & Viewport State ---
+  const [leftPanelWidth, setLeftPanelWidth] = useState<number>(480);
+  
+  const handleResizeLeftPanelStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    const startX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const startWidth = leftPanelWidth;
+
+    const handleMouseMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const currentX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : (moveEvent as MouseEvent).clientX;
+      const delta = currentX - startX; // Dragging right increases left panel width
+      const newWidth = Math.max(300, Math.min(800, startWidth + delta));
+      setLeftPanelWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleMouseMove);
+      document.removeEventListener('touchend', handleMouseUp);
+      document.body.style.cursor = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleMouseMove, { passive: false });
+    document.addEventListener('touchend', handleMouseUp);
+  };
+
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [orbitYaw, setOrbitYaw] = useState<number>(35); // degrees
@@ -3789,7 +3818,10 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
       {/* ========================================================================= */}
       {/* LEFT COLUMN: 3-Step Wizard & Configuration Panel (Live-Reacting)           */}
       {/* ========================================================================= */}
-      <div className="w-full lg:w-[480px] flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex-shrink-0">
+      <div 
+        className="w-full lg:w-auto flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex-shrink-0"
+        style={{ width: window.innerWidth >= 1024 ? leftPanelWidth : '100%' }}
+      >
         {/* Panel Header */}
         <div className="p-3.5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -6189,6 +6221,15 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             )}
           </button>
         </div>
+      </div>
+
+      {/* Resizer */}
+      <div 
+        className="hidden lg:flex w-2 -mx-1.5 hover:bg-indigo-500/50 cursor-col-resize justify-center items-center rounded transition-colors group z-10 shrink-0"
+        onMouseDown={handleResizeLeftPanelStart}
+        onTouchStart={handleResizeLeftPanelStart}
+      >
+        <div className="w-0.5 h-12 bg-slate-700 group-hover:bg-indigo-400 rounded-full transition-colors" />
       </div>
 
       {/* ========================================================================= */}
