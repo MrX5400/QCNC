@@ -48,6 +48,9 @@ import {
   Hand,
   Lock,
   Unlock,
+  Target,
+  Pause,
+  Play,
   Ruler,
   Search,
   Scaling,
@@ -74,15 +77,20 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  FastForward,
   Ratio,
   Crop,
   SquareDashed,
+  LayoutGrid,
 } from 'lucide-react';
 import { 
   ActuatorType, 
   MachineProfile, 
   ParsedGcode, 
-  RasterSettings 
+  RasterSettings,
+  GrblState
 } from '../types/cnc';
 import { 
   generateHersheyText, 
@@ -109,6 +117,8 @@ import {
 } from '../services/vectorRasterGenerator';
 import { applyDragKnifeCompensation, CompensatedPathResult } from '../services/dragKnifeCorrection';
 import { parseGcode } from '../services/gcodeParser';
+import { gcodeGenerator } from '../services/gcodeGenerator';
+import { grbl } from '../services/grblService';
 import { parseDxf } from '../services/dxfParser';
 import { LaserDatabaseModal } from './LaserDatabaseModal';
 import { LaserMaterialPreset } from '../services/laserDatabaseService';
@@ -120,6 +130,9 @@ interface GeneratorSuiteProps {
   onProfileUpdate: (updated: MachineProfile) => void;
   onGcodeGenerated: (parsed: ParsedGcode) => void;
   onSwitchToVisualizer?: () => void;
+  cncControls?: React.ReactNode;
+  liveState?: GrblState;
+  parsedGcode?: ParsedGcode | null;
 }
 
 type SourceType = 'file' | 'text' | 'shapes' | 'raster';
@@ -146,12 +159,22 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
   onProfileUpdate,
   onGcodeGenerated,
   onSwitchToVisualizer,
+  cncControls,
+  liveState,
+  parsedGcode,
 }) => {
   const { t } = useI18n();
   const { uiScale, theme } = useThemeLanguage();
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'design' | 'steuerung'>('design');
 
   // --- Multi-Element Composition Workspace State (Multi-Selection Support) ---
   const [compositionElements, setCompositionElements] = useState<CompositionElement[]>([]);
+  const [mousePos, setMousePos] = useState<{x: number, y: number}>({ x: 0, y: 0 });
+  const [simIndex, setSimIndex] = useState<number>(0);
+  const [isSimPlaying, setIsSimPlaying] = useState<boolean>(false);
+  const [simSpeed, setSimSpeed] = useState<number>(1);
+  const [jogToast, setJogToast] = useState<{x: number, y: number} | null>(null);
+  const [doubleClickTarget, setDoubleClickTarget] = useState<{x: number, y: number, time: number} | null>(null);
   const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
   const selectedElementId = selectedElementIds.length === 1 ? selectedElementIds[0] : (selectedElementIds.length > 0 ? selectedElementIds[0] : null);
   const setSelectedElementId = (id: string | null) => {
@@ -484,8 +507,8 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
     const handleMouseMove = (moveEvent: MouseEvent | TouchEvent) => {
       const currentX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : (moveEvent as MouseEvent).clientX;
-      const delta = currentX - startX; // Dragging right increases left panel width
-      const newWidth = Math.max(300, Math.min(800, startWidth + delta));
+      const delta = currentX - startX; 
+      const newWidth = Math.max(300, Math.min(800, startWidth - delta));
       setLeftPanelWidth(newWidth);
     };
 
@@ -2063,7 +2086,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
         dragKnifeResult.compensatedSegments.forEach(seg => {
           if ((seg.type === 'SWIVEL_ARC' || (seg as any).type === 'swivel') && showSwivelArcs) {
             ctx.save();
-            ctx.strokeStyle = theme.accentColor || '#f59e0b';
+            ctx.strokeStyle = '#f59e0b';
             ctx.lineWidth = 2.5;
             ctx.beginPath();
             
@@ -2474,6 +2497,46 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
         ctx.restore();
       }
 
+      // Live Machine Position Crosshair 3D
+      if (liveState && (liveState.status === 'Run' || liveState.status === 'Hold' || liveState.status === 'Idle')) {
+        const mx = liveState.wpos.x;
+        const my = liveState.wpos.y;
+        const mz = liveState.wpos.z;
+        const mp = project3D(mx, my, mz);
+        
+        ctx.save();
+        ctx.strokeStyle = '#ef4444'; // Red crosshair
+        ctx.lineWidth = 1.5;
+        
+        // Draw 3D Crosshair
+        ctx.beginPath();
+        ctx.moveTo(mp.sx - 10, mp.sy);
+        ctx.lineTo(mp.sx + 10, mp.sy);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(mp.sx, mp.sy - 10);
+        ctx.lineTo(mp.sx, mp.sy + 10);
+        ctx.stroke();
+        
+        // Z-axis indicator line down to bed
+        const bedP = project3D(mx, my, 0);
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(mp.sx, mp.sy);
+        ctx.lineTo(bedP.sx, bedP.sy);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(mp.sx, mp.sy, 4, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+        ctx.fill();
+        ctx.setLineDash([]);
+        ctx.stroke();
+        ctx.restore();
+      }
+
       ctx.restore();
     } else {
       // ==========================================
@@ -2539,7 +2602,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             ctx.setLineDash([]);
           } else if ((seg.type === 'SWIVEL_ARC' || (seg as any).type === 'swivel') && showSwivelArcs) {
             // Bright Amber Arc with Blade Pivot Indicator (Rendered as circular curve if center exists)
-            ctx.strokeStyle = theme.accentColor || '#f59e0b';
+            ctx.strokeStyle = '#f59e0b';
             ctx.lineWidth = 3;
             ctx.beginPath();
             if (seg.center) {
@@ -3023,6 +3086,58 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
         ctx.fill();
       }
 
+      // Live Machine Position Crosshair
+      if (liveState && (liveState.status === 'Run' || liveState.status === 'Hold' || liveState.status === 'Idle')) {
+        const mx = liveState.wpos.x;
+        const my = liveState.wpos.y;
+        
+        ctx.strokeStyle = '#ef4444'; // Red crosshair
+        ctx.lineWidth = 1.5;
+        
+        // Horizontal line
+        ctx.beginPath();
+        ctx.moveTo(toScreenX(mx) - 10, toScreenY(my));
+        ctx.lineTo(toScreenX(mx) + 10, toScreenY(my));
+        ctx.stroke();
+        
+        // Vertical line
+        ctx.beginPath();
+        ctx.moveTo(toScreenX(mx), toScreenY(my) - 10);
+        ctx.lineTo(toScreenX(mx), toScreenY(my) + 10);
+        ctx.stroke();
+        
+        // Center circle
+        ctx.beginPath();
+        ctx.arc(toScreenX(mx), toScreenY(my), 4, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // Double Click Jog Target Animation
+      if (doubleClickTarget) {
+        const timeSince = Date.now() - doubleClickTarget.time;
+        if (timeSince < 600) {
+          const progress = timeSince / 600;
+          const radius = 15 - progress * 10;
+          const alpha = 1 - progress;
+          
+          ctx.beginPath();
+          ctx.arc(toScreenX(doubleClickTarget.x), toScreenY(doubleClickTarget.y), radius, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          
+          ctx.beginPath();
+          ctx.arc(toScreenX(doubleClickTarget.x), toScreenY(doubleClickTarget.y), 3, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(56, 189, 248, ${alpha})`;
+          ctx.fill();
+
+          // Request animation frame to keep drawing this
+          requestAnimationFrame(renderPreview);
+        }
+      }
+
       ctx.restore();
     }
   }, [
@@ -3056,8 +3171,29 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
     showOriginMarker,
     optimizeOrder,
     objectOrderMode,
-    pathOrderStrategy
+    pathOrderStrategy,
+    liveState,
+    doubleClickTarget
   ]);
+
+  useEffect(() => {
+    if (!isSimPlaying || !parsedGcode || parsedGcode.segments.length === 0) return;
+    const interval = setInterval(() => {
+      setSimIndex((prev) => {
+        if (prev >= parsedGcode.segments.length - 1) {
+          setIsSimPlaying(false);
+          return 0;
+        }
+        return Math.min(parsedGcode.segments.length - 1, prev + Math.max(1, Math.round(simSpeed * 2)));
+      });
+    }, 30);
+    return () => clearInterval(interval);
+  }, [isSimPlaying, simSpeed, parsedGcode]);
+
+  useEffect(() => {
+    setSimIndex(0);
+    setIsSimPlaying(false);
+  }, [parsedGcode]);
 
   // Keep preview rendered on state changes and resize
   useEffect(() => {
@@ -3412,6 +3548,31 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
     }
   };
 
+  // --- Double Click to Jog ---
+  const handleDoubleClick = async (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Only travel if we are in CNC Steuerung, or maybe always if connected? 
+    // Wait, let's just make it always work if they want.
+    const mm = screenToBedMm(e.clientX, e.clientY);
+    const targetX = Math.max(0, Math.min(currentProfile.bedWidth, Number(mm.x.toFixed(2))));
+    const targetY = Math.max(0, Math.min(currentProfile.bedHeight, Number(mm.y.toFixed(2))));
+
+    setDoubleClickTarget({ x: targetX, y: targetY, time: Date.now() });
+    setJogToast({ x: targetX, y: targetY });
+    setTimeout(() => setJogToast(null), 3000);
+
+    const feed = currentProfile.travelFeedrate || 2000;
+    const cmd = `G0 X${targetX.toFixed(2)} Y${targetY.toFixed(2)} F${feed}`;
+    try {
+      if (liveState?.status === 'Run' || liveState?.status === 'Hold') {
+        // Can't jog while running
+      } else {
+        await grbl.send(cmd);
+      }
+    } catch (error) {
+      console.error('Jog error:', error);
+    }
+  };
+
   // --- Mouse Orbit, Pan, Zoom, Multi-Object Dragging & Box Marquee Handlers ---
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     // 1. Right Click (button === 2)
@@ -3564,6 +3725,9 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const mm = screenToBedMm(e.clientX, e.clientY);
+    setMousePos({ x: mm.x, y: mm.y });
+
     if (dragMode === 'orbit') {
       const dx = e.clientX - dragStart.x;
       const dy = e.clientY - dragStart.y;
@@ -3852,13 +4016,15 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
     navigator.clipboard.writeText(generatedGcode);
   };
 
-  const handleLoadIntoVisualizer = () => {
-    const parsed = parseGcode(generatedGcode, currentProfile.penUpZ || 2);
-    onGcodeGenerated(parsed);
-    if (onSwitchToVisualizer) {
-      onSwitchToVisualizer();
-    }
-  };
+  // Auto-sync generated G-code to main visualizer
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const parsed = parseGcode(generatedGcode, currentProfile.penUpZ || 2);
+      onGcodeGenerated(parsed);
+    }, 500); // 500ms debounce
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generatedGcode, currentProfile.penUpZ]);
 
   const handleApplyMaterialPreset = (preset: any) => {
     if (preset.feedrate) {
@@ -3879,7 +4045,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col lg:flex-row h-full overflow-hidden gap-3 text-slate-200 select-none">
+    <div className="flex-1 flex flex-col lg:flex-row-reverse h-full overflow-hidden gap-3 text-slate-200 select-none">
       {/* Hidden off-screen canvas for raster image processing */}
       <canvas ref={rasterCanvasRef} className="hidden" />
 
@@ -3890,26 +4056,54 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
         className="w-full lg:w-auto flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex-shrink-0"
         style={{ width: window.innerWidth >= 1024 ? leftPanelWidth : '100%' }}
       >
-        {/* Panel Header */}
-        <div className="p-3.5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-indigo-400" />
-            <div>
-              <h2 className="font-bold text-slate-100 text-sm">{t.vectorRasterGenerator || 'Vektor & Raster Generator'}</h2>
-              <p className="text-[0.6875rem] text-slate-400">Motiv wählen, Werkzeug definieren & G-Code live generieren</p>
+        {/* Panel Header & Tabs */}
+        <div className="flex flex-col border-b border-slate-800 bg-slate-950/80">
+          <div className="p-2 flex items-center justify-between">
+            <div className="flex bg-slate-900 border border-slate-700 rounded-lg p-0.5 shadow-inner">
+              <button
+                onClick={() => setActiveSidebarTab('design')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
+                  activeSidebarTab === 'design'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Design & Generator</span>
+              </button>
+              {cncControls && (
+                <button
+                  onClick={() => setActiveSidebarTab('steuerung')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
+                    activeSidebarTab === 'steuerung'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>CNC Steuerung</span>
+                </button>
+              )}
             </div>
+            {activeSidebarTab === 'design' && (
+              <button
+                onClick={resetView}
+                className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-md text-[0.6875rem] flex items-center gap-1 transition-colors"
+                title="Ansicht zurücksetzen"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-          <button
-            onClick={resetView}
-            className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-md text-[0.6875rem] flex items-center gap-1 transition-colors"
-            title="Ansicht zurücksetzen"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
+        </div>
+
+        {/* CNC Controls Container */}
+        <div className={`flex-1 h-full overflow-y-auto ${activeSidebarTab === 'steuerung' ? 'block' : 'hidden'}`}>
+          {cncControls}
         </div>
 
         {/* Scrollable Wizard Steps */}
-        <div className="flex-1 overflow-y-auto p-3.5 space-y-4 text-xs">
+        <div className={`flex-1 overflow-y-auto p-3.5 space-y-4 text-xs ${activeSidebarTab === 'design' ? 'block' : 'hidden'}`}>
           {/* ------------------------------------------------------------- */}
           {/* SCHRITT 1: QUELLE / MOTIV WÄHLEN                              */}
           {/* ------------------------------------------------------------- */}
@@ -6243,50 +6437,23 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
           </div>
         </div>
 
-        {/* Panel Footer: Direct Transfer & Export Buttons */}
-        <div className="p-3.5 border-t border-slate-800 bg-slate-950/90 flex items-center justify-between gap-2">
+        <div className="p-3.5 border-t border-slate-800 bg-slate-950/90 flex items-center gap-2">
           <button
             onClick={() => setShowGcodeModal(true)}
-            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors"
+            className="flex-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
             title="G-Code ansehen & kopieren"
           >
             <Code className="w-3.5 h-3.5" />
-            <span>G-Code</span>
+            <span>G-Code ansehen</span>
           </button>
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => handleDownloadGcode('nc')}
-              className="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors"
-              title="G-Code Datei herunterladen (.nc)"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>.NC</span>
-            </button>
-            <button
-              onClick={() => handleDownloadGcode('gcode')}
-              className="px-2 py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 rounded-lg text-xs font-medium transition-colors"
-              title="Als .gcode Datei herunterladen"
-            >
-              .gcode
-            </button>
-          </div>
-
           <button
-            onClick={handleLoadIntoVisualizer}
-            className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-md shadow-indigo-900/30 transition-all hover:scale-[1.02]"
+            onClick={() => handleDownloadGcode('nc')}
+            className="flex-1 px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-colors"
+            title="G-Code Datei herunterladen (.nc)"
           >
-            {loadedSuccess ? (
-              <>
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span className="text-emerald-200">Übertragen!</span>
-              </>
-            ) : (
-              <>
-                <ArrowRight className="w-4 h-4" />
-                <span>In CNC Steuerung laden</span>
-              </>
-            )}
+            <Download className="w-3.5 h-3.5" />
+            <span>Als .NC Speichern</span>
           </button>
         </div>
       </div>
@@ -6301,16 +6468,13 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* RIGHT COLUMN: Interactive Live Result Preview & Real-time Canvas          */}
+      {/* CANVAS AREA: Only the unified Generator Preview is used here              */}
       {/* ========================================================================= */}
-      <div className="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl relative">
-        {/* Top Preview Bar: Statistics, 2D/3D Switches, 3 Menus & Object Browser */}
-        <div className="px-4 py-2 bg-slate-950/90 border-b border-slate-800 flex items-center justify-between flex-wrap gap-2 text-xs">
-          <div className="flex items-center flex-wrap gap-2 sm:gap-2.5">
-            <span className="font-semibold text-slate-200 flex items-center gap-1.5 pr-1 border-r border-slate-800">
-              <Eye className="w-4 h-4 text-indigo-400" />
-              <span>Generator-Fläche</span>
-            </span>
+      <div className="flex-1 flex flex-col h-full overflow-hidden shadow-2xl relative min-w-[300px]">
+        <div className="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden relative">
+          {/* Top Preview Bar: Statistics, 2D/3D Switches, 3 Menus & Object Browser */}
+          <div className="absolute top-0 left-0 right-0 z-10 px-4 py-2 flex items-center justify-between flex-wrap gap-2 text-xs pointer-events-none">
+          <div className="flex items-center flex-wrap gap-2 sm:gap-2.5 pointer-events-auto">
 
 
             {/* 3 MENUS / SWITCHES (USER REQUEST) */}
@@ -6417,7 +6581,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
           </div>
 
           {/* Quick Metrics & Zoom */}
-          <div className="flex items-center gap-3 font-mono text-[0.6875rem] text-slate-400">
+          <div className="flex items-center gap-3 font-mono text-[0.6875rem] text-slate-400 pointer-events-auto">
             <span title="Objekt-Abmessungen" className="hidden sm:inline">
               B: <strong className="text-slate-200">{stats.width}</strong> x H: <strong className="text-slate-200">{stats.height}</strong> mm
             </span>
@@ -7123,6 +7287,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
+            onDoubleClick={handleDoubleClick}
             onWheel={handleWheel}
             className={`w-full h-full block ${
               viewMode === '3d'
@@ -7136,6 +7301,122 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 : 'cursor-default'
             }`}
           />
+
+          {/* Live Tool & Mouse Coordinates Overlay */}
+          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 pointer-events-none">
+            <div className="bg-slate-950/80 backdrop-blur-md border border-slate-700/50 px-2.5 py-1.5 rounded-lg shadow-xl flex items-center gap-2">
+              <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="font-mono text-xs text-slate-300">
+                Maus: <span className="text-white font-semibold">X:{mousePos.x.toFixed(1)} Y:{mousePos.y.toFixed(1)}</span>
+              </span>
+            </div>
+            {liveState && (
+              <div className="bg-slate-950/80 backdrop-blur-md border border-slate-700/50 px-2.5 py-1.5 rounded-lg shadow-xl flex items-center gap-2">
+                <Target className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+                <span className="font-mono text-xs text-slate-300">
+                  CNC: <span className="text-white font-semibold">X:{liveState.wpos.x.toFixed(1)} Y:{liveState.wpos.y.toFixed(1)} Z:{liveState.wpos.z.toFixed(1)}</span>
+                </span>
+              </div>
+            )}
+            {jogToast && (
+              <div className="bg-indigo-600/90 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] text-white font-bold animate-in fade-in slide-in-from-left-2 mt-1 shadow-lg border border-indigo-400/50">
+                G0 X{jogToast.x.toFixed(1)} Y{jogToast.y.toFixed(1)} 
+              </div>
+            )}
+          </div>
+
+          {/* Simulation Controls Overlay (Only visible if we have parsedGcode) */}
+          {parsedGcode && parsedGcode.segments.length > 0 && activeSidebarTab === 'steuerung' && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-md border border-white/10 p-1.5 md:p-2 rounded-xl shadow-2xl flex items-center gap-1.5 md:gap-2 z-10 pointer-events-auto min-w-[320px] md:min-w-[500px]">
+              
+              {/* Previous Step */}
+              <button
+                onClick={() => {
+                  setIsSimPlaying(false);
+                  setSimIndex(Math.max(0, simIndex - 1));
+                }}
+                className="p-1.5 md:p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                title="Einen Schritt zurück"
+              >
+                <ChevronLeft className="w-4 h-4 md:w-4 md:h-4" />
+              </button>
+
+              {/* Play/Pause Button */}
+              <button 
+                className={`p-1.5 md:p-2 rounded-lg transition-all shadow-md ${
+                  isSimPlaying 
+                    ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                }`}
+                onClick={() => setIsSimPlaying(!isSimPlaying)}
+                title={isSimPlaying ? 'Simulation anhalten' : 'Simulation abspielen'}
+              >
+                {isSimPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              </button>
+
+              {/* Next Step */}
+              <button
+                onClick={() => {
+                  setIsSimPlaying(false);
+                  setSimIndex(Math.min(parsedGcode.segments.length - 1, simIndex + 1));
+                }}
+                className="p-1.5 md:p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                title="Einen Schritt vor"
+              >
+                <ChevronRight className="w-4 h-4 md:w-4 md:h-4" />
+              </button>
+
+              {/* Stop / Reset Button */}
+              <button
+                onClick={() => {
+                  setIsSimPlaying(false);
+                  setSimIndex(0);
+                }}
+                className="p-1.5 md:p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                title="Simulation zurücksetzen"
+              >
+                <Square className="w-4 h-4" />
+              </button>
+
+              {/* Timeline Slider */}
+              <div className="flex-1 flex items-center gap-2 md:gap-3 px-1 md:px-2">
+                <span className="text-slate-400 font-mono text-[0.6rem] md:text-[0.65rem] min-w-[50px] md:min-w-[70px]">
+                  Seg {simIndex}
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={parsedGcode.segments.length - 1}
+                  value={simIndex}
+                  onChange={(e) => {
+                    setIsSimPlaying(false);
+                    setSimIndex(Number(e.target.value));
+                  }}
+                  className="flex-1 accent-indigo-500 h-1.5 md:h-2 bg-black/40 rounded-full cursor-pointer transition-all hover:h-2.5"
+                />
+                <span className="text-indigo-300 font-mono font-semibold text-[0.6rem] md:text-xs min-w-[30px] md:min-w-[35px] text-right drop-shadow-[0_0_3px_rgba(99,102,241,0.8)]">
+                  {Math.round((simIndex / Math.max(1, parsedGcode.segments.length - 1)) * 100)}%
+                </span>
+              </div>
+
+              {/* Speed Toggle */}
+              <button
+                onClick={() => {
+                  setSimSpeed(prev => {
+                    if (prev === 1) return 2;
+                    if (prev === 2) return 5;
+                    if (prev === 5) return 10;
+                    return 1;
+                  });
+                }}
+                className="flex items-center gap-1 px-1.5 md:px-2 py-1 md:py-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors font-mono text-[0.65rem] md:text-xs font-semibold"
+                title="Simulationsgeschwindigkeit"
+              >
+                <FastForward className="w-3 h-3 md:w-3.5 md:h-3.5 text-cyan-400" />
+                <span>{simSpeed}x</span>
+              </button>
+            </div>
+          )}
 
           {/* Floating Action Bar for Selected Objects */}
           {selectedElementIds.length > 0 && (
@@ -7263,7 +7544,10 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               }`}
               title="Bearbeitungslinien (Schnitt / Stift / Laser) ein-/ausblenden"
             >
-              <span className={`w-2.5 h-1 rounded-full ${showCutPaths ? 'bg-emerald-400 shadow-sm' : 'bg-slate-500'}`} />
+              <span 
+                className="w-2.5 h-1 rounded-full shadow-sm" 
+                style={{ backgroundColor: showCutPaths ? (theme.cutLineColor || '#10b981') : '#64748b' }}
+              />
               <span>Bearbeitung</span>
             </button>
 
@@ -7277,7 +7561,10 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               }`}
               title="Leerfahrten / Eilgang (G0) ein-/ausblenden"
             >
-              <span className={`w-2.5 border-b-2 border-dashed ${showRapid ? 'border-rose-400' : 'border-slate-500'}`} />
+              <span 
+                className="w-2.5 border-b-2 border-dashed" 
+                style={{ borderColor: showRapid ? (theme.rapidLineColor || '#ef4444') : '#64748b' }}
+              />
               <span>Leerfahrt (G0)</span>
             </button>
 
@@ -7292,7 +7579,10 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
                 }`}
                 title="Messer-Schwenkbögen ein-/ausblenden"
               >
-                <span className={`w-2.5 h-1 rounded-full ${showSwivelArcs ? 'bg-amber-400' : 'bg-slate-500'}`} />
+                <span 
+                  className="w-2.5 h-1 rounded-full" 
+                  style={{ backgroundColor: showSwivelArcs ? '#f59e0b' : '#64748b' }}
+                />
                 <span>Schwenkbögen</span>
               </button>
             )}
@@ -7307,13 +7597,16 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               }`}
               title="Nullpunkt-Achsen & Startpunkt-Markierung ein-/ausblenden"
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${showOriginMarker ? 'bg-cyan-400' : 'bg-slate-500'}`} />
+              <span 
+                className="w-1.5 h-1.5 rounded-full" 
+                style={{ backgroundColor: showOriginMarker ? '#10b981' : '#64748b' }}
+              />
               <span>Nullpunkt (0,0)</span>
             </button>
           </div>
         </div>
       </div>
-
+      </div>
       {/* ========================================================================= */}
       {/* MODAL: Full G-Code Viewer & Code Inspector                                */}
       {/* ========================================================================= */}
@@ -7348,15 +7641,6 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
             <div className="px-5 py-3 border-t border-slate-800 bg-slate-950 flex items-center justify-between text-xs text-slate-400">
               <span>{generatedGcode.split('\n').length} Zeilen generiert</span>
-              <button
-                onClick={() => {
-                  setShowGcodeModal(false);
-                  handleLoadIntoVisualizer();
-                }}
-                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-semibold text-xs transition-colors"
-              >
-                In CNC Steuerung laden
-              </button>
             </div>
           </div>
         </div>

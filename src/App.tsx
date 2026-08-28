@@ -179,72 +179,41 @@ G0 X0.000 Y0.000
 
       {/* Main Workspace Body */}
       <main className="flex-1 flex overflow-hidden p-2 md:p-3 gap-2 md:gap-3 relative">
-        {/* Visualizer Tab (Persistent) */}
-        <div className={`flex-1 flex flex-col md:flex-row gap-2 md:gap-3 h-full overflow-hidden ${activeTab === 'visualizer' ? 'flex' : 'hidden'}`}>
-          {/* Left: 2D/3D Real-time Path Visualizer + Custom Action Buttons Bar */}
-          <div className="flex-1 flex flex-col gap-2 h-full overflow-hidden min-w-[300px]">
-            {/* Custom Macro Toolbar (Fully hideable to maximize workspace area) */}
-            {showMacroBar && (
-              <div className="shrink-0">
-                <CustomButtonsBar
-                  currentProfile={currentProfile}
-                  parsedGcode={parsedGcode}
-                  onOpenManageModal={() => setIsButtonsModalOpen(true)}
-                  onClose={() => toggleMacroBar(false)}
-                />
-              </div>
-            )}
-
-            {/* 2D/3D Interactive Canvas */}
-            <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0">
-              <Visualizer2D3D
-                parsedGcode={parsedGcode}
+        {/* Unified Workspace Tab */}
+        <div className={`flex-1 flex flex-col gap-2 h-full overflow-hidden ${activeTab === 'visualizer' || activeTab === 'generator' ? 'flex' : 'hidden'}`}>
+          {/* Custom Macro Toolbar (Fully hideable to maximize workspace area) */}
+          {showMacroBar && (
+            <div className="shrink-0">
+              <CustomButtonsBar
                 currentProfile={currentProfile}
-                liveState={liveState}
-                activeLineIndex={activeExecutingLine}
-                onGcodeUpdate={(updated) => setParsedGcode(updated)}
-                onOpenGenerator={() => setActiveTab('generator')}
+                parsedGcode={parsedGcode}
+                onOpenManageModal={() => setIsButtonsModalOpen(true)}
+                onClose={() => toggleMacroBar(false)}
               />
             </div>
-          </div>
-
-          {/* Resizer */}
-          <div 
-            className="hidden md:flex w-2 -mx-1 hover:bg-indigo-500/50 cursor-col-resize justify-center items-center rounded transition-colors group z-10 shrink-0"
-            onMouseDown={handleResizeRightPanelStart}
-            onTouchStart={handleResizeRightPanelStart}
-          >
-            <div className="w-0.5 h-12 bg-slate-700 group-hover:bg-indigo-400 rounded-full transition-colors" />
-          </div>
-
-          {/* Right: Jog Controller + G-Code Execution Streamer */}
-          <div 
-            className="flex flex-col gap-2 md:gap-3 h-full overflow-y-auto pr-1 pb-2 shrink-0 md:max-w-[800px] w-full md:w-auto"
-            style={{ width: window.innerWidth >= 768 ? rightPanelWidth : '100%' }}
-          >
-            <JogController
-              currentProfile={currentProfile}
-              liveState={liveState}
-            />
-            <GcodeStreamer
-              parsedGcode={parsedGcode}
-              onGcodeLoaded={(parsed) => setParsedGcode(parsed)}
-              currentProfile={currentProfile}
-              liveState={liveState}
-            />
-          </div>
-        </div>
-
-        {/* Generator Tab (Persistent - State Never Lost When Switching Tabs!) */}
-        <div className={`flex-1 h-full overflow-hidden ${activeTab === 'generator' ? 'block' : 'hidden'}`}>
+          )}
           <GeneratorSuite
             currentProfile={currentProfile}
             onProfileUpdate={handleProfileSave}
             onGcodeGenerated={(parsed) => {
               setParsedGcode(parsed);
-              setActiveTab('visualizer');
             }}
-            onSwitchToVisualizer={() => setActiveTab('visualizer')}
+            cncControls={
+              <div className="flex flex-col gap-2 md:gap-3 h-full pb-2 shrink-0">
+                <JogController
+                  currentProfile={currentProfile}
+                  liveState={liveState}
+                />
+                <GcodeStreamer
+                  parsedGcode={parsedGcode}
+                  onGcodeLoaded={(parsed) => setParsedGcode(parsed)}
+                  currentProfile={currentProfile}
+                  liveState={liveState}
+                />
+              </div>
+            }
+            liveState={liveState}
+            parsedGcode={parsedGcode}
           />
         </div>
 

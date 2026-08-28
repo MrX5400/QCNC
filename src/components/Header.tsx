@@ -192,34 +192,20 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* CENTER: Workflow-Tabs (1. Design & Generator, 2. Steuerung & 3D Visualizer, 3. GRBL $$ & Konsole) */}
+      {/* CENTER: Workflows (Now unified into the main view) */}
       <nav className="flex items-center bg-slate-950/90 p-0.5 rounded-lg border border-slate-800 text-xs">
-        <button
-          onClick={() => setActiveTab('generator')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all ${
-            activeTab === 'generator'
-              ? 'bg-indigo-600 text-white shadow-sm font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-          }`}
-          title="1. Design & Vektor/Raster Generator"
-        >
-          <FileCode className="w-3.5 h-3.5 text-cyan-400" />
-          <span>{t.vectorRasterGenerator || 'Design & Generator'}</span>
-        </button>
-
         <button
           onClick={() => setActiveTab('visualizer')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all ${
-            activeTab === 'visualizer'
+            activeTab === 'visualizer' || activeTab === 'generator'
               ? 'bg-indigo-600 text-white shadow-sm font-semibold'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
           }`}
-          title="2. Steuerung & 3D Pfad Visualizer"
+          title="Hauptarbeitsfläche (Design & Steuerung)"
         >
-          <Layers className="w-3.5 h-3.5 text-indigo-400" />
-          <span>{t.controlAndVisualizer || 'Steuerung & Visualizer'}</span>
+          <Layers className="w-3.5 h-3.5 text-cyan-400" />
+          <span>{t.workspace || 'Workspace'}</span>
         </button>
-
         <button
           onClick={() => setActiveTab('settings')}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md font-medium transition-all ${

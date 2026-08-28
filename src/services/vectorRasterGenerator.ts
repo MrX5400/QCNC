@@ -257,6 +257,26 @@ export function optimizePathOrder(
     return { ...p, points: rotated };
   };
 
+  // Helper to find min distance to a path (considering reversing and closed polygon vertex rotation)
+  const getMinDistanceToPath = (p: VectorPolyline, currentPos: Path2DPoint) => {
+    if (!p.points || p.points.length === 0) return { d: Infinity, reverse: false };
+    
+    if (p.closed) {
+      let minD = Infinity;
+      const limit = (p.points[0].x === p.points[p.points.length - 1].x && p.points[0].y === p.points[p.points.length - 1].y) ? p.points.length - 1 : p.points.length;
+      for (let k = 0; k < limit; k++) {
+        const d = Math.hypot(p.points[k].x - currentPos.x, p.points[k].y - currentPos.y);
+        if (d < minD) minD = d;
+      }
+      return { d: minD, reverse: false };
+    } else {
+      const dStart = Math.hypot(p.points[0].x - currentPos.x, p.points[0].y - currentPos.y);
+      const dEnd = Math.hypot(p.points[p.points.length - 1].x - currentPos.x, p.points[p.points.length - 1].y - currentPos.y);
+      if (dStart <= dEnd) return { d: dStart, reverse: false };
+      else return { d: dEnd, reverse: true };
+    }
+  };
+
   if (strategy === 'inside_to_outside' || strategy === 'outside_to_inside') {
     const pathsWithMeta = paths.map((p, idx) => ({
       path: p,
@@ -277,34 +297,19 @@ export function optimizePathOrder(
     let currentPos: Path2DPoint = { ...startPosition };
 
     while (remaining.length > 0) {
-      // Pick among candidate tier to preserve inside/out grouping while minimizing travel
-      const tierSize = Math.min(remaining.length, Math.max(1, Math.ceil(pathsWithMeta.length * 0.35)));
+      // Use a smaller tier size to better respect the area ordering while still allowing TSP for similar areas
+      const tierSize = Math.min(remaining.length, Math.max(1, Math.ceil(pathsWithMeta.length * 0.15)));
       let bestIdx = 0;
       let minDistance = Infinity;
       let reversePath = false;
 
       for (let i = 0; i < tierSize; i++) {
-        const item = remaining[i];
-        const p = item.path;
-        if (!p.points || p.points.length === 0) continue;
-
-        const startPt = p.points[0];
-        const endPt = p.points[p.points.length - 1];
-
-        const dStart = Math.hypot(startPt.x - currentPos.x, startPt.y - currentPos.y);
-        if (dStart < minDistance) {
-          minDistance = dStart;
+        const p = remaining[i].path;
+        const { d, reverse } = getMinDistanceToPath(p, currentPos);
+        if (d < minDistance) {
+          minDistance = d;
           bestIdx = i;
-          reversePath = false;
-        }
-
-        if (!p.closed) {
-          const dEnd = Math.hypot(endPt.x - currentPos.x, endPt.y - currentPos.y);
-          if (dEnd < minDistance) {
-            minDistance = dEnd;
-            bestIdx = i;
-            reversePath = true;
-          }
+          reversePath = reverse;
         }
       }
 
@@ -316,6 +321,7 @@ export function optimizePathOrder(
         nextPath = optimizeClosedPolyStart(nextPath, currentPos);
       }
       ordered.push(nextPath);
+
       currentPos = nextPath.closed
         ? nextPath.points[0]
         : nextPath.points[nextPath.points.length - 1];
@@ -336,27 +342,11 @@ export function optimizePathOrder(
 
     for (let i = 0; i < remaining.length; i++) {
       const p = remaining[i];
-      if (!p.points || p.points.length === 0) continue;
-
-      const startPt = p.points[0];
-      const endPt = p.points[p.points.length - 1];
-
-      // Check distance from currentPos to start of path
-      const dStart = Math.hypot(startPt.x - currentPos.x, startPt.y - currentPos.y);
-      if (dStart < minDistance) {
-        minDistance = dStart;
+      const { d, reverse } = getMinDistanceToPath(p, currentPos);
+      if (d < minDistance) {
+        minDistance = d;
         nearestIndex = i;
-        reversePath = false;
-      }
-
-      // If open path, also check distance to end of path (can reverse stroke direction)
-      if (!p.closed) {
-        const dEnd = Math.hypot(endPt.x - currentPos.x, endPt.y - currentPos.y);
-        if (dEnd < minDistance) {
-          minDistance = dEnd;
-          nearestIndex = i;
-          reversePath = true;
-        }
+        reversePath = reverse;
       }
     }
 
@@ -366,6 +356,7 @@ export function optimizePathOrder(
     } else if (nextPath.closed) {
       nextPath = optimizeClosedPolyStart(nextPath, currentPos);
     }
+
     ordered.push(nextPath);
     currentPos = nextPath.closed
       ? nextPath.points[0]

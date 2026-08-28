@@ -4,7 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/src/logo.svg" />
-    <title>QCNC - CNC Stift- & Schleppmesser-Steuerung</title>
+    <title>QCNC Studio</title>
+    <script>
+      window.onerror = function(msg, url, lineNo, columnNo, error) {
+        console.error('GLOBAL ERROR:', msg, error);
+        // Display on screen so we can see it in a screenshot if we had one
+        const div = document.createElement('div');
+        div.style.position = 'fixed';
+        div.style.top = '0';
+        div.style.left = '0';
+        div.style.background = 'red';
+        div.style.color = 'white';
+        div.style.zIndex = '9999';
+        div.innerText = msg + ' ' + (error ? error.stack : '');
+        document.body.appendChild(div);
+      };
+    </script>
     <meta name="description" content="Professionelle CNC Stift- und Schleppmesserplotter Steuerung für Windows/Web mit Echtzeit-Pfadvisualisierung, GRBL-Anbindung und G-Code-Generator." />
     <meta property="og:title" content="QCNC" />
     <meta property="og:description" content="CNC Stift- & Schleppmesserplotter Controller mit GRBL, WebSerial und Schleppmesserkorrektur." />
