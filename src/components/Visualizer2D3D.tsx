@@ -1363,14 +1363,15 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
         return { x: tx + offX, y: ty + offY, z: pz };
       };
 
-      const penUpZ = Math.max(8, currentProfile.penUpZ || 10);
-      const penDownZ = Math.max(0, currentProfile.penDownZ || 0);
+      const penUpZ = currentProfile.penUpZ ?? 5;
+      const penDownZ = currentProfile.penDownZ ?? 0;
 
       // Helper function to render linear or circular arc segment paths accurately
       const renderSegmentPath = (seg: GcodeSegment, segIndex: number, strokeColor: string, lineWidth: number, isDashed: number[] = []) => {
-        const isUp = seg.type === 'G0' || seg.penState === 'up';
-        const zFrom = viewMode === '3d' ? (isUp ? penUpZ : (seg.from.z || penDownZ)) : 0;
-        const zTo = viewMode === '3d' ? (isUp ? penUpZ : (seg.to.z || penDownZ)) : 0;
+        const isPureZ = Math.abs(seg.from.x - seg.to.x) < 0.001 && Math.abs(seg.from.y - seg.to.y) < 0.001 && Math.abs((seg.from.z || 0) - (seg.to.z || 0)) > 0.001;
+        const isUp = seg.type === 'G0' || seg.penState === 'up' || (isPureZ && seg.type === 'G1');
+        const zFrom = viewMode === '3d' ? (isUp && !isPureZ ? penUpZ : (seg.from.z || penDownZ)) : 0;
+        const zTo = viewMode === '3d' ? (isUp && !isPureZ ? penUpZ : (seg.to.z || penDownZ)) : 0;
 
         ctx.strokeStyle = strokeColor;
         ctx.lineWidth = lineWidth;
@@ -1444,9 +1445,11 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
 
         const isSelected = segObjId !== undefined && selectedObjectIds.includes(segObjId);
         const isHovered = segObjId !== undefined && hoveredObjectId === segObjId && !isSelected;
-        const isUp = seg.type === 'G0' || seg.penState === 'up';
+        
+        const isPureZ = Math.abs(seg.from.x - seg.to.x) < 0.001 && Math.abs(seg.from.y - seg.to.y) < 0.001 && Math.abs((seg.from.z || 0) - (seg.to.z || 0)) > 0.001;
+        const isUp = seg.type === 'G0' || seg.penState === 'up' || (isPureZ && seg.type === 'G1');
 
-        const zFrom = viewMode === '3d' ? (isUp ? penUpZ : (seg.from.z || penDownZ)) : 0;
+        const zFrom = viewMode === '3d' ? (isUp && !isPureZ ? penUpZ : (seg.from.z || penDownZ)) : 0;
         const ptFrom = getLivePoint(seg.from.x, seg.from.y, zFrom, i, true);
 
         if (seg.type === 'PEN_DOWN' && viewMode === '3d') {
@@ -2253,26 +2256,24 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
               <button
                 onClick={() => setShowCutPaths(prev => !prev)}
                 className={`flex items-center gap-1 px-1 py-0.5 rounded transition-all cursor-pointer ${
-                  showCutPaths
-                    ? 'text-emerald-400 drop-shadow-[0_0_4px_rgba(52,211,153,0.8)] font-medium'
-                    : 'text-slate-500/70 line-through hover:text-slate-400'
+                  showCutPaths ? 'font-medium' : 'text-slate-500/70 line-through hover:text-slate-400'
                 }`}
+                style={showCutPaths ? { color: theme.cutLineColor || '#10b981', textShadow: `0 0 4px ${theme.cutLineColor}80` } : undefined}
                 title="Klicken: Bearbeitungs- und Schnittlinien ein-/ausblenden"
               >
-                <span className={`w-2 h-0.5 rounded-full ${showCutPaths ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+                <span className={`w-2 h-0.5 rounded-full`} style={showCutPaths ? { backgroundColor: theme.cutLineColor || '#10b981' } : { backgroundColor: 'currentColor' }} />
                 <span>Bearbeitung</span>
               </button>
 
               <button
                 onClick={() => setShowRapid(prev => !prev)}
                 className={`flex items-center gap-1 px-1 py-0.5 rounded transition-all cursor-pointer ${
-                  showRapid
-                    ? 'text-rose-400 drop-shadow-[0_0_4px_rgba(251,113,133,0.8)] font-medium'
-                    : 'text-slate-500/70 line-through hover:text-slate-400'
+                  showRapid ? 'font-medium' : 'text-slate-500/70 line-through hover:text-slate-400'
                 }`}
+                style={showRapid ? { color: theme.rapidLineColor || '#ef4444', textShadow: `0 0 4px ${theme.rapidLineColor}80` } : undefined}
                 title="Klicken: Leerfahrten / Eilgang (G0) ein-/ausblenden"
               >
-                <span className={`w-2 border-b-2 border-dashed ${showRapid ? 'border-rose-400' : 'border-slate-600'}`} />
+                <span className={`w-2 border-b-2 border-dashed`} style={showRapid ? { borderColor: theme.rapidLineColor || '#ef4444' } : { borderColor: 'currentColor' }} />
                 <span>Leerfahrt (G0)</span>
               </button>
 
@@ -2280,13 +2281,12 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
                 <button
                   onClick={() => setShowSwivelArcs(prev => !prev)}
                   className={`flex items-center gap-1 px-1 py-0.5 rounded transition-all cursor-pointer ${
-                    showSwivelArcs
-                      ? 'text-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.8)] font-medium'
-                      : 'text-slate-500/70 line-through hover:text-slate-400'
+                    showSwivelArcs ? 'font-medium' : 'text-slate-500/70 line-through hover:text-slate-400'
                   }`}
+                  style={showSwivelArcs ? { color: theme.accentColor || '#f59e0b', textShadow: `0 0 4px ${theme.accentColor}80` } : undefined}
                   title="Klicken: Messer-Schwenkbögen ein-/ausblenden"
                 >
-                  <span className={`w-2 h-0.5 rounded-full ${showSwivelArcs ? 'bg-amber-400' : 'bg-slate-600'}`} />
+                  <span className={`w-2 h-0.5 rounded-full`} style={showSwivelArcs ? { backgroundColor: theme.accentColor || '#f59e0b' } : { backgroundColor: 'currentColor' }} />
                   <span>Messerbögen</span>
                 </button>
               )}
@@ -2294,10 +2294,10 @@ export const Visualizer2D3D: React.FC<Visualizer2D3DProps> = ({
               <button
                 onClick={() => setShowOriginMarker(prev => !prev)}
                 className={`flex items-center gap-1 px-1 py-0.5 rounded transition-all cursor-pointer ${
-                  showOriginMarker
-                    ? 'text-cyan-400 drop-shadow-[0_0_4px_rgba(34,211,238,0.8)] font-medium'
-                    : 'text-slate-500/70 line-through hover:text-slate-400'
+                  showOriginMarker ? 'font-medium' : 'text-slate-500/70 line-through hover:text-slate-400'
                 }`}
+                style={showOriginMarker ? { color: theme.accentColor || '#06b6d4', textShadow: `0 0 4px ${theme.accentColor}80` } : undefined}
+
                 title="Klicken: Nullpunkt / Start-Achsen ein-/ausblenden"
               >
                 <span className={`w-1 h-1 rounded-full ${showOriginMarker ? 'bg-cyan-400' : 'bg-slate-600'}`} />

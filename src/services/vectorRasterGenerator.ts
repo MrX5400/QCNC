@@ -78,6 +78,12 @@ export interface PenModeOptions {
   passes: number;
   zLiftHeight?: number;
   zCutDepth?: number;
+  penUpZ?: number;
+  penDownZ?: number;
+  plungeFeedrate?: number;
+  servoUpValue?: number;
+  servoDownValue?: number;
+  servoDelayMs?: number;
 }
 
 export interface DragKnifeModeOptions {

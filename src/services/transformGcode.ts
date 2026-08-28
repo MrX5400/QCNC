@@ -663,12 +663,30 @@ export function transformParsedGcode(
   });
 
   // Re-generate fresh clean G-Code lines and re-calculate entire travel geometry
-  const penUpZ = Math.max(0, profile?.penUpZ ?? 5);
-  const penDownZ = Math.max(0, profile?.penDownZ ?? 0);
+  let existingPenUpCmd: string | undefined = undefined;
+  let existingPenDownCmd: string | undefined = undefined;
+  let existingPenUpZ: number | undefined = undefined;
+  let existingPenDownZ: number | undefined = undefined;
+
+  for (const s of parsed.segments) {
+    if (!existingPenUpCmd && s.type === 'PEN_UP') {
+      existingPenUpCmd = s.raw;
+      const match = s.raw.match(/Z([-\d.]+)/i);
+      if (match) existingPenUpZ = parseFloat(match[1]);
+    }
+    if (!existingPenDownCmd && s.type === 'PEN_DOWN') {
+      existingPenDownCmd = s.raw;
+      const match = s.raw.match(/Z([-\d.]+)/i);
+      if (match) existingPenDownZ = parseFloat(match[1]);
+    }
+  }
+
+  const penUpZ = existingPenUpZ !== undefined ? existingPenUpZ : Math.max(0, profile?.penUpZ ?? 5);
+  const penDownZ = existingPenDownZ !== undefined ? existingPenDownZ : Math.max(0, profile?.penDownZ ?? 0);
   const isZStepper = profile?.actuatorType === 'z_stepper';
 
-  const penUpCmd = profile?.penUpCommand || (isZStepper ? `G0 Z${penUpZ.toFixed(2)}` : 'M5');
-  const penDownCmd = profile?.penDownCommand || (isZStepper ? `G1 Z${penDownZ.toFixed(2)} F${profile?.plungeFeedrate || 600}` : 'M3 S1000');
+  const penUpCmd = existingPenUpCmd || profile?.penUpCommand || (isZStepper ? `G0 Z${penUpZ.toFixed(2)}` : 'M5');
+  const penDownCmd = existingPenDownCmd || profile?.penDownCommand || (isZStepper ? `G1 Z${penDownZ.toFixed(2)} F${profile?.plungeFeedrate || 600}` : 'M3 S1000');
   const travelFeed = profile?.travelFeedrate || 2000;
   const drawFeed = profile?.drawingFeedrate || 1200;
 

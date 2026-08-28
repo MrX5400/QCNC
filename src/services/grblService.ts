@@ -301,7 +301,7 @@ class GrblService {
     }
 
     // Stream Ok Handshake
-    if (line === 'ok') {
+    if (line.toLowerCase().startsWith('ok')) {
       if (this.isStreaming && !this.isPaused) {
         this.isAwaitingOk = false;
         if (this.currentStreamIndex >= this.streamQueue.length) {

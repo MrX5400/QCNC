@@ -148,7 +148,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
   onSwitchToVisualizer,
 }) => {
   const { t } = useI18n();
-  const { uiScale } = useThemeLanguage();
+  const { uiScale, theme } = useThemeLanguage();
 
   // --- Multi-Element Composition Workspace State (Multi-Selection Support) ---
   const [compositionElements, setCompositionElements] = useState<CompositionElement[]>([]);
@@ -411,29 +411,50 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
   // --- 3. Step 3: Tool Specific Settings ---
   // Pen Options
-  const [penOptions, setPenOptions] = useState<PenModeOptions>({
-    drawingFeedrate: currentProfile.drawingFeedrate || 1500,
-    travelFeedrate: currentProfile.travelFeedrate || 4000,
-    penUpCommand: currentProfile.penUpCommand || 'M3 S30',
-    penDownCommand: currentProfile.penDownCommand || 'M3 S80',
-    penUpDelayMs: currentProfile.penUpDelayMs || 50,
-    penDownDelayMs: currentProfile.penDownDelayMs || 100,
-    passes: 1,
+  const [penOptions, setPenOptions] = useState<PenModeOptions>(() => {
+    const isZ = currentProfile.actuatorType === 'z_stepper' || !currentProfile.actuatorType;
+    return {
+      actuatorType: isZ ? 'z_stepper' : (currentProfile.actuatorType === 'laser' ? 'custom' : 'servo_pwm'),
+      drawingFeedrate: currentProfile.drawingFeedrate || 1500,
+      travelFeedrate: currentProfile.travelFeedrate || 4000,
+      penUpCommand: currentProfile.penUpCommand || (isZ ? `G0 Z${(currentProfile.penUpZ ?? 5.0).toFixed(2)}` : 'M3 S30'),
+      penDownCommand: currentProfile.penDownCommand || (isZ ? `G1 Z${(currentProfile.penDownZ ?? 0.0).toFixed(2)} F${currentProfile.plungeFeedrate || 600}` : 'M3 S80'),
+      penUpZ: currentProfile.penUpZ ?? 5.0,
+      penDownZ: currentProfile.penDownZ ?? 0.0,
+      plungeFeedrate: currentProfile.plungeFeedrate || 600,
+      servoUpValue: 30,
+      servoDownValue: 80,
+      servoDelayMs: 100,
+      penUpDelayMs: currentProfile.penUpDelayMs || 50,
+      penDownDelayMs: currentProfile.penDownDelayMs || 100,
+      passes: 1,
+    };
   });
 
   // Drag Knife Options
-  const [dragKnifeOptions, setDragKnifeOptions] = useState<DragKnifeModeOptions>({
-    bladeOffset: currentProfile.dragKnife?.bladeOffset || 0.45,
-    swivelAngleThreshold: currentProfile.dragKnife?.swivelAngleThreshold || 20,
-    swivelFeedrate: currentProfile.dragKnife?.swivelFeedrate || 800,
-    cuttingFeedrate: currentProfile.dragKnife?.cuttingFeedrate || 1500,
-    overcut: currentProfile.dragKnife?.overcut || 1.0,
-    liftOnSwivel: currentProfile.dragKnife?.liftOnSwivel || false,
-    liftAmount: currentProfile.dragKnife?.liftAmount || 0.5,
-    liftOnRapid: currentProfile.dragKnife?.liftOnRapid ?? true,
-    rapidLiftZ: currentProfile.dragKnife?.rapidLiftZ || 2.0,
-    penUpCommand: currentProfile.penUpCommand || 'M3 S30',
-    penDownCommand: currentProfile.penDownCommand || 'M3 S80',
+  const [dragKnifeOptions, setDragKnifeOptions] = useState<DragKnifeModeOptions>(() => {
+    const isZ = currentProfile.actuatorType === 'z_stepper' || !currentProfile.actuatorType;
+    return {
+      actuatorType: isZ ? 'z_stepper' : (currentProfile.actuatorType === 'laser' ? 'custom' : 'servo'),
+      bladeOffset: currentProfile.dragKnife?.bladeOffset || 0.45,
+      swivelAngleThreshold: currentProfile.dragKnife?.swivelAngleThreshold || 20,
+      swivelFeedrate: currentProfile.dragKnife?.swivelFeedrate || 800,
+      cuttingFeedrate: currentProfile.dragKnife?.cuttingFeedrate || 1500,
+      travelFeedrate: currentProfile.travelFeedrate || 4000,
+      overcut: currentProfile.dragKnife?.overcut || 1.0,
+      liftOnSwivel: currentProfile.dragKnife?.liftOnSwivel || false,
+      liftAmount: currentProfile.dragKnife?.liftAmount || 0.5,
+      liftOnRapid: currentProfile.dragKnife?.liftOnRapid ?? true,
+      rapidLiftZ: currentProfile.dragKnife?.rapidLiftZ || 2.0,
+      penUpZ: currentProfile.dragKnife?.rapidLiftZ || 2.0,
+      penDownZ: 0.0,
+      plungeFeedrate: 600,
+      penUpCommand: currentProfile.penUpCommand || (isZ ? `G0 Z${(currentProfile.dragKnife?.rapidLiftZ || 2.0).toFixed(2)}` : 'M3 S30'),
+      penDownCommand: currentProfile.penDownCommand || (isZ ? `G1 Z0.00 F600` : 'M3 S80'),
+      servoUpValue: 30,
+      servoDownValue: 80,
+      servoDelayMs: 80,
+    };
   });
 
   // Laser Options
@@ -1066,7 +1087,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
       const scaleY = h / (rasterSettings.targetHeight || 1);
 
       ctx.lineWidth = 1.4;
-      ctx.strokeStyle = '#06b6d4'; // Cyan
+      ctx.strokeStyle = theme.accentColor || '#06b6d4'; // Cyan
       ctx.shadowColor = 'rgba(6, 182, 212, 0.7)';
       ctx.shadowBlur = 3;
 
@@ -1872,7 +1893,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
     ctx.scale(dpr, dpr);
 
     // Clear background
-    ctx.fillStyle = '#090d16';
+    ctx.fillStyle = theme.bgTone || '#090d16';
     ctx.fillRect(0, 0, cw, ch);
 
     // Coordinate system: CNC 0,0 is bottom-left
@@ -1910,7 +1931,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
       const pWH = project3D(bedW, bedH, 0);
       const p0H = project3D(0, bedH, 0);
 
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+      ctx.fillStyle = theme.isDark ? 'rgba(15, 23, 42, 0.7)' : 'rgba(240, 240, 240, 0.7)';
       ctx.beginPath();
       ctx.moveTo(p00.sx, p00.sy);
       ctx.lineTo(pW0.sx, pW0.sy);
@@ -1920,7 +1941,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
       ctx.fill();
 
       // Grid
-      ctx.strokeStyle = 'rgba(51, 65, 85, 0.35)';
+      ctx.strokeStyle = theme.gridColor || 'rgba(51, 65, 85, 0.35)';
       ctx.lineWidth = 1;
       for (let x = 0; x <= bedW; x += 20) {
         const p1 = project3D(x, 0, 0);
@@ -2028,7 +2049,13 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
         ctx.fillText('Z+', zAx3d.sx + 5, zAx3d.sy - 2);
       }
       // Z-Hop calculation for clear 3D plunge/retract visualization
-      const penUpZ = Math.max(8, currentProfile.penUpZ || (penOptions.upHeight ? Number(penOptions.upHeight) : 10));
+      let penUpZVal = 5;
+      if (targetMode === 'dragknife') {
+        penUpZVal = dragKnifeOptions.penUpZ ?? currentProfile.penUpZ ?? 5;
+      } else {
+        penUpZVal = penOptions.penUpZ ?? currentProfile.penUpZ ?? 5;
+      }
+      const penUpZ = penUpZVal;
       const penDownZ = 0;
 
       // Draw Main Active Toolpaths (Composition Elements or Primary Active Object) in 3D
@@ -2036,24 +2063,64 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
         dragKnifeResult.compensatedSegments.forEach(seg => {
           if ((seg.type === 'SWIVEL_ARC' || (seg as any).type === 'swivel') && showSwivelArcs) {
             ctx.save();
-            ctx.strokeStyle = '#f59e0b';
+            ctx.strokeStyle = theme.accentColor || '#f59e0b';
             ctx.lineWidth = 2.5;
             ctx.beginPath();
-            const p1 = project3D(seg.from.x, seg.from.y, penDownZ);
-            const p2 = project3D(seg.to.x, seg.to.y, penDownZ);
-            ctx.moveTo(p1.sx, p1.sy);
-            ctx.lineTo(p2.sx, p2.sy);
+            
+            // Draw an actual arc if seg has center and sweep, else just a line (simplified fallback)
+            if (seg.center) {
+              const cX = seg.center.x, cY = seg.center.y;
+              const r1 = Math.hypot(seg.from.x - cX, seg.from.y - cY);
+              const r2 = Math.hypot(seg.to.x - cX, seg.to.y - cY);
+              const radius = (r1 + r2) / 2 || r1;
+              
+              if (radius > 0.001) {
+                const a1 = Math.atan2(seg.from.y - cY, seg.from.x - cX);
+                const a2 = Math.atan2(seg.to.y - cY, seg.to.x - cX);
+                const isCW = seg.clockwise ?? true;
+                let sweep = a2 - a1;
+                if (isCW) {
+                  if (sweep > 0) sweep -= 2 * Math.PI;
+                } else {
+                  if (sweep < 0) sweep += 2 * Math.PI;
+                }
+                const steps = Math.max(12, Math.min(60, Math.ceil(Math.abs(sweep) * 24 / Math.PI)));
+                const first = project3D(seg.from.x, seg.from.y, penDownZ);
+                ctx.moveTo(first.sx, first.sy);
+                
+                for (let s = 1; s <= steps; s++) {
+                  const t = s / steps;
+                  const angle = a1 + sweep * t;
+                  const px = cX + radius * Math.cos(angle);
+                  const py = cY + radius * Math.sin(angle);
+                  const pt = project3D(px, py, penDownZ);
+                  ctx.lineTo(pt.sx, pt.sy);
+                }
+              } else {
+                const p1 = project3D(seg.from.x, seg.from.y, penDownZ);
+                const p2 = project3D(seg.to.x, seg.to.y, penDownZ);
+                ctx.moveTo(p1.sx, p1.sy);
+                ctx.lineTo(p2.sx, p2.sy);
+              }
+            } else {
+              const p1 = project3D(seg.from.x, seg.from.y, penDownZ);
+              const p2 = project3D(seg.to.x, seg.to.y, penDownZ);
+              ctx.moveTo(p1.sx, p1.sy);
+              ctx.lineTo(p2.sx, p2.sy);
+            }
+            
             ctx.stroke();
 
             // Swivel Pivot Node on bed
-            ctx.fillStyle = '#fbbf24';
+            const p2 = project3D(seg.to.x, seg.to.y, penDownZ);
+            ctx.fillStyle = theme.accentColor || '#fbbf24';
             ctx.beginPath();
             ctx.arc(p2.sx, p2.sy, 2.5, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
           } else if ((seg.type === 'G1' || (seg as any).type === 'cut') && showCutPaths) {
             ctx.save();
-            ctx.strokeStyle = '#10b981';
+            ctx.strokeStyle = theme.cutLineColor || '#10b981';
             ctx.lineWidth = 2;
             ctx.beginPath();
             const p1 = project3D(seg.from.x, seg.from.y, penDownZ);
@@ -2071,7 +2138,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
           // Cut Path at Z=0 (Solid Emerald Green on the bed)
           ctx.save();
-          ctx.strokeStyle = '#10b981';
+          ctx.strokeStyle = theme.cutLineColor || '#10b981';
           ctx.lineWidth = 2;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
@@ -2109,7 +2176,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               ctx.stroke();
 
               // Air travel
-              ctx.strokeStyle = '#f43f5e';
+              ctx.strokeStyle = theme.rapidLineColor || '#f43f5e';
               ctx.lineWidth = 1.3;
               ctx.setLineDash([4, 4]);
               ctx.beginPath();
@@ -2135,7 +2202,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             const p1Up = project3D(firstPt.x, firstPt.y, penUpZ);
             const p1Down = project3D(firstPt.x, firstPt.y, penDownZ);
 
-            ctx.strokeStyle = '#f43f5e';
+            ctx.strokeStyle = theme.rapidLineColor || '#f43f5e';
             ctx.lineWidth = 1.3;
             ctx.setLineDash([4, 4]);
             ctx.beginPath();
@@ -2179,7 +2246,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             ctx.stroke();
 
             // Air travel
-            ctx.strokeStyle = '#f43f5e';
+            ctx.strokeStyle = theme.rapidLineColor || '#f43f5e';
             ctx.lineWidth = 1.3;
             ctx.setLineDash([4, 4]);
             ctx.beginPath();
@@ -2217,7 +2284,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             ctx.stroke();
 
             // Air travel
-            ctx.strokeStyle = '#f43f5e';
+            ctx.strokeStyle = theme.rapidLineColor || '#f43f5e';
             ctx.lineWidth = 1.3;
             ctx.setLineDash([4, 4]);
             ctx.beginPath();
@@ -2251,7 +2318,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               ctx.restore();
             } else if (seg.type === 'G1' || (seg as any).type === 'cut') {
               ctx.save();
-              ctx.strokeStyle = '#06b6d4';
+              ctx.strokeStyle = theme.accentColor || '#06b6d4';
               ctx.lineWidth = 2.2;
               ctx.beginPath();
               const p1 = project3D(seg.from.x, seg.from.y, penDownZ);
@@ -2269,7 +2336,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
             // Cut in Cyan
             ctx.save();
-            ctx.strokeStyle = '#06b6d4';
+            ctx.strokeStyle = theme.accentColor || '#06b6d4';
             ctx.lineWidth = 2.2;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
@@ -2294,7 +2361,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
           const p3 = project3D(draftStats.maxX, draftStats.maxY, 0);
           const p4 = project3D(draftStats.minX, draftStats.maxY, 0);
 
-          ctx.strokeStyle = '#06b6d4';
+          ctx.strokeStyle = theme.accentColor || '#06b6d4';
           ctx.lineWidth = 1.5;
           ctx.setLineDash([4, 4]);
           ctx.beginPath();
@@ -2397,7 +2464,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
         ctx.save();
         const p1 = project3D(genMeasureStart.x, genMeasureStart.y, 0);
         const p2 = project3D(genMeasureEnd.x, genMeasureEnd.y, 0);
-        ctx.strokeStyle = '#06b6d4';
+        ctx.strokeStyle = theme.accentColor || '#06b6d4';
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 4]);
         ctx.beginPath();
@@ -2417,11 +2484,11 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
       const toScreenY = (y: number) => pan.y - y * zoom;
 
       // Bed Background
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = theme.isDark ? '#0f172a' : '#f8fafc';
       ctx.fillRect(toScreenX(0), toScreenY(bedH), bedW * zoom, bedH * zoom);
 
       // Bed Grid
-      ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+      ctx.strokeStyle = theme.gridColor || 'rgba(51, 65, 85, 0.4)';
       ctx.lineWidth = 1;
       for (let x = 0; x <= bedW; x += 10) {
         ctx.beginPath();
@@ -2437,14 +2504,14 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
       }
 
       // Bed Border
-      ctx.strokeStyle = '#64748b';
+      ctx.strokeStyle = theme.isDark ? '#64748b' : '#94a3b8';
       ctx.lineWidth = 2;
       ctx.strokeRect(toScreenX(0), toScreenY(bedH), bedW * zoom, bedH * zoom);
 
       // Render Committed Objects / Main Active Toolpaths
       if (targetMode === 'dragknife' && dragKnifeResult && dragKnifeResult.compensatedSegments.length > 0) {
         // Draw underlying original path in faint dashed cyan
-        ctx.strokeStyle = 'rgba(6, 182, 212, 0.35)';
+        ctx.strokeStyle = theme.isDark ? 'rgba(6, 182, 212, 0.35)' : 'rgba(6, 182, 212, 0.6)';
         ctx.lineWidth = 1.2;
         ctx.setLineDash([3, 3]);
         activePolylines.forEach((poly) => {
@@ -2462,7 +2529,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
         // Render Compensated Cut and Swivel Segments
         dragKnifeResult.compensatedSegments.forEach((seg) => {
           if (seg.type === 'G0' || (seg as any).type === 'rapid') {
-            ctx.strokeStyle = '#ef4444';
+            ctx.strokeStyle = theme.rapidLineColor || '#ef4444';
             ctx.lineWidth = 1.2;
             ctx.setLineDash([4, 4]);
             ctx.beginPath();
@@ -2472,7 +2539,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             ctx.setLineDash([]);
           } else if ((seg.type === 'SWIVEL_ARC' || (seg as any).type === 'swivel') && showSwivelArcs) {
             // Bright Amber Arc with Blade Pivot Indicator (Rendered as circular curve if center exists)
-            ctx.strokeStyle = '#f59e0b';
+            ctx.strokeStyle = theme.accentColor || '#f59e0b';
             ctx.lineWidth = 3;
             ctx.beginPath();
             if (seg.center) {
@@ -2512,12 +2579,12 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
             ctx.stroke();
 
             // Swivel Pivot Node
-            ctx.fillStyle = '#fbbf24';
+            ctx.fillStyle = theme.accentColor || '#fbbf24';
             ctx.beginPath();
             ctx.arc(toScreenX(seg.to.x), toScreenY(seg.to.y), 2.5, 0, Math.PI * 2);
             ctx.fill();
           } else if ((seg.type === 'G1' || (seg as any).type === 'cut') && showCutPaths) {
-            ctx.strokeStyle = '#10b981';
+            ctx.strokeStyle = theme.cutLineColor || '#10b981';
             ctx.lineWidth = 2.2;
             ctx.beginPath();
             ctx.moveTo(toScreenX(seg.from.x), toScreenY(seg.from.y));
@@ -2530,7 +2597,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        ctx.strokeStyle = '#10b981';
+        ctx.strokeStyle = theme.cutLineColor || '#10b981';
 
         activeOptimizedPolylines.forEach((poly) => {
           if (poly.points.length < 2) return;
@@ -2543,7 +2610,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
           ctx.stroke();
 
           // Green Plunge Dot at Start Point
-          ctx.fillStyle = '#22c55e';
+          ctx.fillStyle = theme.cutLineColor || '#22c55e';
           ctx.beginPath();
           ctx.arc(toScreenX(poly.points[0].x), toScreenY(poly.points[0].y), 2.5, 0, Math.PI * 2);
           ctx.fill();
@@ -2553,7 +2620,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
       // Render Rapid / Travel Moves (G0 Leerfahrten / Eilgang) in 2D
       if (showRapid) {
         ctx.save();
-        ctx.strokeStyle = '#f43f5e';
+        ctx.strokeStyle = theme.rapidLineColor || '#f43f5e';
         ctx.lineWidth = 1.2;
         ctx.setLineDash([4, 4]);
 
@@ -2642,7 +2709,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
               ctx.arc(toScreenX(seg.to.x), toScreenY(seg.to.y), 2.5, 0, Math.PI * 2);
               ctx.fill();
             } else if (seg.type === 'G1' || (seg as any).type === 'cut') {
-              ctx.strokeStyle = '#06b6d4';
+              ctx.strokeStyle = theme.accentColor || '#06b6d4';
               ctx.lineWidth = 2.2;
               ctx.beginPath();
               ctx.moveTo(toScreenX(seg.from.x), toScreenY(seg.from.y));
@@ -2655,7 +2722,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
           ctx.lineWidth = 2.2;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
-          ctx.strokeStyle = '#06b6d4';
+          ctx.strokeStyle = theme.accentColor || '#06b6d4';
 
           draftPolylines.forEach((poly) => {
             if (poly.points.length < 2) return;
@@ -2682,7 +2749,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
           const dbw = draftStats.width * zoom;
           const dbh = draftStats.height * zoom;
 
-          ctx.strokeStyle = '#06b6d4';
+          ctx.strokeStyle = theme.accentColor || '#06b6d4';
           ctx.lineWidth = 1.4;
           ctx.setLineDash([4, 4]);
           ctx.strokeRect(dbx, dby, dbw, dbh);
@@ -2895,7 +2962,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
         const distMm = Math.hypot(dxMm, dyMm);
         const angleDeg = (Math.atan2(dyMm, dxMm) * 180) / Math.PI;
 
-        ctx.strokeStyle = '#06b6d4';
+        ctx.strokeStyle = theme.accentColor || '#06b6d4';
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 4]);
         ctx.beginPath();
@@ -2933,7 +3000,7 @@ export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
 
         ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
         ctx.fillRect(midX - badgeW / 2, midY - badgeH / 2, badgeW, badgeH);
-        ctx.strokeStyle = '#06b6d4';
+        ctx.strokeStyle = theme.accentColor || '#06b6d4';
         ctx.lineWidth = 1.5;
         ctx.strokeRect(midX - badgeW / 2, midY - badgeH / 2, badgeW, badgeH);
 
