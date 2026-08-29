@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
-import { JogController } from './components/JogController';
 import { GcodeStreamer } from './components/GcodeStreamer';
 import { Workspace } from './components/Workspace';
 import { GrblSettingsManager } from './components/GrblSettingsManager';
@@ -153,7 +152,7 @@ G0 X0.000 Y0.000
         onOpenButtonsModal={() => setIsButtonsModalOpen(true)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        hasGcode={!!parsedGcode && parsedGcode.lines.length > 0}
+        parsedGcode={parsedGcode}
         onImportFile={handleImportFile}
         onExportGcode={handleExportGcode}
         panelVisibility={{
@@ -193,10 +192,6 @@ G0 X0.000 Y0.000
               }}
               cncControls={
                 <div className="flex flex-col gap-2 md:gap-3 h-full pb-2 shrink-0">
-                  <JogController
-                    currentProfile={currentProfile}
-                    liveState={liveState}
-                  />
                   <GcodeStreamer
                     parsedGcode={parsedGcode}
                     onGcodeLoaded={(parsed) => setParsedGcode(parsed)}

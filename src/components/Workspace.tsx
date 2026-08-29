@@ -83,7 +83,7 @@ import {
   Ratio,
   Crop,
   SquareDashed,
-  LayoutGrid,
+  LayoutGrid
 } from 'lucide-react';
 import { 
   ActuatorType, 
@@ -173,6 +173,13 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   const [simIndex, setSimIndex] = useState<number>(0);
   const [isSimPlaying, setIsSimPlaying] = useState<boolean>(false);
   const [simSpeed, setSimSpeed] = useState<number>(1);
+  const [showSimSlider, setShowSimSlider] = useState<boolean>(true);
+  const [showStatsPanel, setShowStatsPanel] = useState<boolean>(false);
+  const [showCoordsPanel, setShowCoordsPanel] = useState<boolean>(true);
+  const [showLegendPanel, setShowLegendPanel] = useState<boolean>(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const [showMiniJog, setShowMiniJog] = useState<boolean>(false);
+  const [jogStep, setJogStep] = useState<number>(10);
   const [jogToast, setJogToast] = useState<{x: number, y: number} | null>(null);
   const [doubleClickTarget, setDoubleClickTarget] = useState<{x: number, y: number, time: number} | null>(null);
   const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
@@ -1984,7 +1991,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       }
 
       // Outer Bed border
-      ctx.strokeStyle = '#64748b';
+      ctx.strokeStyle = theme.borderTone || (theme.isDark ? '#64748b' : '#94a3b8');
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(p00.sx, p00.sy);
@@ -2082,7 +2089,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       const penDownZ = 0;
 
       // Draw Main Active Toolpaths (Composition Elements or Primary Active Object) in 3D
-      if (targetMode === 'dragknife' && dragKnifeResult && dragKnifeResult.compensatedSegments.length > 0) {
+      if (!showSimSlider && targetMode === 'dragknife' && dragKnifeResult && dragKnifeResult.compensatedSegments.length > 0) {
         dragKnifeResult.compensatedSegments.forEach(seg => {
           if ((seg.type === 'SWIVEL_ARC' || (seg as any).type === 'swivel') && showSwivelArcs) {
             ctx.save();
@@ -2102,23 +2109,14 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                 const a2 = Math.atan2(seg.to.y - cY, seg.to.x - cX);
                 const isCW = seg.clockwise ?? true;
                 let sweep = a2 - a1;
-                if (isCW) {
-                  if (sweep > 0) sweep -= 2 * Math.PI;
-                } else {
-                  if (sweep < 0) sweep += 2 * Math.PI;
-                }
-                const steps = Math.max(12, Math.min(60, Math.ceil(Math.abs(sweep) * 24 / Math.PI)));
-                const first = project3D(seg.from.x, seg.from.y, penDownZ);
-                ctx.moveTo(first.sx, first.sy);
+                if (isCW && sweep > 0) sweep -= 2 * Math.PI;
+                if (!isCW && sweep < 0) sweep += 2 * Math.PI;
                 
-                for (let s = 1; s <= steps; s++) {
-                  const t = s / steps;
-                  const angle = a1 + sweep * t;
-                  const px = cX + radius * Math.cos(angle);
-                  const py = cY + radius * Math.sin(angle);
-                  const pt = project3D(px, py, penDownZ);
-                  ctx.lineTo(pt.sx, pt.sy);
-                }
+                // For 3D, arcs are complex, so we fallback to line if not perfectly on Z=0
+                const p1 = project3D(seg.from.x, seg.from.y, penDownZ);
+                const p2 = project3D(seg.to.x, seg.to.y, penDownZ);
+                ctx.moveTo(p1.sx, p1.sy);
+                ctx.lineTo(p2.sx, p2.sy);
               } else {
                 const p1 = project3D(seg.from.x, seg.from.y, penDownZ);
                 const p2 = project3D(seg.to.x, seg.to.y, penDownZ);
@@ -2135,10 +2133,10 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             ctx.stroke();
 
             // Swivel Pivot Node on bed
-            const p2 = project3D(seg.to.x, seg.to.y, penDownZ);
+            const pTo = project3D(seg.to.x, seg.to.y, penDownZ);
             ctx.fillStyle = theme.accentColor || '#fbbf24';
             ctx.beginPath();
-            ctx.arc(p2.sx, p2.sy, 2.5, 0, Math.PI * 2);
+            ctx.arc(pTo.sx, pTo.sy, 2.5, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
           } else if ((seg.type === 'G1' || (seg as any).type === 'cut') && showCutPaths) {
@@ -2154,7 +2152,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             ctx.restore();
           }
         });
-      } else if (showCutPaths) {
+      } else if (!showSimSlider && showCutPaths) {
         activeOptimizedPolylines.forEach((poly) => {
           if (poly.points.length < 2) return;
           const startPt = poly.points[0];
@@ -2179,7 +2177,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       }
 
       // Render Rapid / Travel Moves (G0 Leerfahrten / Eilgang with Z-Hop) in 3D
-      if (showRapid) {
+      if (!showSimSlider && showRapid) {
         ctx.save();
         if (targetMode === 'dragknife' && dragKnifeResult && dragKnifeResult.compensatedSegments.length > 0) {
           dragKnifeResult.compensatedSegments.forEach(seg => {
@@ -2497,6 +2495,67 @@ export const Workspace: React.FC<WorkspaceProps> = ({
         ctx.restore();
       }
 
+      // Simulation Path 3D (G-Code Preview up to simIndex)
+      if (parsedGcode && parsedGcode.segments.length > 0 && showSimSlider) {
+        ctx.save();
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        let simToolX = 0, simToolY = 0, simToolZ = 0;
+        let drawnPath = false;
+
+        for (let i = 0; i < parsedGcode.segments.length; i++) {
+          const seg = parsedGcode.segments[i];
+          const type = (seg as any).type || seg.type;
+          const pFrom = project3D(seg.from.x, seg.from.y, seg.from.z ?? 0);
+          const pTo = project3D(seg.to.x, seg.to.y, seg.to.z ?? 0);
+          
+          if (i <= simIndex) {
+            simToolX = seg.to.x; simToolY = seg.to.y; simToolZ = seg.to.z ?? 0;
+            ctx.globalAlpha = 1.0;
+            drawnPath = true;
+          } else {
+            ctx.globalAlpha = 0.15;
+          }
+          
+          ctx.beginPath();
+          ctx.moveTo(pFrom.sx, pFrom.sy);
+          if (type === 'G0' || type === 'rapid') {
+            ctx.strokeStyle = theme.rapidLineColor || '#f43f5e';
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1.5;
+            ctx.lineTo(pTo.sx, pTo.sy);
+          } else if (type === 'G1' || type === 'cut') {
+            ctx.strokeStyle = theme.cutLineColor || '#10b981';
+            ctx.setLineDash([]);
+            ctx.lineWidth = 2.5;
+            ctx.lineTo(pTo.sx, pTo.sy);
+          } else if (type === 'G2' || type === 'G3' || type === 'SWIVEL_ARC' || type === 'swivel') {
+             ctx.strokeStyle = '#f59e0b';
+             ctx.setLineDash([]);
+             ctx.lineWidth = 2.5;
+             ctx.lineTo(pTo.sx, pTo.sy);
+          } else {
+             ctx.lineTo(pTo.sx, pTo.sy);
+          }
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1.0;
+
+        if (drawnPath) {
+          const tP = project3D(simToolX, simToolY, simToolZ);
+          ctx.fillStyle = '#eab308';
+          ctx.beginPath();
+          ctx.arc(tP.sx, tP.sy, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
       // Live Machine Position Crosshair 3D
       if (liveState && (liveState.status === 'Run' || liveState.status === 'Hold' || liveState.status === 'Idle')) {
         const mx = liveState.wpos.x;
@@ -2547,7 +2606,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       const toScreenY = (y: number) => pan.y - y * zoom;
 
       // Bed Background
-      ctx.fillStyle = theme.isDark ? '#0f172a' : '#f8fafc';
+      ctx.fillStyle = theme.bgTone || (theme.isDark ? '#0f172a' : '#f8fafc');
       ctx.fillRect(toScreenX(0), toScreenY(bedH), bedW * zoom, bedH * zoom);
 
       // Bed Grid
@@ -2567,12 +2626,12 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       }
 
       // Bed Border
-      ctx.strokeStyle = theme.isDark ? '#64748b' : '#94a3b8';
+      ctx.strokeStyle = theme.borderTone || (theme.isDark ? '#64748b' : '#94a3b8');
       ctx.lineWidth = 2;
       ctx.strokeRect(toScreenX(0), toScreenY(bedH), bedW * zoom, bedH * zoom);
 
       // Render Committed Objects / Main Active Toolpaths
-      if (targetMode === 'dragknife' && dragKnifeResult && dragKnifeResult.compensatedSegments.length > 0) {
+      if (!showSimSlider && targetMode === 'dragknife' && dragKnifeResult && dragKnifeResult.compensatedSegments.length > 0) {
         // Draw underlying original path in faint dashed cyan
         ctx.strokeStyle = theme.isDark ? 'rgba(6, 182, 212, 0.35)' : 'rgba(6, 182, 212, 0.6)';
         ctx.lineWidth = 1.2;
@@ -2655,7 +2714,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             ctx.stroke();
           }
         });
-      } else if (showCutPaths) {
+      } else if (!showSimSlider && showCutPaths) {
         // Cut / Tool Paths (G1) (Unified Bearbeitung / Schnitt: Solid Emerald Green)
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
@@ -3084,6 +3143,64 @@ export const Workspace: React.FC<WorkspaceProps> = ({
         ctx.beginPath();
         ctx.arc(toScreenX(0), toScreenY(0), 4, 0, Math.PI * 2);
         ctx.fill();
+      }
+
+      // Simulation Path 2D (G-Code Preview up to simIndex)
+      if (parsedGcode && parsedGcode.segments.length > 0 && showSimSlider) {
+        ctx.save();
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        let simToolX = 0, simToolY = 0;
+        let drawnPath = false;
+
+        for (let i = 0; i < parsedGcode.segments.length; i++) {
+          const seg = parsedGcode.segments[i];
+          const type = (seg as any).type || seg.type;
+          
+          if (i <= simIndex) {
+            simToolX = seg.to.x; simToolY = seg.to.y;
+            ctx.globalAlpha = 1.0;
+            drawnPath = true;
+          } else {
+            ctx.globalAlpha = 0.15;
+          }
+          
+          ctx.beginPath();
+          ctx.moveTo(toScreenX(seg.from.x), toScreenY(seg.from.y));
+          if (type === 'G0' || type === 'rapid') {
+            ctx.strokeStyle = theme.rapidLineColor || '#f43f5e';
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1.5;
+            ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+          } else if (type === 'G1' || type === 'cut') {
+            ctx.strokeStyle = theme.cutLineColor || '#10b981';
+            ctx.setLineDash([]);
+            ctx.lineWidth = 2.5;
+            ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+          } else if (type === 'G2' || type === 'G3' || type === 'SWIVEL_ARC' || type === 'swivel') {
+             ctx.strokeStyle = '#f59e0b';
+             ctx.setLineDash([]);
+             ctx.lineWidth = 2.5;
+             ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+          } else {
+             ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+          }
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1.0;
+
+        if (drawnPath) {
+          ctx.fillStyle = '#eab308';
+          ctx.beginPath();
+          ctx.arc(toScreenX(simToolX), toScreenY(simToolY), 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+        ctx.restore();
       }
 
       // Live Machine Position Crosshair
@@ -4053,8 +4170,8 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       {/* LEFT COLUMN: 3-Step Wizard & Configuration Panel (Live-Reacting)           */}
       {/* ========================================================================= */}
       <div 
-        className="w-full lg:w-auto flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex-shrink-0"
-        style={{ width: window.innerWidth >= 1024 ? leftPanelWidth : '100%' }}
+        className={`flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex-shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 border-none ml-0 hidden' : 'w-full lg:w-auto'}`}
+        style={{ width: isSidebarCollapsed ? 0 : (window.innerWidth >= 1024 ? leftPanelWidth : '100%') }}
       >
         {/* Panel Header & Tabs */}
         <div className="flex flex-col border-b border-slate-800 bg-slate-950/80">
@@ -6459,18 +6576,30 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       </div>
 
       {/* Resizer */}
-      <div 
-        className="hidden lg:flex w-2 -mx-1.5 hover:bg-indigo-500/50 cursor-col-resize justify-center items-center rounded transition-colors group z-10 shrink-0"
-        onMouseDown={handleResizeLeftPanelStart}
-        onTouchStart={handleResizeLeftPanelStart}
-      >
-        <div className="w-0.5 h-12 bg-slate-700 group-hover:bg-indigo-400 rounded-full transition-colors" />
-      </div>
+      {!isSidebarCollapsed && (
+        <div 
+          className="hidden lg:flex w-2 -mx-1.5 hover:bg-indigo-500/50 cursor-col-resize justify-center items-center rounded transition-colors group z-10 shrink-0"
+          onMouseDown={handleResizeLeftPanelStart}
+          onTouchStart={handleResizeLeftPanelStart}
+        >
+          <div className="w-0.5 h-12 bg-slate-700 group-hover:bg-indigo-400 rounded-full transition-colors" />
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* CANVAS AREA: Only the unified Generator Preview is used here              */}
       {/* ========================================================================= */}
       <div className="flex-1 flex flex-col h-full overflow-hidden shadow-2xl relative min-w-[300px]">
+        
+        {/* Toggle Sidebar Button */}
+        <button
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="absolute top-1/2 -right-4 z-50 p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-l-md shadow-md border border-r-0 border-slate-700 transition-all group translate-x-4 hover:translate-x-0"
+          title={isSidebarCollapsed ? "Seitenleiste einblenden" : "Seitenleiste ausblenden"}
+        >
+          {isSidebarCollapsed ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+        </button>
+
         <div className="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden relative">
           {/* Top Preview Bar: Statistics, 2D/3D Switches, 3 Menus & Object Browser */}
           <div className="absolute top-0 left-0 right-0 z-10 px-4 py-2 flex items-center justify-between flex-wrap gap-2 text-xs pointer-events-none">
@@ -7055,7 +7184,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             <div className="flex items-center justify-between pb-1 border-b border-slate-800 flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-indigo-400" />
-                <span className="font-bold text-indigo-200 text-sm">Objekt-Browser &amp; Ebenenverwaltung</span>
+                <span className="font-bold text-indigo-200 text-sm">Objekt-Browser &amp; Legende</span>
                 <span className="text-slate-500 font-mono text-[0.6875rem]">({compositionElements.length} Objekte, {selectedElementIds.length} ausgewählt)</span>
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -7304,19 +7433,23 @@ export const Workspace: React.FC<WorkspaceProps> = ({
 
           {/* Live Tool & Mouse Coordinates Overlay */}
           <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 pointer-events-none">
-            <div className="bg-slate-950/80 backdrop-blur-md border border-slate-700/50 px-2.5 py-1.5 rounded-lg shadow-xl flex items-center gap-2">
-              <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="font-mono text-xs text-slate-300">
-                Maus: <span className="text-white font-semibold">X:{mousePos.x.toFixed(1)} Y:{mousePos.y.toFixed(1)}</span>
-              </span>
-            </div>
-            {liveState && (
-              <div className="bg-slate-950/80 backdrop-blur-md border border-slate-700/50 px-2.5 py-1.5 rounded-lg shadow-xl flex items-center gap-2">
-                <Target className="w-3.5 h-3.5 text-red-400 animate-pulse" />
-                <span className="font-mono text-xs text-slate-300">
-                  CNC: <span className="text-white font-semibold">X:{liveState.wpos.x.toFixed(1)} Y:{liveState.wpos.y.toFixed(1)} Z:{liveState.wpos.z.toFixed(1)}</span>
-                </span>
-              </div>
+            {showCoordsPanel && (
+              <>
+                <div className="bg-slate-950/80 backdrop-blur-md border border-slate-700/50 px-2.5 py-1.5 rounded-lg shadow-xl flex items-center gap-2">
+                  <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="font-mono text-xs text-slate-300">
+                    Maus: <span className="text-white font-semibold">X:{mousePos.x.toFixed(1)} Y:{mousePos.y.toFixed(1)}</span>
+                  </span>
+                </div>
+                {liveState && (
+                  <div className="bg-slate-950/80 backdrop-blur-md border border-slate-700/50 px-2.5 py-1.5 rounded-lg shadow-xl flex items-center gap-2">
+                    <Target className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+                    <span className="font-mono text-xs text-slate-300">
+                      CNC: <span className="text-white font-semibold">X:{liveState.wpos.x.toFixed(1)} Y:{liveState.wpos.y.toFixed(1)} Z:{liveState.wpos.z.toFixed(1)}</span>
+                    </span>
+                  </div>
+                )}
+              </>
             )}
             {jogToast && (
               <div className="bg-indigo-600/90 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] text-white font-bold animate-in fade-in slide-in-from-left-2 mt-1 shadow-lg border border-indigo-400/50">
@@ -7325,9 +7458,9 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             )}
           </div>
 
-          {/* Simulation Controls Overlay (Only visible if we have parsedGcode) */}
-          {parsedGcode && parsedGcode.segments.length > 0 && activeSidebarTab === 'steuerung' && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-md border border-white/10 p-1.5 md:p-2 rounded-xl shadow-2xl flex items-center gap-1.5 md:gap-2 z-10 pointer-events-auto min-w-[320px] md:min-w-[500px]">
+          {/* Simulation Controls Overlay (Only visible if we have parsedGcode and showSimSlider is true) */}
+          {parsedGcode && parsedGcode.segments.length > 0 && showSimSlider && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 backdrop-blur-md bg-slate-900/60 border border-slate-700/50 p-1.5 md:p-2 rounded-xl shadow-2xl flex items-center gap-1.5 md:gap-2 z-10 pointer-events-auto min-w-[320px] md:min-w-[500px]">
               
               {/* Previous Step */}
               <button
@@ -7392,7 +7525,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                     setIsSimPlaying(false);
                     setSimIndex(Number(e.target.value));
                   }}
-                  className="flex-1 accent-indigo-500 h-1.5 md:h-2 bg-black/40 rounded-full cursor-pointer transition-all hover:h-2.5"
+                  className="flex-1 accent-indigo-500 h-1.5 md:h-2 bg-slate-800 rounded-full cursor-pointer transition-all hover:h-2.5"
                 />
                 <span className="text-indigo-300 font-mono font-semibold text-[0.6rem] md:text-xs min-w-[30px] md:min-w-[35px] text-right drop-shadow-[0_0_3px_rgba(99,102,241,0.8)]">
                   {Math.round((simIndex / Math.max(1, parsedGcode.segments.length - 1)) * 100)}%
@@ -7531,79 +7664,212 @@ export const Workspace: React.FC<WorkspaceProps> = ({
           />
 
           {/* Interactive Live Legend Overlay with Standardized Color Scheme */}
-          <div className="absolute bottom-4 left-3 bg-black/10 backdrop-blur-md px-3 py-1.5 rounded-full drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] text-[0.625rem] text-slate-100 flex items-center gap-2 z-20 pointer-events-auto transition-opacity opacity-50 hover:opacity-100">
-            <span className="text-slate-300 font-semibold mr-1 hidden sm:inline drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]">Ebenen:</span>
-            
-            {/* Bearbeitung / Cut Paths */}
-            <button
-              onClick={() => setShowCutPaths(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all cursor-pointer ${
-                showCutPaths 
-                  ? 'text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.8)] font-medium hover:bg-white/10' 
-                  : 'text-slate-400 line-through opacity-80 hover:opacity-100 hover:bg-white/5'
-              }`}
-              title="Bearbeitungslinien (Schnitt / Stift / Laser) ein-/ausblenden"
-            >
-              <span 
-                className="w-2.5 h-1 rounded-full shadow-sm" 
-                style={{ backgroundColor: showCutPaths ? (theme.cutLineColor || '#10b981') : '#64748b' }}
-              />
-              <span>Bearbeitung</span>
-            </button>
-
-            {/* Leerfahrt / Eilgang (G0) */}
-            <button
-              onClick={() => setShowRapid(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all cursor-pointer ${
-                showRapid 
-                  ? 'text-rose-400 drop-shadow-[0_0_6px_rgba(251,113,133,0.8)] font-medium hover:bg-white/10' 
-                  : 'text-slate-400 line-through opacity-80 hover:opacity-100 hover:bg-white/5'
-              }`}
-              title="Leerfahrten / Eilgang (G0) ein-/ausblenden"
-            >
-              <span 
-                className="w-2.5 border-b-2 border-dashed" 
-                style={{ borderColor: showRapid ? (theme.rapidLineColor || '#ef4444') : '#64748b' }}
-              />
-              <span>Leerfahrt (G0)</span>
-            </button>
-
-            {/* Messer-Schwenkbögen (Swivel Arcs) */}
-            {targetMode === 'dragknife' && (
+          {showLegendPanel && (
+            <div className="absolute bottom-4 left-3 bg-black/10 backdrop-blur-md px-3 py-1.5 rounded-full drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] text-[0.625rem] text-slate-100 flex items-center gap-2 z-20 pointer-events-auto transition-opacity opacity-50 hover:opacity-100">
+              <span className="text-slate-300 font-semibold mr-1 hidden sm:inline drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]">Legende:</span>
+              
+              {/* Bearbeitung / Cut Paths */}
               <button
-                onClick={() => setShowSwivelArcs(prev => !prev)}
+                onClick={() => setShowCutPaths(prev => !prev)}
                 className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all cursor-pointer ${
-                  showSwivelArcs 
-                    ? 'text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)] font-medium hover:bg-white/10' 
+                  showCutPaths 
+                    ? 'text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.8)] font-medium hover:bg-white/10' 
                     : 'text-slate-400 line-through opacity-80 hover:opacity-100 hover:bg-white/5'
                 }`}
-                title="Messer-Schwenkbögen ein-/ausblenden"
+                title="Bearbeitungslinien (Schnitt / Stift / Laser) ein-/ausblenden"
               >
                 <span 
-                  className="w-2.5 h-1 rounded-full" 
-                  style={{ backgroundColor: showSwivelArcs ? '#f59e0b' : '#64748b' }}
+                  className="w-2.5 h-1 rounded-full shadow-sm" 
+                  style={{ backgroundColor: showCutPaths ? (theme.cutLineColor || '#10b981') : '#64748b' }}
                 />
-                <span>Schwenkbögen</span>
+                <span>Bearbeitung</span>
               </button>
-            )}
 
-            {/* Nullpunkt / Start */}
-            <button
-              onClick={() => setShowOriginMarker(prev => !prev)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all cursor-pointer ${
-                showOriginMarker 
-                  ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.8)] font-medium hover:bg-white/10' 
-                  : 'text-slate-400 line-through opacity-80 hover:opacity-100 hover:bg-white/5'
-              }`}
-              title="Nullpunkt-Achsen & Startpunkt-Markierung ein-/ausblenden"
-            >
-              <span 
-                className="w-1.5 h-1.5 rounded-full" 
-                style={{ backgroundColor: showOriginMarker ? '#10b981' : '#64748b' }}
-              />
-              <span>Nullpunkt (0,0)</span>
-            </button>
+              {/* Leerfahrt / Eilgang (G0) */}
+              <button
+                onClick={() => setShowRapid(prev => !prev)}
+                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                  showRapid 
+                    ? 'text-rose-400 drop-shadow-[0_0_6px_rgba(251,113,133,0.8)] font-medium hover:bg-white/10' 
+                    : 'text-slate-400 line-through opacity-80 hover:opacity-100 hover:bg-white/5'
+                }`}
+                title="Leerfahrten / Eilgang (G0) ein-/ausblenden"
+              >
+                <span 
+                  className="w-2.5 border-b-2 border-dashed" 
+                  style={{ borderColor: showRapid ? (theme.rapidLineColor || '#ef4444') : '#64748b' }}
+                />
+                <span>Leerfahrt (G0)</span>
+              </button>
+
+              {/* Messer-Schwenkbögen (Swivel Arcs) */}
+              {targetMode === 'dragknife' && (
+                <button
+                  onClick={() => setShowSwivelArcs(prev => !prev)}
+                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                    showSwivelArcs 
+                      ? 'text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)] font-medium hover:bg-white/10' 
+                      : 'text-slate-400 line-through opacity-80 hover:opacity-100 hover:bg-white/5'
+                  }`}
+                  title="Messer-Schwenkbögen ein-/ausblenden"
+                >
+                  <span 
+                    className="w-2.5 h-1 rounded-full" 
+                    style={{ backgroundColor: showSwivelArcs ? '#f59e0b' : '#64748b' }}
+                  />
+                  <span>Schwenkbögen</span>
+                </button>
+              )}
+
+              {/* Nullpunkt / Start */}
+              <button
+                onClick={() => setShowOriginMarker(prev => !prev)}
+                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                  showOriginMarker 
+                    ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.8)] font-medium hover:bg-white/10' 
+                    : 'text-slate-400 line-through opacity-80 hover:opacity-100 hover:bg-white/5'
+                }`}
+                title="Nullpunkt-Achsen & Startpunkt-Markierung ein-/ausblenden"
+              >
+                <span 
+                  className="w-1.5 h-1.5 rounded-full" 
+                  style={{ backgroundColor: showOriginMarker ? '#10b981' : '#64748b' }}
+                />
+                <span>Nullpunkt (0,0)</span>
+              </button>
+            </div>
+          )}
+
+          {/* OVERLAY TOGGLES (Bottom Right) */}
+          <div className="absolute bottom-4 right-3 flex flex-col gap-2 z-20 pointer-events-auto">
+            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-700/50 p-1.5 rounded-xl shadow-lg flex flex-col gap-1.5">
+              <button 
+                onClick={() => setShowCoordsPanel(!showCoordsPanel)}
+                className={`p-1.5 rounded-lg transition-colors ${showCoordsPanel ? 'bg-indigo-600/80 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                title="Koordinaten ein-/ausblenden"
+              >
+                <Crosshair className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setShowStatsPanel(!showStatsPanel)}
+                className={`p-1.5 rounded-lg transition-colors ${showStatsPanel ? 'bg-indigo-600/80 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                title="Statistiken ein-/ausblenden"
+              >
+                <Activity className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setShowLegendPanel(!showLegendPanel)}
+                className={`p-1.5 rounded-lg transition-colors ${showLegendPanel ? 'bg-indigo-600/80 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                title="Legende ein-/ausblenden"
+              >
+                <Layers className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setShowSimSlider(!showSimSlider)}
+                className={`p-1.5 rounded-lg transition-colors ${showSimSlider ? 'bg-indigo-600/80 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                title="Simulation Slider ein-/ausblenden"
+              >
+                <Sliders className="w-4 h-4" />
+              </button>
+              {isSidebarCollapsed && (
+                <button 
+                  onClick={() => setShowMiniJog(!showMiniJog)}
+                  className={`p-1.5 rounded-lg transition-colors ${showMiniJog ? 'bg-emerald-600/80 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                  title="Mini-Jog-Controller ein-/ausblenden"
+                >
+                  <Move className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* STATS PANEL */}
+          {showStatsPanel && (
+            <div className="absolute bottom-20 right-3 bg-slate-900/80 backdrop-blur-md border border-slate-700/50 p-3 rounded-xl shadow-xl z-20 pointer-events-auto min-w-[200px] text-xs font-mono text-slate-300">
+              <h4 className="font-bold text-white mb-2 pb-1 border-b border-slate-700">Arbeitsstatistik</h4>
+              {(() => {
+                let cutLen = 0;
+                let rapidLen = 0;
+                let zRetracts = 0;
+                if (parsedGcode) {
+                  for (const seg of parsedGcode.segments) {
+                    const d = Math.hypot(seg.to.x - seg.from.x, seg.to.y - seg.from.y, seg.to.z - seg.from.z);
+                    if (seg.type === 'G0') {
+                      rapidLen += d;
+                      if (seg.to.z > seg.from.z) zRetracts++;
+                    } else if (seg.type === 'G1' || seg.type === 'G2' || seg.type === 'G3') {
+                      cutLen += d;
+                    }
+                  }
+                }
+                const b = parsedGcode?.bounds || { minX: 0, maxX: 0, minY: 0, maxY: 0, minZ: 0, maxZ: 0 };
+                const w = (b.maxX - b.minX).toFixed(1);
+                const h = (b.maxY - b.minY).toFixed(1);
+                const d = (b.maxZ - b.minZ).toFixed(1);
+                // Rough time estimate: Cut length / feedrate + rapid length / rapid speed + z-retracts * delay
+                const feed = currentProfile.travelFeedrate || 1000;
+                const timeSecs = (cutLen / feed) * 60 + (rapidLen / (feed * 2)) * 60 + (zRetracts * 0.5);
+                const hrs = Math.floor(timeSecs / 3600);
+                const mins = Math.floor((timeSecs % 3600) / 60);
+                const secs = Math.floor(timeSecs % 60);
+                const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m ${secs}s`;
+
+                return (
+                  <>
+                    <div className="flex justify-between py-0.5"><span>Bounding Box:</span> <span className="text-emerald-400 font-semibold">{w} x {h} x {d}</span></div>
+                    <div className="flex justify-between py-0.5"><span>Cut Length (G1-3):</span> <span className="text-cyan-400 font-semibold">{cutLen.toFixed(1)} mm</span></div>
+                    <div className="flex justify-between py-0.5"><span>Rapid Length (G0):</span> <span className="text-amber-400 font-semibold">{rapidLen.toFixed(1)} mm</span></div>
+                    <div className="flex justify-between py-0.5"><span>Z-Retracts:</span> <span className="text-rose-400 font-semibold">{zRetracts}</span></div>
+                    <div className="flex justify-between py-0.5 pt-2 mt-1 border-t border-slate-700"><span>Est. Time:</span> <span className="text-white font-bold">{timeStr}</span></div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+          
+          {/* MINI JOG CONTROLLER */}
+          {showMiniJog && isSidebarCollapsed && (
+            <div className="absolute top-20 left-4 bg-slate-900/90 backdrop-blur-md border border-slate-700/50 p-3 rounded-2xl shadow-2xl z-40 pointer-events-auto flex flex-col gap-2">
+               <div className="flex justify-between items-center mb-1 border-b border-slate-800 pb-2">
+                 <h4 className="font-bold text-white text-xs">Mini-Jog</h4>
+                 <button onClick={() => setShowMiniJog(false)} className="text-slate-400 hover:text-white"><X className="w-3 h-3" /></button>
+               </div>
+               
+               {/* Step Size Selector */}
+               <div className="flex justify-center gap-1 mb-1">
+                 {[0.1, 1, 10].map(step => (
+                   <button
+                     key={step}
+                     onClick={() => setJogStep(step)}
+                     className={`px-2 py-0.5 rounded text-[0.6rem] font-bold transition-colors border ${
+                       jogStep === step 
+                         ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm' 
+                         : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+                     }`}
+                   >
+                     {step}mm
+                   </button>
+                 ))}
+               </div>
+
+               <div className="grid grid-cols-3 gap-1 place-items-center">
+                 <div />
+                 <button onClick={() => grbl.jog('Y', jogStep, currentProfile.travelFeedrate)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white active:bg-indigo-600 transition-colors"><ChevronUp className="w-5 h-5" /></button>
+                 <div />
+                 <button onClick={() => grbl.jog('X', -jogStep, currentProfile.travelFeedrate)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white active:bg-indigo-600 transition-colors"><ChevronLeft className="w-5 h-5" /></button>
+                 <button onClick={() => grbl.send('G90 G0 X0 Y0')} className="p-3 bg-indigo-900/50 hover:bg-indigo-700 rounded-xl text-indigo-200 active:bg-indigo-500 transition-colors"><Target className="w-5 h-5" /></button>
+                 <button onClick={() => grbl.jog('X', jogStep, currentProfile.travelFeedrate)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white active:bg-indigo-600 transition-colors"><ChevronRight className="w-5 h-5" /></button>
+                 <div />
+                 <button onClick={() => grbl.jog('Y', -jogStep, currentProfile.travelFeedrate)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white active:bg-indigo-600 transition-colors"><ChevronDown className="w-5 h-5" /></button>
+                 <div />
+               </div>
+               <div className="flex gap-2 justify-center mt-2 border-t border-slate-800 pt-2">
+                 <button onClick={() => grbl.jog('Z', jogStep, currentProfile.travelFeedrate)} className="flex-1 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-white font-bold text-xs flex justify-center items-center gap-1 active:bg-indigo-600 transition-colors"><ChevronUp className="w-3 h-3"/> Z+</button>
+                 <button onClick={() => grbl.jog('Z', -jogStep, currentProfile.travelFeedrate)} className="flex-1 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-white font-bold text-xs flex justify-center items-center gap-1 active:bg-indigo-600 transition-colors"><ChevronDown className="w-3 h-3"/> Z-</button>
+               </div>
+            </div>
+          )}
+
         </div>
       </div>
       </div>

@@ -21,7 +21,11 @@ import {
   LayoutGrid,
   Check,
   FolderOpen,
-  Zap
+  Zap,
+  Pause,
+  Square,
+  Unlock,
+  Link
 } from 'lucide-react';
 import { grbl } from '../services/grblService';
 import { GrblState, MachineProfile } from '../types/cnc';
@@ -37,7 +41,7 @@ interface HeaderProps {
   setActiveTab: (tab: 'visualizer' | 'generator' | 'settings' | 'console') => void;
   onImportFile?: (file: File) => void;
   onExportGcode?: (ext?: 'nc' | 'gcode') => void;
-  hasGcode?: boolean;
+  parsedGcode?: any; // Will use ParsedGcode
   panelVisibility?: {
     visualizer: boolean;
     jog: boolean;
@@ -57,21 +61,24 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   onImportFile,
   onExportGcode,
-  hasGcode = false,
+  parsedGcode,
   panelVisibility,
   onTogglePanel,
 }) => {
   const { t } = useI18n();
   const { theme } = useTheme();
+  const hasGcode = !!parsedGcode && parsedGcode.lines.length > 0;
   const [grblState, setGrblState] = useState<GrblState>(() => grbl.getCurrentState());
   const [baudRate, setBaudRate] = useState<number>(115200);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [connInfo, setConnInfo] = useState(() => grbl.getConnectionInfo());
   const [showLayoutMenu, setShowLayoutMenu] = useState<boolean>(false);
   const [showImportExportMenu, setShowImportExportMenu] = useState<boolean>(false);
+  const [showConnMenu, setShowConnMenu] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const layoutDropdownRef = useRef<HTMLDivElement | null>(null);
   const importExportDropdownRef = useRef<HTMLDivElement | null>(null);
+  const connDropdownRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const unsub = grbl.onState((state) => {
@@ -89,6 +96,9 @@ export const Header: React.FC<HeaderProps> = ({
       }
       if (importExportDropdownRef.current && !importExportDropdownRef.current.contains(e.target as Node)) {
         setShowImportExportMenu(false);
+      }
+      if (connDropdownRef.current && !connDropdownRef.current.contains(e.target as Node)) {
+        setShowConnMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -142,7 +152,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 px-3 py-2 flex flex-wrap items-center justify-between gap-2.5 select-none z-30 relative shadow-md">
+    <header className="bg-slate-900 border-b border-slate-800 px-3 py-2 flex flex-nowrap overflow-x-auto overflow-y-hidden hide-scrollbar items-center justify-between gap-2.5 select-none z-30 relative shadow-md">
       {/* Hidden File Input for Header Import Button */}
       <input
         type="file"
@@ -340,49 +350,85 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* 2. Connection Controls (USB / Simulation) */}
-        {!connInfo.connected ? (
-          <div className="flex items-center gap-1">
-            <select
-              value={baudRate}
-              onChange={(e) => setBaudRate(Number(e.target.value))}
-              className="hidden lg:block bg-slate-800 text-slate-300 text-xs rounded px-1.5 py-1 border border-slate-700 focus:outline-none focus:border-indigo-500 font-mono"
-            >
-              <option value={115200}>115200</option>
-              <option value={9600}>9600</option>
-              <option value={57600}>57600</option>
-              <option value={250000}>250000</option>
-            </select>
-
-            <button
-              onClick={handleConnectSerial}
-              disabled={isConnecting}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
-              title="Per WebSerial (USB) mit GRBL Controller verbinden"
-            >
-              <Usb className="w-3.5 h-3.5" />
-              <span>{t.connectUSB || 'USB'}</span>
-            </button>
-
-            <button
-              onClick={handleConnectSimulation}
-              className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-md text-xs font-medium border border-slate-700 transition-colors"
-              title="Simulator ohne echte Hardware starten"
-            >
-              <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden sm:inline">Sim</span>
-            </button>
-          </div>
-        ) : (
+        {/* 2. Connection Dropdown */}
+        <div className="relative" ref={connDropdownRef}>
           <button
-            onClick={handleDisconnect}
-            className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-rose-950/60 hover:text-rose-300 text-slate-300 rounded-md text-xs font-medium border border-slate-700 hover:border-rose-800 transition-colors"
-            title="Verbindung zum Controller trennen"
+            onClick={() => setShowConnMenu(!showConnMenu)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all border ${
+              connInfo.connected
+                ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30'
+                : showConnMenu
+                ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+            }`}
+            title="Verbindung zum GRBL-Controller"
           >
-            <PowerOff className="w-3.5 h-3.5 text-rose-400" />
-            <span>{t.disconnect || 'Trennen'}</span>
+            {connInfo.connected ? <PowerOff className="w-3.5 h-3.5 text-emerald-400" /> : <Link className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{connInfo.connected ? 'Verbunden' : 'Verbinden'}</span>
           </button>
-        )}
+
+          {showConnMenu && (
+            <div className="absolute right-0 mt-1.5 w-60 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 z-50 space-y-2 text-xs animate-in fade-in-50 duration-100">
+              {!connInfo.connected ? (
+                <>
+                  <div className="px-2 py-1 text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                    Serial Connection
+                  </div>
+                  <div className="space-y-2 pt-1">
+                    <div className="px-1">
+                      <label className="block text-[0.625rem] text-slate-500 mb-1">Baudrate</label>
+                      <select
+                        value={baudRate}
+                        onChange={(e) => setBaudRate(Number(e.target.value))}
+                        className="w-full bg-slate-800 text-slate-300 text-xs rounded px-2 py-1.5 border border-slate-700 focus:outline-none focus:border-indigo-500 font-mono"
+                      >
+                        <option value={115200}>115200</option>
+                        <option value={9600}>9600</option>
+                        <option value={57600}>57600</option>
+                        <option value={250000}>250000</option>
+                      </select>
+                    </div>
+                    <button
+                      onClick={() => { setShowConnMenu(false); handleConnectSerial(); }}
+                      disabled={isConnecting}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
+                    >
+                      <Usb className="w-4 h-4" />
+                      <span>{t.connectUSB || 'WebSerial Verbinden'}</span>
+                    </button>
+                  </div>
+                  
+                  <div className="px-2 py-1 mt-2 text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                    Virtual Controller
+                  </div>
+                  <div className="pt-1">
+                    <button
+                      onClick={() => { setShowConnMenu(false); handleConnectSimulation(); }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-medium border border-slate-700 transition-colors"
+                    >
+                      <Cpu className="w-4 h-4 text-cyan-400" />
+                      <span>Simulator Starten</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="px-2 py-2 mb-1 flex items-center gap-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-emerald-400 font-medium">{connInfo.port || 'Verbunden'}</span>
+                  </div>
+                  <button
+                    onClick={() => { setShowConnMenu(false); handleDisconnect(); }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 bg-rose-950/40 hover:bg-rose-600 text-rose-300 hover:text-white rounded-lg text-xs font-medium border border-rose-900/50 hover:border-rose-500 transition-colors"
+                  >
+                    <PowerOff className="w-4 h-4" />
+                    <span>{t.disconnect || 'Trennen'}</span>
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* 3. Central Gear Menu (Settings, Makros, Layout & Fenster) */}
         <div className="relative" ref={layoutDropdownRef}>
@@ -486,15 +532,66 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* 4. Emergency Stop / NOT-HALT Button */}
-        <button
-          onClick={handleEmergencyStop}
-          className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white rounded-md text-xs font-bold transition-all shadow-md shadow-rose-600/30"
-          title="Not-Halt / Sofortiger Spindel- & Motorstopp (Reset)"
-        >
-          <AlertTriangle className="w-3.5 h-3.5 animate-pulse" />
-          <span>{t.emergencyStop || 'NOT-HALT'}</span>
-        </button>
+        {/* 4. Job Controls */}
+        {connInfo.connected && (parsedGcode?.lines?.length > 0 || grblState.status === 'Run' || grblState.status === 'Hold') && (
+          <div className="flex items-center bg-slate-800 rounded-md p-0.5 border border-slate-700">
+            {(grblState.status === 'Idle' || grblState.status === 'Run') && (
+              <button
+                onClick={() => grblState.status === 'Idle' ? grbl.startStream(parsedGcode?.lines || []) : grbl.pauseStream()}
+                className={`p-1.5 px-2 rounded-sm text-xs font-bold transition-colors flex items-center gap-1 ${
+                  grblState.status === 'Run' 
+                    ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/40'
+                    : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40'
+                }`}
+                title={grblState.status === 'Run' ? 'Pause' : 'Job Starten'}
+              >
+                {grblState.status === 'Run' ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">{grblState.status === 'Run' ? 'Pause' : 'Start'}</span>
+              </button>
+            )}
+            {grblState.status === 'Hold' && (
+              <button
+                onClick={() => grbl.resumeStream()}
+                className="p-1.5 px-2 rounded-sm text-xs font-bold transition-colors bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40 flex items-center gap-1"
+                title="Job Fortsetzen"
+              >
+                <Play className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Resume</span>
+              </button>
+            )}
+            {(grblState.status === 'Run' || grblState.status === 'Hold') && (
+              <button
+                onClick={() => grbl.stopStream()}
+                className="p-1.5 px-2 rounded-sm text-xs font-bold transition-colors bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 flex items-center gap-1 ml-0.5"
+                title="Job Abbrechen"
+              >
+                <Square className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Stop</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* 5. Emergency Stop / Alarm Unlock Button */}
+        {grblState.status === 'Alarm' ? (
+          <button
+            onClick={() => grbl.sendRaw('$X')}
+            className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-900 rounded-md text-xs font-bold transition-all shadow-md shadow-amber-500/30"
+            title="Alarm zurücksetzen (Unlock $X)"
+          >
+            <Unlock className="w-3.5 h-3.5" />
+            <span>Unlock</span>
+          </button>
+        ) : (
+          <button
+            onClick={handleEmergencyStop}
+            className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white rounded-md text-xs font-bold transition-all shadow-md shadow-rose-600/30"
+            title="Not-Halt / Sofortiger Spindel- & Motorstopp (Reset)"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 animate-pulse" />
+            <span>{t.emergencyStop || 'NOT-HALT'}</span>
+          </button>
+        )}
       </div>
     </header>
   );
