@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
-import { Visualizer2D3D } from './components/Visualizer2D3D';
 import { JogController } from './components/JogController';
 import { GcodeStreamer } from './components/GcodeStreamer';
-import { GeneratorSuite } from './components/GeneratorSuite';
+import { Workspace } from './components/Workspace';
 import { GrblSettingsManager } from './components/GrblSettingsManager';
 import { GrblConsole } from './components/GrblConsole';
 import { MachineProfileModal } from './components/MachineProfileModal';
@@ -24,7 +23,6 @@ export default function App() {
   const [isButtonsModalOpen, setIsButtonsModalOpen] = useState<boolean>(false);
   const [parsedGcode, setParsedGcode] = useState<ParsedGcode | null>(null);
   const [liveState, setLiveState] = useState<GrblState>(() => grbl.getCurrentState());
-  const [activeExecutingLine, setActiveExecutingLine] = useState<number>(0);
   const [showMacroBar, setShowMacroBar] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('plottercnc_macrobar_visible');
@@ -91,13 +89,8 @@ export default function App() {
       setLiveState(state);
     });
 
-    const unsubProgress = grbl.onStreamProgress((prog) => {
-      setActiveExecutingLine(prog.currentLine);
-    });
-
     return () => {
       unsubState();
-      unsubProgress();
     };
   }, []);
 
@@ -180,51 +173,7 @@ G0 X0.000 Y0.000
       {/* Main Workspace Body */}
       <main className="flex-1 flex overflow-hidden p-2 md:p-3 gap-2 md:gap-3 relative">
         {/* Unified Workspace Tab */}
-        <div className={`flex-1 flex flex-col gap-2 h-full overflow-hidden ${activeTab === 'visualizer' || activeTab === 'generator' ? 'flex' : 'hidden'}`}>
-          {/* Custom Macro Toolbar (Fully hideable to maximize workspace area) */}
-          {showMacroBar && (
-            <div className="shrink-0">
-              <CustomButtonsBar
-                currentProfile={currentProfile}
-                parsedGcode={parsedGcode}
-                onOpenManageModal={() => setIsButtonsModalOpen(true)}
-                onClose={() => toggleMacroBar(false)}
-              />
-            </div>
-          )}
-          <GeneratorSuite
-            currentProfile={currentProfile}
-            onProfileUpdate={handleProfileSave}
-            onGcodeGenerated={(parsed) => {
-              setParsedGcode(parsed);
-            }}
-            cncControls={
-              <div className="flex flex-col gap-2 md:gap-3 h-full pb-2 shrink-0">
-                <JogController
-                  currentProfile={currentProfile}
-                  liveState={liveState}
-                />
-                <GcodeStreamer
-                  parsedGcode={parsedGcode}
-                  onGcodeLoaded={(parsed) => setParsedGcode(parsed)}
-                  currentProfile={currentProfile}
-                  liveState={liveState}
-                />
-              </div>
-            }
-            liveState={liveState}
-            parsedGcode={parsedGcode}
-          />
-        </div>
-
-        {/* Settings Tab */}
-        <div className={`flex-1 h-full overflow-y-auto ${activeTab === 'settings' ? 'block' : 'hidden'}`}>
-          <GrblSettingsManager />
-        </div>
-
-        {/* Console View: Constrained to max 1/3 width with workspace visualizer visible in remaining 2/3 */}
-        <div className={`flex-1 flex flex-col md:flex-row gap-2 md:gap-3 h-full overflow-hidden ${activeTab === 'console' ? 'flex' : 'hidden'}`}>
-          {/* Left: Live 2D/3D Workspace Surface is fully visible */}
+        <div className={`flex-1 flex flex-row gap-2 md:gap-3 h-full overflow-hidden ${activeTab === 'visualizer' || activeTab === 'generator' || activeTab === 'console' ? 'flex' : 'hidden'}`}>
           <div className="flex-1 flex flex-col gap-2 h-full overflow-hidden min-w-[300px]">
             {showMacroBar && (
               <div className="shrink-0">
@@ -236,34 +185,55 @@ G0 X0.000 Y0.000
                 />
               </div>
             )}
-            <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0">
-              <Visualizer2D3D
-                parsedGcode={parsedGcode}
-                currentProfile={currentProfile}
-                liveState={liveState}
-                activeLineIndex={activeExecutingLine}
-                onGcodeUpdate={(updated) => setParsedGcode(updated)}
-                onOpenGenerator={() => setActiveTab('generator')}
-              />
-            </div>
+            <Workspace
+              currentProfile={currentProfile}
+              onProfileUpdate={handleProfileSave}
+              onGcodeGenerated={(parsed) => {
+                setParsedGcode(parsed);
+              }}
+              cncControls={
+                <div className="flex flex-col gap-2 md:gap-3 h-full pb-2 shrink-0">
+                  <JogController
+                    currentProfile={currentProfile}
+                    liveState={liveState}
+                  />
+                  <GcodeStreamer
+                    parsedGcode={parsedGcode}
+                    onGcodeLoaded={(parsed) => setParsedGcode(parsed)}
+                    currentProfile={currentProfile}
+                    liveState={liveState}
+                  />
+                </div>
+              }
+              liveState={liveState}
+              parsedGcode={parsedGcode}
+            />
           </div>
 
-          {/* Resizer */}
+          {/* Console Right Panel */}
           <div 
-            className="hidden md:flex w-2 -mx-1 hover:bg-indigo-500/50 cursor-col-resize justify-center items-center rounded transition-colors group z-10 shrink-0"
-            onMouseDown={handleResizeRightPanelStart}
-            onTouchStart={handleResizeRightPanelStart}
-          >
-            <div className="w-0.5 h-12 bg-slate-700 group-hover:bg-indigo-400 rounded-full transition-colors" />
-          </div>
-
-          {/* Right: GRBL Terminal & Command Console */}
-          <div 
-            className="h-full overflow-hidden border border-slate-800 rounded-xl bg-slate-900 shadow-xl shrink-0 w-full md:w-auto"
+            className={`flex flex-row h-full gap-2 md:gap-3 shrink-0 ${activeTab === 'console' ? 'flex' : 'hidden'}`} 
             style={{ width: window.innerWidth >= 768 ? rightPanelWidth : '100%' }}
           >
-            <GrblConsole />
+            {/* Resizer */}
+            <div 
+              className="hidden md:flex w-2 -mx-1 hover:bg-indigo-500/50 cursor-col-resize justify-center items-center rounded transition-colors group z-10 shrink-0"
+              onMouseDown={handleResizeRightPanelStart}
+              onTouchStart={handleResizeRightPanelStart}
+            >
+              <div className="w-0.5 h-12 bg-slate-700 group-hover:bg-indigo-400 rounded-full transition-colors" />
+            </div>
+
+            {/* Right: GRBL Terminal & Command Console */}
+            <div className="h-full w-full overflow-hidden border border-slate-800 rounded-xl bg-slate-900 shadow-xl">
+              <GrblConsole />
+            </div>
           </div>
+        </div>
+
+        {/* Settings Tab */}
+        <div className={`flex-1 h-full overflow-y-auto ${activeTab === 'settings' ? 'block' : 'hidden'}`}>
+          <GrblSettingsManager />
         </div>
       </main>
 

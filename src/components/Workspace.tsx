@@ -117,7 +117,7 @@ import {
 } from '../services/vectorRasterGenerator';
 import { applyDragKnifeCompensation, CompensatedPathResult } from '../services/dragKnifeCorrection';
 import { parseGcode } from '../services/gcodeParser';
-import { gcodeGenerator } from '../services/gcodeGenerator';
+
 import { grbl } from '../services/grblService';
 import { parseDxf } from '../services/dxfParser';
 import { LaserDatabaseModal } from './LaserDatabaseModal';
@@ -125,7 +125,7 @@ import { LaserMaterialPreset } from '../services/laserDatabaseService';
 import { useI18n, useThemeLanguage } from '../contexts/ThemeLanguageContext';
 import { ViewCube } from './ViewCube';
 
-interface GeneratorSuiteProps {
+interface WorkspaceProps {
   currentProfile: MachineProfile;
   onProfileUpdate: (updated: MachineProfile) => void;
   onGcodeGenerated: (parsed: ParsedGcode) => void;
@@ -154,7 +154,7 @@ export interface CompositionElement {
   locked?: boolean;
 }
 
-export const GeneratorSuite: React.FC<GeneratorSuiteProps> = ({
+export const Workspace: React.FC<WorkspaceProps> = ({
   currentProfile,
   onProfileUpdate,
   onGcodeGenerated,

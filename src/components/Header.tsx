@@ -204,7 +204,7 @@ export const Header: React.FC<HeaderProps> = ({
           title="Hauptarbeitsfläche (Design & Steuerung)"
         >
           <Layers className="w-3.5 h-3.5 text-cyan-400" />
-          <span>{t.workspace || 'Workspace'}</span>
+          <span>Workspace</span>
         </button>
         <button
           onClick={() => setActiveTab('settings')}
