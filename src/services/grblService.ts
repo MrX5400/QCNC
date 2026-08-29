@@ -42,8 +42,13 @@ class GrblService {
   private isStreaming: boolean = false;
   private isPaused: boolean = false;
   private isAwaitingOk: boolean = false;
+  private currentStreamLine: number = 0;
 
   // Simulator state
+  private isSimulated: boolean = false;
+  private simulationInterval: any = null;
+  private simRafId: number | null = null;
+  private lastSimTime: number = 0;
   private simTargetPos: Point3D = { x: 0, y: 0, z: 0 };
   private simFeedrate: number = 1000;
 
@@ -138,9 +143,14 @@ class GrblService {
     this.notifyLog('recv', "Grbl 1.1h ['$' for help]");
 
     // Start simulation loop for motion & status reports
-    this.simulationInterval = setInterval(() => {
-      this.tickSimulation();
-    }, 100);
+    this.lastSimTime = performance.now();
+    const simLoop = (now: number) => {
+      const dt = (now - this.lastSimTime) / 1000.0;
+      this.lastSimTime = now;
+      this.tickSimulation(dt);
+      this.simRafId = requestAnimationFrame(simLoop);
+    };
+    this.simRafId = requestAnimationFrame(simLoop);
 
     return true;
   }
@@ -148,8 +158,10 @@ class GrblService {
   public async disconnect() {
     if (this.statusPollInterval) clearInterval(this.statusPollInterval);
     if (this.simulationInterval) clearInterval(this.simulationInterval);
+    if (this.simRafId) cancelAnimationFrame(this.simRafId);
     this.statusPollInterval = null;
     this.simulationInterval = null;
+    this.simRafId = null;
 
     if (this.reader) {
       try { await this.reader.cancel(); } catch {}
@@ -655,6 +667,23 @@ class GrblService {
       return;
     }
 
+    // Parse spindle/laser commands
+    const sMatch = cmd.match(/S([\d.]+)/i);
+    if (sMatch) this.currentState.spindleSpeed = parseFloat(sMatch[1]);
+    
+    if (upper.includes('M3') || upper.includes('M4')) {
+       // Spindle on
+       if (sMatch) this.currentState.spindleSpeed = parseFloat(sMatch[1]);
+       else if (this.currentState.spindleSpeed === 0) this.currentState.spindleSpeed = 1000;
+    }
+    if (upper.includes('M5')) {
+       this.currentState.spindleSpeed = 0;
+    }
+    
+    if (sMatch || upper.includes('M3') || upper.includes('M4') || upper.includes('M5')) {
+       this.notifyState();
+    }
+
     // Default immediate OK
     setTimeout(() => {
       this.notifyLog('recv', 'ok');
@@ -665,7 +694,7 @@ class GrblService {
     }, 10);
   }
 
-  private tickSimulation() {
+  private tickSimulation(dt: number = 0.016) {
     if (!this.isSimulated || !this.isConnected) return;
 
     // Smoothly step position towards simTargetPos
@@ -674,8 +703,12 @@ class GrblService {
     const dz = this.simTargetPos.z - this.currentState.wpos.z;
     const dist = Math.hypot(dx, dy, dz);
 
-    if (dist > 0.05) {
-      const step = Math.min(dist, 10.0);
+    if (dist > 0.005) {
+      // Feedrate is in mm/min, so mm/sec is feedrate / 60
+      const speedMmPerSec = this.simFeedrate / 60.0;
+      // Step distance is speed * dt
+      const step = Math.min(dist, speedMmPerSec * dt);
+      
       this.currentState.wpos.x += (dx / dist) * step;
       this.currentState.wpos.y += (dy / dist) * step;
       this.currentState.wpos.z += (dz / dist) * step;
@@ -685,6 +718,19 @@ class GrblService {
         z: this.currentState.wpos.z + this.currentState.wco.z,
       };
       this.currentState.feedrate = this.simFeedrate;
+      this.currentState.status = 'Run';
+      this.notifyState();
+    } else if (dist <= 0.005 && dist > 0) {
+      this.currentState.wpos.x = this.simTargetPos.x;
+      this.currentState.wpos.y = this.simTargetPos.y;
+      this.currentState.wpos.z = this.simTargetPos.z;
+      this.currentState.mpos = {
+        x: this.currentState.wpos.x + this.currentState.wco.x,
+        y: this.currentState.wpos.y + this.currentState.wco.y,
+        z: this.currentState.wpos.z + this.currentState.wco.z,
+      };
+      this.currentState.feedrate = 0;
+      this.currentState.status = 'Idle';
       this.notifyState();
     }
   }

@@ -51,8 +51,8 @@ export const JogController: React.FC<JogControllerProps> = ({
 
   const isJobRunning = liveState?.status?.toUpperCase() === 'RUN' || liveState?.status?.toUpperCase() === 'HOLD';
 
-  const stepOptions = [0.05, 0.1, 0.5, 1, 5, 10, 50, 100];
-  const feedrateOptions = [100, 500, 1000, 2000, 3000, 5000];
+  const stepOptions = [0.1, 1, 5, 10, 50, 100];
+  const feedrateOptions = [100, 500, 2000, 5000, 10000];
 
   const continuousJogInterval = useRef<any>(null);
 
@@ -282,7 +282,7 @@ export const JogController: React.FC<JogControllerProps> = ({
           )}
 
           {/* Quick Step Preset Buttons */}
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-1 pt-1 font-mono text-[0.625rem]">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 pt-1 font-mono text-[0.625rem]">
             {stepOptions.map((s) => (
               <button
                 key={s}
@@ -337,7 +337,7 @@ export const JogController: React.FC<JogControllerProps> = ({
           </div>
 
           {/* Quick Speed Preset Buttons */}
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 font-mono text-[0.625rem]">
+          <div className="grid grid-cols-5 gap-1 font-mono text-[0.625rem]">
             {feedrateOptions.map((f) => (
               <button
                 key={f}
