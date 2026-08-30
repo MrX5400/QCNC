@@ -283,9 +283,15 @@ export const Workspace: React.FC<WorkspaceProps> = ({
     scale: 1.0,
     scaleToFit: false,
     alignCenter: true,
-    minPathLength: 0.1,
+    minPathLength: 0.2,
     removeDuplicates: true,
     ignoreImagesAndFills: true,
+    filterInvisibleRects: true,
+    filterPageBorders: true,
+    ignoreFills: true,
+    importMode: 'auto',
+    tracerMode: 'contour_trace',
+    tracerThreshold: 128,
   });
   const [isPdfProcessing, setIsPdfProcessing] = useState<boolean>(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
@@ -6038,54 +6044,90 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                 </label>
 
                 {pdfFile && (
-                  <div className="space-y-3 pt-2">
-                    <div className="flex items-center justify-between text-[0.6875rem]">
-                      <span className="font-medium text-slate-300 truncate max-w-[150px]">{pdfFile.name}</span>
-                      <span className="text-slate-500">{pdfTotalPages} Seite{pdfTotalPages !== 1 ? 'n' : ''}</span>
+                  <div className="space-y-4 pt-2">
+                    {/* A) Dokument & Vorschau */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[0.6875rem]">
+                        <span className="font-medium text-slate-300 truncate max-w-[150px]">{pdfFile.name}</span>
+                        <span className="text-slate-500">{pdfTotalPages} Seite{pdfTotalPages !== 1 ? 'n' : ''}</span>
+                      </div>
+
+                      {isPdfProcessing ? (
+                        <div className="flex flex-col items-center justify-center p-4 bg-slate-900 rounded border border-slate-800">
+                          <Loader2 className="w-5 h-5 text-indigo-400 animate-spin mb-2" />
+                          <span className="text-[0.625rem] text-slate-400">PDF wird analysiert...</span>
+                        </div>
+                      ) : pdfError ? (
+                        <div className="p-3 bg-red-950/30 rounded border border-red-900/50 text-red-400 text-[0.625rem] text-center flex flex-col items-center">
+                          <Info className="w-4 h-4 mb-1" />
+                          {pdfError}
+                        </div>
+                      ) : pdfPreviewUrl ? (
+                        <div className="relative w-full rounded border border-slate-800 overflow-hidden bg-white/5 flex items-center justify-center" style={{ height: '140px' }}>
+                          <img src={pdfPreviewUrl} alt="PDF Vorschau" className="max-w-full max-h-full object-contain drop-shadow-md" />
+                        </div>
+                      ) : null}
+
+                      {pdfTotalPages > 1 && (
+                        <div className="space-y-1 pt-1">
+                          <label className="text-[0.625rem] text-slate-400 font-semibold">Seite auswählen:</label>
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="range" 
+                              min={1} 
+                              max={pdfTotalPages} 
+                              value={pdfOptions.pageNumber}
+                              onChange={(e) => setPdfOptions({ ...pdfOptions, pageNumber: Number(e.target.value) })}
+                              className="flex-1 accent-indigo-500"
+                            />
+                            <span className="text-xs font-mono text-indigo-300 w-8 text-right">{pdfOptions.pageNumber}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Preview / Loading / Error */}
-                    {isPdfProcessing ? (
-                      <div className="flex flex-col items-center justify-center p-4 bg-slate-900 rounded border border-slate-800">
-                        <Loader2 className="w-5 h-5 text-indigo-400 animate-spin mb-2" />
-                        <span className="text-[0.625rem] text-slate-400">PDF wird analysiert...</span>
+                    {/* B) Vektor- & Text-Verarbeitung */}
+                    <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                      <label className="text-[0.625rem] text-slate-400 font-semibold uppercase tracking-wider">✒️ Vektor- & Text-Verarbeitung</label>
+                      <div className="space-y-1.5">
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                          <div className={`w-3.5 h-3.5 rounded-sm flex items-center justify-center transition-colors ${pdfOptions.importShapes ? 'bg-indigo-500' : 'bg-slate-800 group-hover:bg-slate-700'}`}>
+                            {pdfOptions.importShapes && <Check className="w-2.5 h-2.5 text-white" />}
+                          </div>
+                          <span className="text-[0.6875rem] text-slate-300">Vektoren & Formen importieren</span>
+                          <input type="checkbox" className="hidden" checked={pdfOptions.importShapes} onChange={(e) => setPdfOptions({ ...pdfOptions, importShapes: e.target.checked })} />
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                          <div className={`w-3.5 h-3.5 rounded-sm flex items-center justify-center transition-colors ${pdfOptions.importText ? 'bg-indigo-500' : 'bg-slate-800 group-hover:bg-slate-700'}`}>
+                            {pdfOptions.importText && <Check className="w-2.5 h-2.5 text-white" />}
+                          </div>
+                          <span className="text-[0.6875rem] text-slate-300">Text & Beschriftungen importieren</span>
+                          <input type="checkbox" className="hidden" checked={pdfOptions.importText} onChange={(e) => setPdfOptions({ ...pdfOptions, importText: e.target.checked })} />
+                        </label>
                       </div>
-                    ) : pdfError ? (
-                      <div className="p-3 bg-red-950/30 rounded border border-red-900/50 text-red-400 text-[0.625rem] text-center flex flex-col items-center">
-                        <Info className="w-4 h-4 mb-1" />
-                        {pdfError}
-                      </div>
-                    ) : pdfPreviewUrl ? (
-                      <div className="relative w-full rounded border border-slate-800 overflow-hidden bg-white/5 flex items-center justify-center" style={{ height: '140px' }}>
-                        <img src={pdfPreviewUrl} alt="PDF Vorschau" className="max-w-full max-h-full object-contain drop-shadow-md" />
-                      </div>
-                    ) : null}
 
-
-                    {/* Page Selection */}
-                    {pdfTotalPages > 1 && (
-                      <div className="space-y-1">
-                        <label className="text-[0.625rem] text-slate-400 font-semibold">Seite auswählen:</label>
-                        <div className="flex items-center gap-2">
-                          <input 
-                            type="range" 
-                            min={1} 
-                            max={pdfTotalPages} 
-                            value={pdfOptions.pageNumber}
-                            onChange={(e) => setPdfOptions({ ...pdfOptions, pageNumber: Number(e.target.value) })}
-                            className="flex-1 accent-indigo-500"
-                          />
-                          <span className="text-xs font-mono text-indigo-300 w-8 text-right">{pdfOptions.pageNumber}</span>
+                      {pdfOptions.importText && (
+                        <div className="pl-5 space-y-1">
+                          <label className="text-[0.625rem] text-slate-400">Text-Modus:</label>
+                          <select 
+                            className="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200 outline-none focus:border-indigo-500"
+                            value={pdfOptions.textMode}
+                            onChange={(e) => setPdfOptions({ ...pdfOptions, textMode: e.target.value as any })}
+                          >
+                            <option value="outline">Konturen abfahren (Outline)</option>
+                            <option value="single_line">Mittellinie (Single-Line)</option>
+                            <option value="ignore">Text ignorieren</option>
+                          </select>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
-                    {/* Scale & Positioning */}
-                    <div className="space-y-1 pt-1 border-t border-slate-800/80">
-                      <label className="text-[0.625rem] text-slate-400 font-semibold">Maßstab & Skalierung:</label>
-                      <div className="flex items-center gap-2">
+                    {/* C) Maßstab & Platzierung */}
+                    <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                      <label className="text-[0.625rem] text-slate-400 font-semibold uppercase tracking-wider">📐 Maßstab & Platzierung</label>
+                      <div className="space-y-1">
                         <select 
-                          className="flex-1 bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200 outline-none focus:border-indigo-500"
+                          className="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200 outline-none focus:border-indigo-500"
                           value={pdfOptions.scaleToFit ? 'fit' : pdfOptions.scale.toString()}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -6099,141 +6141,95 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                           <option value="1">Original (1:1)</option>
                           <option value="0.5">1:2 (50%)</option>
                           <option value="0.1">1:10 (10%)</option>
-                          <option value="fit">An Arbeitsfläche einpassen</option>
+                          <option value="fit">An Bett einpassen</option>
                         </select>
-                      </div>
-                    </div>
 
-                    <div className="space-y-1 pt-1 border-t border-slate-800/80">
-                      <label className="text-[0.625rem] text-slate-400 font-semibold">Positionierung:</label>
-                      <select
-                        className="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200 outline-none focus:border-indigo-500"
-                        value={pdfOptions.scaleToFit ? 'fit' : pdfOptions.alignCenter ? 'center' : 'origin'}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === 'fit') {
-                            setPdfOptions({ ...pdfOptions, scaleToFit: true, alignCenter: false });
-                          } else if (val === 'center') {
-                            setPdfOptions({ ...pdfOptions, scaleToFit: false, alignCenter: true });
-                          } else {
-                            setPdfOptions({ ...pdfOptions, scaleToFit: false, alignCenter: false });
-                          }
-                        }}
-                      >
-                        <option value="center">Auf Bett zentrieren</option>
-                        <option value="origin">Originalposition (0,0)</option>
-                        <option value="fit">Einpassen & zentrieren</option>
-                      </select>
-                    </div>
-
-                    {/* Components Filter */}
-                    <div className="space-y-1.5 pt-1 border-t border-slate-800/80">
-                      <label className="text-[0.625rem] text-slate-400 font-semibold flex items-center justify-between">
-                        Komponenten importieren:
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer group">
-                        <div className={`w-3.5 h-3.5 rounded-sm flex items-center justify-center transition-colors ${pdfOptions.importShapes ? 'bg-indigo-500' : 'bg-slate-800 group-hover:bg-slate-700'}`}>
-                          {pdfOptions.importShapes && <Check className="w-2.5 h-2.5 text-white" />}
-                        </div>
-                        <span className="text-[0.6875rem] text-slate-300">Vektorformen & Linien</span>
-                        <input type="checkbox" className="hidden" checked={pdfOptions.importShapes} onChange={(e) => setPdfOptions({ ...pdfOptions, importShapes: e.target.checked })} />
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer group">
-                        <div className={`w-3.5 h-3.5 rounded-sm flex items-center justify-center transition-colors ${pdfOptions.importText ? 'bg-indigo-500' : 'bg-slate-800 group-hover:bg-slate-700'}`}>
-                          {pdfOptions.importText && <Check className="w-2.5 h-2.5 text-white" />}
-                        </div>
-                        <span className="text-[0.6875rem] text-slate-300">Text & Schriften</span>
-                        <input type="checkbox" className="hidden" checked={pdfOptions.importText} onChange={(e) => setPdfOptions({ ...pdfOptions, importText: e.target.checked })} />
-                      </label>
-                    </div>
-
-                    {/* Text Processing */}
-                    {pdfOptions.importText && (
-                      <div className="space-y-1.5 pt-1 border-t border-slate-800/80">
-                        <label className="text-[0.625rem] text-slate-400 font-semibold">Text-Modus:</label>
-                        <select 
+                        <select
                           className="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200 outline-none focus:border-indigo-500"
-                          value={pdfOptions.textMode}
-                          onChange={(e) => setPdfOptions({ ...pdfOptions, textMode: e.target.value as any })}
+                          value={pdfOptions.scaleToFit ? 'fit' : pdfOptions.alignCenter ? 'center' : 'origin'}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === 'fit') {
+                              setPdfOptions({ ...pdfOptions, scaleToFit: true, alignCenter: false });
+                            } else if (val === 'center') {
+                              setPdfOptions({ ...pdfOptions, scaleToFit: false, alignCenter: true });
+                            } else {
+                              setPdfOptions({ ...pdfOptions, scaleToFit: false, alignCenter: false });
+                            }
+                          }}
                         >
-                          <option value="outline">Konturen abfahren (Outline)</option>
-                          <option value="single_line">Mittellinie / Single-Line Font</option>
-                          <option value="ignore">Text ignorieren</option>
+                          <option value="center">Auf Bett zentrieren</option>
+                          <option value="origin">Originalposition (0,0)</option>
+                          {pdfOptions.scaleToFit && <option value="fit">Einpassen & zentrieren</option>}
                         </select>
-                        
-                        {pdfOptions.textMode === 'single_line' && (
-                          <div className="pt-1">
-                            <label className="text-[0.625rem] text-slate-400 font-semibold">Plotter-Schriftart:</label>
-                            <select 
-                              className="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200 outline-none focus:border-indigo-500 mt-1"
-                              value={pdfOptions.singleLineFont}
-                              onChange={(e) => setPdfOptions({ ...pdfOptions, singleLineFont: e.target.value })}
-                            >
-                              <option value="hershey_simplex">Hershey Simplex</option>
-                              <option value="hershey_sans">Hershey Sans</option>
-                              <option value="hershey_serif">Hershey Serif</option>
-                              <option value="hershey_script">Hershey Script</option>
-                            </select>
-                          </div>
-                        )}
-
-                        {pdfOptions.textMode === 'outline' && (
-                          <div className="pt-1 space-y-1">
-                            <label className="text-[0.625rem] text-slate-400 font-semibold">Schriftart (Outline):</label>
-                            <select 
-                              className="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200 outline-none focus:border-indigo-500"
-                              value={pdfOptions.outlineFontMode}
-                              onChange={(e) => setPdfOptions({ ...pdfOptions, outlineFontMode: e.target.value as any })}
-                            >
-                              <option value="original">Original aus PDF</option>
-                              <option value="replace">Durch Web-Font ersetzen</option>
-                            </select>
-                            
-                            {pdfOptions.outlineFontMode === 'replace' && (
-                              <input
-                                type="text"
-                                className="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200 outline-none focus:border-indigo-500"
-                                placeholder="z.B. Arial, Fira Code..."
-                                value={pdfOptions.outlineFontReplace}
-                                onChange={(e) => setPdfOptions({ ...pdfOptions, outlineFontReplace: e.target.value })}
-                              />
-                            )}
-                          </div>
-                        )}
                       </div>
-                    )}
-                    {/* Filters */}
+                    </div>
+
+                    {/* D) Bereinigung & Feinfilter */}
                     <div className="space-y-2 pt-2 border-t border-slate-800/80">
-                      <label className="flex items-center gap-2 cursor-pointer group">
+                      <label className="text-[0.625rem] text-slate-400 font-semibold uppercase tracking-wider">🧹 Bereinigung & Feinfilter</label>
+                      
+                      <label className="flex items-start gap-2 cursor-pointer group">
+                        <input 
+                          type="checkbox" 
+                          checked={pdfOptions.filterInvisibleRects}
+                          onChange={(e) => setPdfOptions({ ...pdfOptions, filterInvisibleRects: e.target.checked })}
+                          className="mt-0.5 rounded border-slate-700 text-indigo-500 focus:ring-indigo-500 bg-slate-900" 
+                        />
+                        <span className="text-[0.6875rem] text-slate-300 group-hover:text-white transition-colors leading-tight">Unsichtbare Schnittmasken & weiße Seitenhintergründe filtern</span>
+                      </label>
+
+                      <label className="flex items-start gap-2 cursor-pointer group">
                         <input 
                           type="checkbox" 
                           checked={pdfOptions.removeDuplicates}
                           onChange={(e) => setPdfOptions({ ...pdfOptions, removeDuplicates: e.target.checked })}
-                          className="rounded border-slate-700 text-indigo-500 focus:ring-indigo-500 bg-slate-900" 
+                          className="mt-0.5 rounded border-slate-700 text-indigo-500 focus:ring-indigo-500 bg-slate-900" 
                         />
-                        <span className="text-xs text-slate-300 group-hover:text-white transition-colors">Doppelte Linien entfernen</span>
+                        <span className="text-[0.6875rem] text-slate-300 group-hover:text-white transition-colors">Doppelte Linien / Kanten bereinigen</span>
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer group">
-                        <input 
-                          type="checkbox" 
-                          checked={pdfOptions.ignoreImagesAndFills}
-                          onChange={(e) => setPdfOptions({ ...pdfOptions, ignoreImagesAndFills: e.target.checked })}
-                          className="rounded border-slate-700 text-indigo-500 focus:ring-indigo-500 bg-slate-900" 
-                        />
-                        <span className="text-xs text-slate-300 group-hover:text-white transition-colors">Füllflächen ausblenden</span>
-                      </label>
-                      <div className="flex items-center justify-between text-xs text-slate-300 pt-1">
+
+                      <div className="flex items-center justify-between text-[0.6875rem] text-slate-300 pt-1">
                         <span>Min. Linienlänge:</span>
                         <select 
                           className="bg-slate-900 border border-slate-700 rounded p-0.5 text-xs outline-none"
                           value={pdfOptions.minPathLength}
                           onChange={(e) => setPdfOptions({ ...pdfOptions, minPathLength: Number(e.target.value) })}
                         >
-                          <option value="0">Kein Filter</option>
+                          <option value="0">Kein Filter (0 mm)</option>
                           <option value="0.1">0.1 mm (Artefakte)</option>
                           <option value="1">1.0 mm</option>
                         </select>
                       </div>
+                    </div>
+
+                    {/* Fallback settings */}
+                    <div className="space-y-1 pt-2 border-t border-slate-800/80">
+                      <label className="text-[0.625rem] text-slate-400 font-semibold uppercase tracking-wider">⚠️ Import-Methode & Fallback</label>
+                      <select
+                        className="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-200 outline-none focus:border-indigo-500"
+                        value={pdfOptions.importMode}
+                        onChange={(e) => setPdfOptions({ ...pdfOptions, importMode: e.target.value as any })}
+                      >
+                        <option value="auto">Automatisch (Primär Vektoren)</option>
+                        <option value="vector">Direkte CAD-Vektoren (Nur Pfade)</option>
+                        <option value="raster_tracer">Kontur-Tracer (Scan-Vektorisierung)</option>
+                      </select>
+                      
+                      {(pdfOptions.importMode === 'raster_tracer' || pdfOptions.importMode === 'auto') && (
+                        <div className="pt-2">
+                          <label className="text-[0.625rem] text-slate-400 flex justify-between">
+                            <span>Tracer Schwellenwert:</span>
+                            <span className="text-indigo-400">{pdfOptions.tracerThreshold}</span>
+                          </label>
+                          <input
+                            type="range" min="0" max="255"
+                            value={pdfOptions.tracerThreshold}
+                            onChange={(e) => setPdfOptions({ ...pdfOptions, tracerThreshold: Number(e.target.value) })}
+                            className="w-full accent-indigo-500"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <button
