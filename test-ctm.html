@@ -1,0 +1,11 @@
+
+<canvas id='c'></canvas>
+<script>
+  const ctx = document.getElementById('c').getContext('2d');
+  ctx.translate(10, 10);
+  ctx.scale(2, 2);
+  const m = ctx.getTransform();
+  const pt = new DOMPoint(5, 5).matrixTransform(m);
+  console.log(pt.x, pt.y); // Should be 20, 20
+</script>
+
