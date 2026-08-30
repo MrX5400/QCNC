@@ -179,7 +179,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   const [simIndex, setSimIndex] = useState<number>(0);
   const [isSimPlaying, setIsSimPlaying] = useState<boolean>(false);
   const [simSpeed, setSimSpeed] = useState<number>(1);
-  const [showSimSlider, setShowSimSlider] = useState<boolean>(true);
+  const [showSimSlider, setShowSimSlider] = useState<boolean>(false);
   const [showStatsPanel, setShowStatsPanel] = useState<boolean>(false);
   const [showCoordsPanel, setShowCoordsPanel] = useState<boolean>(true);
   const [showLegendPanel, setShowLegendPanel] = useState<boolean>(true);
@@ -1912,6 +1912,11 @@ export const Workspace: React.FC<WorkspaceProps> = ({
     currentProfile
   ]);
 
+  const localSimSegments = useMemo(() => {
+    const parsed = parseGcode(generatedGcode, currentProfile.penUpZ || 2);
+    return parsed.segments || [];
+  }, [generatedGcode, currentProfile.penUpZ]);
+
   // --- Draw Live Preview Canvas (2D & 3D Interactive Modes) ---
   const renderPreview = useCallback(() => {
     const isSimulationActive = showSimSlider && (isSimPlaying || simIndex > 0);
@@ -2092,13 +2097,15 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       if (targetMode === 'dragknife') {
         penUpZVal = dragKnifeOptions.penUpZ ?? currentProfile.penUpZ ?? 5;
       } else {
-        penUpZVal = penOptions.penUpZ ?? currentProfile.penUpZ ?? 5;
+      penUpZVal = penOptions.penUpZ ?? currentProfile.penUpZ ?? 5;
       }
       const penUpZ = penUpZVal;
       const penDownZ = 0;
 
       // Draw Main Active Toolpaths (Composition Elements or Primary Active Object) in 3D
-      if (!isSimulationActive && targetMode === 'dragknife' && dragKnifeResult && dragKnifeResult.compensatedSegments.length > 0) {
+      ctx.save();
+      ctx.globalAlpha = isSimulationActive ? 0.15 : 1.0;
+      if (targetMode === 'dragknife' && dragKnifeResult && dragKnifeResult.compensatedSegments.length > 0) {
         dragKnifeResult.compensatedSegments.forEach(seg => {
           if ((seg.type === 'SWIVEL_ARC' || (seg as any).type === 'swivel') && showSwivelArcs) {
             ctx.save();
@@ -2161,7 +2168,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             ctx.restore();
           }
         });
-      } else if (!isSimulationActive && showCutPaths) {
+      } else if (showCutPaths) {
         activeOptimizedPolylines.forEach((poly) => {
           if (poly.points.length < 2) return;
           const startPt = poly.points[0];
@@ -2186,7 +2193,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       }
 
       // Render Rapid / Travel Moves (G0 Leerfahrten / Eilgang with Z-Hop) in 3D
-      if (!isSimulationActive && showRapid) {
+      if (showRapid) {
         ctx.save();
         if (targetMode === 'dragknife' && dragKnifeResult && dragKnifeResult.compensatedSegments.length > 0) {
           dragKnifeResult.compensatedSegments.forEach(seg => {
@@ -2326,6 +2333,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
         ctx.setLineDash([]);
         ctx.restore();
       }
+      ctx.restore(); // Restore globalAlpha
 
       // 3D LIVE DRAFT OVERLAY (Render draft on canvas before clicking "Zur Arbeitsfläche hinzufügen")
       if (compositionElements.length > 0 && showLiveDraftPreview && draftPolylines.length > 0) {
@@ -2505,7 +2513,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       }
 
       // Simulation Path 3D (G-Code Preview up to simIndex)
-      if (parsedGcode && parsedGcode.segments.length > 0 && isSimulationActive) {
+      if (localSimSegments.length > 0 && isSimulationActive) {
         ctx.save();
         ctx.lineWidth = 2.5;
         ctx.lineCap = 'round';
@@ -2514,8 +2522,8 @@ export const Workspace: React.FC<WorkspaceProps> = ({
         let simToolX = 0, simToolY = 0, simToolZ = 0;
         let drawnPath = false;
 
-        for (let i = 0; i < parsedGcode.segments.length; i++) {
-          const seg = parsedGcode.segments[i];
+        for (let i = 0; i < localSimSegments.length; i++) {
+          const seg = localSimSegments[i];
           const type = (seg as any).type || seg.type;
           const pFrom = project3D(seg.from.x, seg.from.y, seg.from.z ?? 0);
           const pTo = project3D(seg.to.x, seg.to.y, seg.to.z ?? 0);
@@ -2675,7 +2683,9 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       ctx.strokeRect(toScreenX(0), toScreenY(bedH), bedW * zoom, bedH * zoom);
 
       // Render Committed Objects / Main Active Toolpaths
-      if (!isSimulationActive && targetMode === 'dragknife' && dragKnifeResult && dragKnifeResult.compensatedSegments.length > 0) {
+      ctx.save();
+      ctx.globalAlpha = isSimulationActive ? 0.15 : 1.0;
+      if (targetMode === 'dragknife' && dragKnifeResult && dragKnifeResult.compensatedSegments.length > 0) {
         // Draw underlying original path in faint dashed cyan
         ctx.strokeStyle = theme.isDark ? 'rgba(6, 182, 212, 0.35)' : 'rgba(6, 182, 212, 0.6)';
         ctx.lineWidth = 1.2;
@@ -2758,7 +2768,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             ctx.stroke();
           }
         });
-      } else if (!isSimulationActive && showCutPaths) {
+      } else if (showCutPaths) {
         // Cut / Tool Paths (G1) (Unified Bearbeitung / Schnitt: Solid Emerald Green)
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
@@ -2842,6 +2852,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
         ctx.setLineDash([]);
         ctx.restore();
       }
+      ctx.restore(); // Restore globalAlpha
 
       // 2D LIVE DRAFT OVERLAY (Render draft live on canvas without cluttering rapid lines or badges)
       if (compositionElements.length > 0 && showLiveDraftPreview && draftPolylines.length > 0) {
@@ -3190,7 +3201,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       }
 
       // Simulation Path 2D (G-Code Preview up to simIndex)
-      if (parsedGcode && parsedGcode.segments.length > 0 && isSimulationActive) {
+      if (localSimSegments.length > 0 && isSimulationActive) {
         ctx.save();
         ctx.lineWidth = 2.5;
         ctx.lineCap = 'round';
@@ -3199,8 +3210,8 @@ export const Workspace: React.FC<WorkspaceProps> = ({
         let simToolX = 0, simToolY = 0;
         let drawnPath = false;
 
-        for (let i = 0; i < parsedGcode.segments.length; i++) {
-          const seg = parsedGcode.segments[i];
+        for (let i = 0; i < localSimSegments.length; i++) {
+          const seg = localSimSegments[i];
           const type = (seg as any).type || seg.type;
           
           if (i <= simIndex) {
@@ -3337,6 +3348,11 @@ export const Workspace: React.FC<WorkspaceProps> = ({
     activePolylines,
     activeOptimizedPolylines,
     activeOptimizedGroups,
+    simIndex,
+    showSimSlider,
+    isSimPlaying,
+    localSimSegments,
+    theme,
     draftPolylines,
     draftStats,
     draftTitle,
@@ -3370,23 +3386,45 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   ]);
 
   useEffect(() => {
-    if (!isSimPlaying || !parsedGcode || parsedGcode.segments.length === 0) return;
-    const interval = setInterval(() => {
-      setSimIndex((prev) => {
-        if (prev >= parsedGcode.segments.length - 1) {
-          setIsSimPlaying(false);
-          return 0;
-        }
-        return Math.min(parsedGcode.segments.length - 1, prev + Math.max(1, Math.round(simSpeed * 2)));
-      });
-    }, 30);
-    return () => clearInterval(interval);
-  }, [isSimPlaying, simSpeed, parsedGcode]);
+    if (!isSimPlaying || localSimSegments.length === 0) return;
+    
+    let animationFrameId: number;
+    
+    // If we start playing and we are already at the very end, reset to 0 automatically.
+    if (simIndex >= localSimSegments.length - 1) {
+      setSimIndex(0);
+      // We don't return here so the loop can start from 0
+    }
+
+    let currentFraction = simIndex >= localSimSegments.length - 1 ? 0 : simIndex;
+    let lastTime = performance.now();
+    
+    const loop = (time: number) => {
+      const dt = time - lastTime;
+      lastTime = time;
+      
+      // Base speed: 20 segments per second. simSpeed scales this.
+      const segmentsPerSec = 20 * simSpeed;
+      currentFraction += (segmentsPerSec * dt) / 1000;
+      
+      if (currentFraction >= localSimSegments.length - 1) {
+        setSimIndex(0); // "sobald der slider am ende angekommen ist er wieder in den Startzusatnd zurückfallen"
+        setIsSimPlaying(false);
+        return;
+      }
+      
+      setSimIndex(Math.floor(currentFraction));
+      animationFrameId = requestAnimationFrame(loop);
+    };
+    
+    animationFrameId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [isSimPlaying, simSpeed, localSimSegments]);
 
   useEffect(() => {
     setSimIndex(0);
     setIsSimPlaying(false);
-  }, [parsedGcode]);
+  }, [localSimSegments]);
 
   // Keep preview rendered on state changes and resize
   useEffect(() => {
@@ -7520,9 +7558,9 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             )}
           </div>
 
-          {/* Simulation Controls Overlay (Only visible if we have parsedGcode and showSimSlider is true) */}
-          {parsedGcode && parsedGcode.segments.length > 0 && showSimSlider && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 backdrop-blur-md bg-slate-900/80 border border-slate-700/50 p-1.5 md:p-2 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.5)] flex items-center gap-1.5 md:gap-2 z-50 pointer-events-auto min-w-[320px] md:min-w-[500px]">
+          {/* Simulation Controls Overlay (Only visible if showSimSlider is true) */}
+          {showSimSlider && (
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5 md:gap-2 z-50 pointer-events-auto min-w-[320px] md:min-w-[500px]">
               
               {/* Previous Step */}
               <button
@@ -7553,7 +7591,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
               <button
                 onClick={() => {
                   setIsSimPlaying(false);
-                  setSimIndex(Math.min(parsedGcode.segments.length - 1, simIndex + 1));
+                  setSimIndex(Math.min((localSimSegments.length || 1) - 1, simIndex + 1));
                 }}
                 className="p-1.5 md:p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                 title="Einen Schritt vor"
@@ -7581,7 +7619,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                 <input
                   type="range"
                   min={0}
-                  max={parsedGcode.segments.length - 1}
+                  max={Math.max(0, (localSimSegments.length || 1) - 1)}
                   value={simIndex}
                   onChange={(e) => {
                     setIsSimPlaying(false);
@@ -7590,7 +7628,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                   className="flex-1 accent-indigo-500 h-1.5 md:h-2 bg-slate-800 rounded-full cursor-pointer transition-all hover:h-2.5"
                 />
                 <span className="text-indigo-300 font-mono font-semibold text-[0.6rem] md:text-xs min-w-[30px] md:min-w-[35px] text-right drop-shadow-[0_0_3px_rgba(99,102,241,0.8)]">
-                  {Math.round((simIndex / Math.max(1, parsedGcode.segments.length - 1)) * 100)}%
+                  {Math.round((simIndex / Math.max(1, (localSimSegments.length || 1) - 1)) * 100)}%
                 </span>
               </div>
 
@@ -7598,9 +7636,12 @@ export const Workspace: React.FC<WorkspaceProps> = ({
               <button
                 onClick={() => {
                   setSimSpeed(prev => {
+                    if (prev === 0.1) return 0.5;
+                    if (prev === 0.5) return 1;
                     if (prev === 1) return 2;
                     if (prev === 2) return 5;
                     if (prev === 5) return 10;
+                    if (prev === 10) return 0.1;
                     return 1;
                   });
                 }}
@@ -7806,46 +7847,46 @@ export const Workspace: React.FC<WorkspaceProps> = ({
 
           {/* OVERLAY TOGGLES (Bottom Right) */}
           <div className="absolute bottom-4 right-3 flex gap-2 z-20 pointer-events-auto">
-            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-700/50 p-1.5 rounded-xl shadow-lg flex flex-row gap-1.5 overflow-x-auto max-w-[calc(100vw-2rem)]">
+            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-700/50 p-1 rounded-xl shadow-lg flex flex-row gap-1 overflow-x-auto max-w-[calc(100vw-2rem)]">
               <button 
                 onClick={() => setShowCoordsPanel(!showCoordsPanel)}
-                className={`px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-[0.65rem] font-bold ${showCoordsPanel ? 'bg-indigo-600/80 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-                title="Koordinaten"
+                className={`p-1.5 rounded-lg transition-colors ${!showCoordsPanel ? 'bg-slate-800 text-slate-400 hover:text-white' : 'text-white'}`}
+                style={showCoordsPanel ? { backgroundColor: theme.accentColor || '#4f46e5' } : undefined}
+                title="Koordinaten ein-/ausblenden"
               >
-                <Crosshair className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Koord.</span>
+                <Crosshair className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => setShowStatsPanel(!showStatsPanel)}
-                className={`px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-[0.65rem] font-bold ${showStatsPanel ? 'bg-indigo-600/80 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-                title="Statistik"
+                className={`p-1.5 rounded-lg transition-colors ${!showStatsPanel ? 'bg-slate-800 text-slate-400 hover:text-white' : 'text-white'}`}
+                style={showStatsPanel ? { backgroundColor: theme.accentColor || '#4f46e5' } : undefined}
+                title="Statistik ein-/ausblenden"
               >
-                <Activity className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Statistik</span>
+                <Activity className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => setShowLegendPanel(!showLegendPanel)}
-                className={`px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-[0.65rem] font-bold ${showLegendPanel ? 'bg-indigo-600/80 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-                title="Legende"
+                className={`p-1.5 rounded-lg transition-colors ${!showLegendPanel ? 'bg-slate-800 text-slate-400 hover:text-white' : 'text-white'}`}
+                style={showLegendPanel ? { backgroundColor: theme.accentColor || '#4f46e5' } : undefined}
+                title="Legende ein-/ausblenden"
               >
-                <Layers className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Legende</span>
+                <Layers className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => setShowSimSlider(!showSimSlider)}
-                className={`px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-[0.65rem] font-bold ${showSimSlider ? 'bg-indigo-600/80 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-                title="Simulation Slider"
+                className={`p-1.5 rounded-lg transition-colors ${!showSimSlider ? 'bg-slate-800 text-slate-400 hover:text-white' : 'text-white'}`}
+                style={showSimSlider ? { backgroundColor: theme.accentColor || '#4f46e5' } : undefined}
+                title="Simulation Slider ein-/ausblenden"
               >
-                <Sliders className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Sim. Slider</span>
+                <Sliders className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => setShowMiniJog(!showMiniJog)}
-                className={`px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-[0.65rem] font-bold ${showMiniJog ? 'bg-emerald-600/80 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-                title="Mini-Jog"
+                className={`p-1.5 rounded-lg transition-colors ${!showMiniJog ? 'bg-slate-800 text-slate-400 hover:text-white' : 'text-white'}`}
+                style={showMiniJog ? { backgroundColor: theme.accentColor || '#4f46e5' } : undefined}
+                title="Mini-Jog ein-/ausblenden"
               >
-                <Move className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Mini-Jog</span>
+                <Move className="w-4 h-4" />
               </button>
             </div>
           </div>

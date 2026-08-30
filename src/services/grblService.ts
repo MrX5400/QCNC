@@ -45,8 +45,6 @@ class GrblService {
   private currentStreamLine: number = 0;
 
   // Simulator state
-  private isSimulated: boolean = false;
-  private simulationInterval: any = null;
   private simRafId: number | null = null;
   private lastSimTime: number = 0;
   private simTargetPos: Point3D = { x: 0, y: 0, z: 0 };
