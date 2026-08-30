@@ -42,6 +42,7 @@ class GrblService {
   private isStreaming: boolean = false;
   private isPaused: boolean = false;
   private isAwaitingOk: boolean = false;
+  private isWaitingForIdle: boolean = false;
   private currentStreamLine: number = 0;
 
   // Simulator state
@@ -312,34 +313,20 @@ class GrblService {
 
     // Stream Ok Handshake
     if (line.toLowerCase().startsWith('ok')) {
-      if (this.isStreaming && !this.isPaused) {
+      if (this.isStreaming && !this.isPaused && !this.isWaitingForIdle) {
         this.isAwaitingOk = false;
-        if (this.currentStreamIndex >= this.streamQueue.length) {
-          this.isStreaming = false;
-          this.isPaused = false;
-          this.currentState.status = 'Idle';
-          this.notifyState();
-          this.notifyProgress();
-          this.notifyLog('info', '✓ Job erfolgreich abgeschlossen!');
-        } else {
-          this.streamNextLine();
-        }
+        this.streamNextLine();
       }
     } else if (line.startsWith('error:')) {
-      this.notifyLog('error', `GRBL Fehler: ${line}`);
-      if (this.isStreaming) {
+      const errCode = line.split(':')[1]?.trim() || '';
+      this.notifyLog('error', `GRBL Fehler: ${errCode} (${line})`);
+      if (this.isStreaming && !this.isPaused && !this.isWaitingForIdle) {
         this.isAwaitingOk = false;
-        if (this.currentStreamIndex >= this.streamQueue.length) {
-          this.isStreaming = false;
-          this.isPaused = false;
-          this.currentState.status = 'Idle';
-          this.notifyState();
-          this.notifyProgress();
-        } else {
-          this.streamNextLine();
-        }
+        this.streamNextLine();
       }
     } else if (line.startsWith('ALARM:')) {
+      const alarmCode = line.split(':')[1]?.trim() || '';
+      this.notifyLog('error', `GRBL Alarm: ${alarmCode} (${line})`);
       this.currentState.status = 'Alarm';
       this.notifyState();
       this.pauseStream();
@@ -356,6 +343,16 @@ class GrblService {
     for (const st of validStates) {
       if (statusPart.startsWith(st)) {
         this.currentState.status = st;
+        
+        // Completion logic: If we sent all lines and wait for the buffer to empty,
+        // and GRBL finally says 'Idle', the job is completely finished.
+        if (this.isStreaming && this.isWaitingForIdle && st === 'Idle') {
+          this.isStreaming = false;
+          this.isPaused = false;
+          this.isWaitingForIdle = false;
+          this.notifyProgress();
+          this.notifyLog('info', '✓ Job erfolgreich abgeschlossen (Puffer leer)!');
+        }
         break;
       }
     }
@@ -441,6 +438,7 @@ class GrblService {
     this.isStreaming = true;
     this.isPaused = false;
     this.isAwaitingOk = false;
+    this.isWaitingForIdle = false;
     this.currentState.status = 'Run';
     this.notifyState();
     this.notifyLog('info', `Job gestartet: ${this.streamQueue.length} Befehlszeilen werden gesendet.`);
@@ -474,6 +472,7 @@ class GrblService {
   public stopStream() {
     this.isStreaming = false;
     this.isPaused = false;
+    this.isWaitingForIdle = false;
     this.streamQueue = [];
     this.currentStreamIndex = 0;
     this.currentState.status = 'Idle';
@@ -484,16 +483,13 @@ class GrblService {
   }
 
   private streamNextLine() {
-    if (!this.isStreaming || this.isPaused || this.isAwaitingOk) return;
+    if (!this.isStreaming || this.isPaused || this.isAwaitingOk || this.isWaitingForIdle) return;
 
     if (this.currentStreamIndex >= this.streamQueue.length) {
-      this.isStreaming = false;
-      this.isPaused = false;
-      this.isAwaitingOk = false;
-      this.currentState.status = 'Idle';
-      this.notifyState();
-      this.notifyProgress();
-      this.notifyLog('info', '✓ Job erfolgreich abgeschlossen!');
+      // Alle Zeilen versendet und mit 'ok' bestätigt.
+      // Job ist aber erst fertig, wenn GRBL-Puffer leer ist (Status = Idle).
+      this.isWaitingForIdle = true;
+      this.notifyLog('info', 'Alle Befehle gesendet. Warte auf Puffer-Leerung (Idle)...');
       return;
     }
 

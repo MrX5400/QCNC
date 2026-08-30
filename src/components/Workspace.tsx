@@ -176,6 +176,21 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   // --- Multi-Element Composition Workspace State (Multi-Selection Support) ---
   const [compositionElements, setCompositionElements] = useState<CompositionElement[]>([]);
   const [mousePos, setMousePos] = useState<{x: number, y: number}>({ x: 0, y: 0 });
+  const [streamProgress, setStreamProgress] = useState({
+    currentLine: 0,
+    totalLines: 0,
+    percent: 0,
+    isStreaming: false,
+    isPaused: false,
+  });
+
+  useEffect(() => {
+    const unsub = grbl.onStreamProgress((prog) => {
+      setStreamProgress(prog);
+    });
+    return () => unsub();
+  }, []);
+
   const [simIndex, setSimIndex] = useState<number>(0);
   const [isSimPlaying, setIsSimPlaying] = useState<boolean>(false);
   const [simSpeed, setSimSpeed] = useState<number>(1);
@@ -1919,7 +1934,21 @@ export const Workspace: React.FC<WorkspaceProps> = ({
 
   // --- Draw Live Preview Canvas (2D & 3D Interactive Modes) ---
   const renderPreview = useCallback(() => {
-    const isSimulationActive = showSimSlider && (isSimPlaying || simIndex > 0);
+    const isJobStreaming = streamProgress.isStreaming || streamProgress.isPaused;
+    
+    let effectiveSimIndex = 0;
+    if (isJobStreaming) {
+      for (let i = localSimSegments.length - 1; i >= 0; i--) {
+        if (localSimSegments[i].lineIndex <= streamProgress.currentLine) {
+          effectiveSimIndex = i;
+          break;
+        }
+      }
+    } else {
+      effectiveSimIndex = simIndex;
+    }
+
+    const isSimulationActive = (showSimSlider && (isSimPlaying || simIndex > 0)) || isJobStreaming;
 
     const canvas = previewCanvasRef.current;
     if (!canvas) return;
@@ -2526,10 +2555,18 @@ export const Workspace: React.FC<WorkspaceProps> = ({
           const seg = localSimSegments[i];
           const type = (seg as any).type || seg.type;
           const pFrom = project3D(seg.from.x, seg.from.y, seg.from.z ?? 0);
-          const pTo = project3D(seg.to.x, seg.to.y, seg.to.z ?? 0);
+          let targetX = seg.to.x;
+          let targetY = seg.to.y;
+          let targetZ = seg.to.z ?? 0;
+          if (isJobStreaming && i === effectiveSimIndex) {
+            targetX = liveState.wpos.x;
+            targetY = liveState.wpos.y;
+            targetZ = liveState.wpos.z;
+          }
+          const pTo = project3D(targetX, targetY, targetZ);
           
-          if (i <= simIndex) {
-            simToolX = seg.to.x; simToolY = seg.to.y; simToolZ = seg.to.z ?? 0;
+          if (i <= effectiveSimIndex) {
+            simToolX = targetX; simToolY = targetY; simToolZ = targetZ;
             ctx.globalAlpha = 1.0;
             drawnPath = true;
           } else {
@@ -2555,11 +2592,11 @@ export const Workspace: React.FC<WorkspaceProps> = ({
              if (seg.center) {
                const cX = seg.center.x, cY = seg.center.y;
                const r1 = Math.hypot(seg.from.x - cX, seg.from.y - cY);
-               const r2 = Math.hypot(seg.to.x - cX, seg.to.y - cY);
+               const r2 = Math.hypot(targetX - cX, targetY - cY);
                const radius = (r1 + r2) / 2 || r1;
                if (radius > 0.001) {
                  const a1 = Math.atan2(seg.from.y - cY, seg.from.x - cX);
-                 const a2 = Math.atan2(seg.to.y - cY, seg.to.x - cX);
+                 const a2 = Math.atan2(targetY - cY, targetX - cX);
                  const isCW = seg.clockwise ?? (type === 'G2');
                  let sweep = a2 - a1;
                  if (isCW && sweep > 0) sweep -= 2 * Math.PI;
@@ -2571,7 +2608,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                    const px = cX + radius * Math.cos(angle);
                    const py = cY + radius * Math.sin(angle);
                    // In 3D, we also linearly interpolate Z
-                   const pz = (seg.from.z ?? 0) + ((seg.to.z ?? 0) - (seg.from.z ?? 0)) * t;
+                   const pz = (seg.from.z ?? 0) + (targetZ - (seg.from.z ?? 0)) * t;
                    const pInterp = project3D(px, py, pz);
                    ctx.lineTo(pInterp.sx, pInterp.sy);
                  }
@@ -3214,8 +3251,15 @@ export const Workspace: React.FC<WorkspaceProps> = ({
           const seg = localSimSegments[i];
           const type = (seg as any).type || seg.type;
           
-          if (i <= simIndex) {
-            simToolX = seg.to.x; simToolY = seg.to.y;
+          let targetX = seg.to.x;
+          let targetY = seg.to.y;
+          if (isJobStreaming && i === effectiveSimIndex) {
+            targetX = liveState.wpos.x;
+            targetY = liveState.wpos.y;
+          }
+
+          if (i <= effectiveSimIndex) {
+            simToolX = targetX; simToolY = targetY;
             ctx.globalAlpha = 1.0;
             drawnPath = true;
           } else {
@@ -3228,12 +3272,12 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             ctx.strokeStyle = theme.rapidLineColor || '#f43f5e';
             ctx.setLineDash([4, 4]);
             ctx.lineWidth = 1.5;
-            ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+            ctx.lineTo(toScreenX(targetX), toScreenY(targetY));
           } else if (type === 'G1' || type === 'cut') {
             ctx.strokeStyle = theme.cutLineColor || '#10b981';
             ctx.setLineDash([]);
             ctx.lineWidth = 2.5;
-            ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+            ctx.lineTo(toScreenX(targetX), toScreenY(targetY));
           } else if (type === 'G2' || type === 'G3' || type === 'SWIVEL_ARC' || type === 'swivel') {
              ctx.strokeStyle = '#f59e0b';
              ctx.setLineDash([]);
@@ -3241,11 +3285,11 @@ export const Workspace: React.FC<WorkspaceProps> = ({
              if (seg.center) {
                const cX = seg.center.x, cY = seg.center.y;
                const r1 = Math.hypot(seg.from.x - cX, seg.from.y - cY);
-               const r2 = Math.hypot(seg.to.x - cX, seg.to.y - cY);
+               const r2 = Math.hypot(targetX - cX, targetY - cY);
                const radius = (r1 + r2) / 2 || r1;
                if (radius > 0.001) {
                  const a1 = Math.atan2(seg.from.y - cY, seg.from.x - cX);
-                 const a2 = Math.atan2(seg.to.y - cY, seg.to.x - cX);
+                 const a2 = Math.atan2(targetY - cY, targetX - cX);
                  const isCW = seg.clockwise ?? (type === 'G2');
                  let sweep = a2 - a1;
                  if (isCW && sweep > 0) sweep -= 2 * Math.PI;
@@ -3259,13 +3303,13 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                    ctx.lineTo(toScreenX(px), toScreenY(py));
                  }
                } else {
-                 ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+                 ctx.lineTo(toScreenX(targetX), toScreenY(targetY));
                }
              } else {
-               ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+               ctx.lineTo(toScreenX(targetX), toScreenY(targetY));
              }
           } else {
-             ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+             ctx.lineTo(toScreenX(targetX), toScreenY(targetY));
           }
           ctx.stroke();
         }
@@ -3351,6 +3395,8 @@ export const Workspace: React.FC<WorkspaceProps> = ({
     simIndex,
     showSimSlider,
     isSimPlaying,
+    streamProgress,
+    liveState,
     localSimSegments,
     theme,
     draftPolylines,
