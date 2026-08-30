@@ -108,16 +108,27 @@ export default function App() {
 
 
   // Import and Export handlers for top bar
+  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
+
   const handleImportFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      if (text) {
-        const parsed = parseGcode(text, currentProfile.penUpZ);
-        setParsedGcode(parsed);
-      }
-    };
-    reader.readAsText(file);
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const gcodeExts = ['nc', 'gcode', 'ngc', 'tap', 'cnc', 'txt'];
+    if (gcodeExts.includes(ext)) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        if (text) {
+          const parsed = parseGcode(text, currentProfile.penUpZ);
+          setParsedGcode(parsed);
+          setActiveTab('visualizer');
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      // It's a vector or image file, pass to Workspace (generator tab)
+      setPendingImportFile(file);
+      setActiveTab('generator');
+    }
   };
 
   const handleExportGcode = (ext: 'nc' | 'gcode' = 'nc') => {
@@ -182,22 +193,26 @@ export default function App() {
               }}
               cncControls={
                 <div className="flex flex-col gap-2 md:gap-3 h-full pb-2 shrink-0">
-                  <JogController
-                    currentProfile={currentProfile}
-                    liveState={liveState}
-                  />
                   <GcodeStreamer
                     parsedGcode={parsedGcode}
                     onGcodeLoaded={(parsed) => setParsedGcode(parsed)}
                     currentProfile={currentProfile}
                     liveState={liveState}
-                  />
+                  >
+                    <JogController
+                      currentProfile={currentProfile}
+                      liveState={liveState}
+                    />
+                  </GcodeStreamer>
                 </div>
               }
               liveState={liveState}
+              parsedGcode={parsedGcode}
               isLaserDbModalOpen={isLaserDbModalOpen}
               onOpenLaserDbModal={() => setIsLaserDbModalOpen(true)}
               onCloseLaserDbModal={() => setIsLaserDbModalOpen(false)}
+              pendingImportFile={pendingImportFile}
+              onPendingImportFileHandled={() => setPendingImportFile(null)}
             />
           </div>
 

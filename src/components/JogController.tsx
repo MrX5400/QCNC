@@ -178,45 +178,6 @@ export const JogController: React.FC<JogControllerProps> = ({
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4 shadow-xl text-slate-200">
     
 
-      {/* Header with Coordinates readout & Compact Toggle */}
-      <div className="flex items-center justify-between pb-2.5 border-b border-slate-800">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-400">
-            <Move className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="font-bold text-sm text-slate-100">{t.manualJog || 'Manuelle Achsensteuerung'}</h3>
-            <div className="flex items-center gap-2 text-[0.625rem] text-slate-400">
-              <span className="font-mono">F: {feedrate} mm/min</span>
-              <span>•</span>
-              <span className="font-mono">Δ: {stepSize} mm</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 font-mono text-xs bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-            <span className="text-rose-400 font-bold">X{(liveState?.wpos?.x ?? 0).toFixed(1)}</span>
-            <span className="text-slate-600">|</span>
-            <span className="text-cyan-400 font-bold">Y{(liveState?.wpos?.y ?? 0).toFixed(1)}</span>
-            <span className="text-slate-600">|</span>
-            <span className="text-indigo-400 font-bold">Z{(liveState?.wpos?.z ?? 0).toFixed(1)}</span>
-          </div>
-
-          <button
-            onClick={() => setIsCompact(!isCompact)}
-            className={`px-2 py-1 rounded-md text-[0.625rem] font-semibold border transition-colors cursor-pointer ${
-              isCompact
-                ? 'bg-indigo-600 text-white border-indigo-500 shadow-xs'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-            }`}
-            title={isCompact ? 'Erweiterte Ansicht (mit Slidern & Feineinstellung)' : 'Kompakte Tastenansicht aktivieren'}
-          >
-            {isCompact ? 'Kompakt' : 'Voll'}
-          </button>
-        </div>
-      </div>
-
       {/* Mode Switcher: Step vs Continuous */}
       <div className="grid grid-cols-2 gap-1.5 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
         <button
@@ -265,21 +226,19 @@ export const JogController: React.FC<JogControllerProps> = ({
             </div>
           </div>
 
-          {/* Continuous Interactive Step Slider (Hidden in compact) */}
-          {!isCompact && (
-            <div className="flex items-center gap-2 pt-0.5">
-              <input
-                type="range"
-                min="0.05"
-                max="100"
-                step="0.05"
-                value={stepSize}
-                onChange={(e) => setStepSize(Number(e.target.value))}
-                className="flex-1 accent-indigo-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
-              />
-              <span className="font-mono text-[0.625rem] text-indigo-300 w-12 text-right">{stepSize} mm</span>
-            </div>
-          )}
+          {/* Continuous Interactive Step Slider */}
+          <div className="flex items-center gap-2 pt-0.5">
+            <input
+              type="range"
+              min="0.05"
+              max="100"
+              step="0.05"
+              value={stepSize}
+              onChange={(e) => setStepSize(Number(e.target.value))}
+              className="flex-1 accent-indigo-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+            />
+            <span className="font-mono text-[0.625rem] text-indigo-300 w-12 text-right">{stepSize} mm</span>
+          </div>
 
           {/* Quick Step Preset Buttons */}
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 pt-1 font-mono text-[0.625rem]">
@@ -300,60 +259,58 @@ export const JogController: React.FC<JogControllerProps> = ({
         </div>
       )}
 
-      {/* Feedrate Speed Slider & Presets (Full view only) */}
-      {!isCompact && (
-        <div className="space-y-2 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
-          <div className="flex items-center justify-between text-[0.6875rem]">
-            <span className="text-slate-300 font-medium flex items-center gap-1.5">
-              <Gauge className="w-3.5 h-3.5 text-amber-400" />
-              {t.feedrateSpeed || 'Jog-Geschwindigkeit'}:
-            </span>
-            <div className="flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
-              <input
-                type="number"
-                min="0"
-                max="15000"
-                step="50"
-                value={feedrate}
-                onChange={(e) => setFeedrate(Math.max(50, Number(e.target.value)))}
-                className="w-16 bg-transparent text-right font-mono text-xs text-amber-300 focus:outline-none"
-              />
-              <span className="text-[0.625rem] text-slate-500 font-mono">mm/min</span>
-            </div>
-          </div>
-
-          {/* Continuous Interactive Speed Slider */}
-          <div className="flex items-center gap-2 pt-0.5">
+      {/* Feedrate Speed Slider & Presets */}
+      <div className="space-y-2 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+        <div className="flex items-center justify-between text-[0.6875rem]">
+          <span className="text-slate-300 font-medium flex items-center gap-1.5">
+            <Gauge className="w-3.5 h-3.5 text-amber-400" />
+            {t.feedrateSpeed || 'Jog-Geschwindigkeit'}:
+          </span>
+          <div className="flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
             <input
-              type="range"
+              type="number"
               min="0"
               max="15000"
-              step="25"
+              step="50"
               value={feedrate}
-              onChange={(e) => setFeedrate(Number(e.target.value))}
-              className="flex-1 accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+              onChange={(e) => setFeedrate(Math.max(50, Number(e.target.value)))}
+              className="w-16 bg-transparent text-right font-mono text-xs text-amber-300 focus:outline-none"
             />
-            <span className="font-mono text-[0.625rem] text-amber-300 w-16 text-right">{feedrate} mm/min</span>
-          </div>
-
-          {/* Quick Speed Preset Buttons */}
-          <div className="grid grid-cols-5 gap-1 font-mono text-[0.625rem]">
-            {feedrateOptions.map((f) => (
-              <button
-                key={f}
-                onClick={() => setFeedrate(f)}
-                className={`py-1 rounded border transition-all ${
-                  feedrate === f
-                    ? 'bg-amber-600 text-white border-amber-400 font-bold shadow-sm'
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
-              >
-                {f}
-              </button>
-            ))}
+            <span className="text-[0.625rem] text-slate-500 font-mono">mm/min</span>
           </div>
         </div>
-      )}
+
+        {/* Continuous Interactive Speed Slider */}
+        <div className="flex items-center gap-2 pt-0.5">
+          <input
+            type="range"
+            min="0"
+            max="15000"
+            step="25"
+            value={feedrate}
+            onChange={(e) => setFeedrate(Number(e.target.value))}
+            className="flex-1 accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+          />
+          <span className="font-mono text-[0.625rem] text-amber-300 w-16 text-right">{feedrate} mm/min</span>
+        </div>
+
+        {/* Quick Speed Preset Buttons */}
+        <div className="grid grid-cols-5 gap-1 font-mono text-[0.625rem]">
+          {feedrateOptions.map((f) => (
+            <button
+              key={f}
+              onClick={() => setFeedrate(f)}
+              className={`py-1 rounded border transition-all ${
+                feedrate === f
+                  ? 'bg-amber-600 text-white border-amber-400 font-bold shadow-sm'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* ========================================================================= */}
       {/* TACTILE CNC JOGGING DISC & PRECISION DIRECTIONAL ARROWS                    */}
@@ -548,18 +505,14 @@ export const JogController: React.FC<JogControllerProps> = ({
             <ChevronUp className="w-5 h-5 md:w-6 md:h-6" />
           </button>
 
-          {/* Pen / Tool state toggle in middle */}
+          {/* Z-Achse Homing in middle */}
           <button
-            onClick={handleTogglePen}
-            className={`w-11 h-11 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-lg flex flex-col items-center justify-center text-[0.5625rem] font-bold transition-all shadow-sm select-none touch-none ${
-              isPenDown
-                ? 'bg-emerald-600 text-white border border-emerald-400 shadow-emerald-500/30 shadow-lg'
-                : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
-            }`}
-            title="Stift manuell heben/senken"
+            onClick={() => grbl.send('G53 G0 Z0')}
+            className="w-11 h-11 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-lg flex flex-col items-center justify-center text-[0.5625rem] font-bold transition-all shadow-sm select-none touch-none bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800"
+            title="Z-Achse Homing / Z-Home (G53 G0 Z0)"
           >
-            {isPenDown ? <PenTool className="w-4 h-4 md:w-5 md:h-5 mb-0.5" /> : <PenTool className="w-4 h-4 md:w-5 md:h-5 mb-0.5 opacity-50" />}
-            <span className="hidden md:inline">{isPenDown ? 'DOWN' : 'UP'}</span>
+            <Move className="w-4 h-4 md:w-5 md:h-5 mb-0.5 opacity-80" />
+            <span className="hidden md:inline">Z-Home</span>
           </button>
 
           {/* Z- (Tool Down) */}
@@ -661,6 +614,34 @@ export const JogController: React.FC<JogControllerProps> = ({
           <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
           <span>Soft-Reset</span>
         </button>
+      </div>
+
+      {/* Real-time Feed Rate Override */}
+      <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 space-y-1.5 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-slate-400 font-medium">Vorschub-Echtzeit-Override:</span>
+          <span className="text-cyan-400 font-mono font-bold">{liveState?.overrides?.feed ?? 100}%</span>
+        </div>
+        <div className="grid grid-cols-3 gap-1.5 font-mono text-[0.6875rem]">
+          <button
+            onClick={() => grbl.sendRaw('\x92')}
+            className="py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700"
+          >
+            -10%
+          </button>
+          <button
+            onClick={() => grbl.sendRaw('\x90')}
+            className="py-1 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white rounded border border-slate-700 font-bold"
+          >
+            100%
+          </button>
+          <button
+            onClick={() => grbl.sendRaw('\x91')}
+            className="py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700"
+          >
+            +10%
+          </button>
+        </div>
       </div>
 
       {/* Laser test button if laser actuator */}

@@ -243,6 +243,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <button
                     onClick={() => {
                       setShowImportExportMenu(false);
+                      fileInputRef.current?.click();
                       setActiveTab('generator');
                     }}
                     className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-200 hover:bg-slate-800 hover:text-white transition-colors text-left"
@@ -543,7 +544,7 @@ export const Header: React.FC<HeaderProps> = ({
         )}        {/* 5. Emergency Stop / Alarm Unlock Button */}
         {grblState.status === 'Alarm' ? (
           <button
-            onClick={() => grbl.sendRaw('$X')}
+            onClick={() => grbl.unlock()}
             className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-900 rounded-md text-xs font-bold transition-all shadow-md shadow-amber-500/30"
             title="Alarm zurücksetzen (Unlock $X)"
           >

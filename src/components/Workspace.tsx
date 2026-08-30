@@ -136,6 +136,8 @@ interface WorkspaceProps {
   isLaserDbModalOpen?: boolean;
   onOpenLaserDbModal?: () => void;
   onCloseLaserDbModal?: () => void;
+  pendingImportFile?: File | null;
+  onPendingImportFileHandled?: () => void;
 }
 
 type SourceType = 'file' | 'text' | 'shapes' | 'raster';
@@ -168,6 +170,8 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   isLaserDbModalOpen = false,
   onOpenLaserDbModal,
   onCloseLaserDbModal,
+  pendingImportFile,
+  onPendingImportFileHandled,
 }) => {
   const { t } = useI18n();
   const { uiScale, theme } = useThemeLanguage();
@@ -2555,18 +2559,10 @@ export const Workspace: React.FC<WorkspaceProps> = ({
           const seg = localSimSegments[i];
           const type = (seg as any).type || seg.type;
           const pFrom = project3D(seg.from.x, seg.from.y, seg.from.z ?? 0);
-          let targetX = seg.to.x;
-          let targetY = seg.to.y;
-          let targetZ = seg.to.z ?? 0;
-          if (isJobStreaming && i === effectiveSimIndex) {
-            targetX = liveState.wpos.x;
-            targetY = liveState.wpos.y;
-            targetZ = liveState.wpos.z;
-          }
-          const pTo = project3D(targetX, targetY, targetZ);
+          const pTo = project3D(seg.to.x, seg.to.y, seg.to.z ?? 0);
           
           if (i <= effectiveSimIndex) {
-            simToolX = targetX; simToolY = targetY; simToolZ = targetZ;
+            simToolX = seg.to.x; simToolY = seg.to.y; simToolZ = seg.to.z ?? 0;
             ctx.globalAlpha = 1.0;
             drawnPath = true;
           } else {
@@ -2592,11 +2588,11 @@ export const Workspace: React.FC<WorkspaceProps> = ({
              if (seg.center) {
                const cX = seg.center.x, cY = seg.center.y;
                const r1 = Math.hypot(seg.from.x - cX, seg.from.y - cY);
-               const r2 = Math.hypot(targetX - cX, targetY - cY);
+               const r2 = Math.hypot(seg.to.x - cX, seg.to.y - cY);
                const radius = (r1 + r2) / 2 || r1;
                if (radius > 0.001) {
                  const a1 = Math.atan2(seg.from.y - cY, seg.from.x - cX);
-                 const a2 = Math.atan2(targetY - cY, targetX - cX);
+                 const a2 = Math.atan2(seg.to.y - cY, seg.to.x - cX);
                  const isCW = seg.clockwise ?? (type === 'G2');
                  let sweep = a2 - a1;
                  if (isCW && sweep > 0) sweep -= 2 * Math.PI;
@@ -2608,7 +2604,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                    const px = cX + radius * Math.cos(angle);
                    const py = cY + radius * Math.sin(angle);
                    // In 3D, we also linearly interpolate Z
-                   const pz = (seg.from.z ?? 0) + (targetZ - (seg.from.z ?? 0)) * t;
+                   const pz = (seg.from.z ?? 0) + ((seg.to.z ?? 0) - (seg.from.z ?? 0)) * t;
                    const pInterp = project3D(px, py, pz);
                    ctx.lineTo(pInterp.sx, pInterp.sy);
                  }
@@ -2625,7 +2621,8 @@ export const Workspace: React.FC<WorkspaceProps> = ({
         }
         ctx.globalAlpha = 1.0;
 
-        if (drawnPath) {
+        // Draw yellow dot only for manual simulation
+        if (drawnPath && !isJobStreaming) {
           const tP = project3D(simToolX, simToolY, simToolZ);
           ctx.fillStyle = '#eab308';
           ctx.beginPath();
@@ -3251,15 +3248,8 @@ export const Workspace: React.FC<WorkspaceProps> = ({
           const seg = localSimSegments[i];
           const type = (seg as any).type || seg.type;
           
-          let targetX = seg.to.x;
-          let targetY = seg.to.y;
-          if (isJobStreaming && i === effectiveSimIndex) {
-            targetX = liveState.wpos.x;
-            targetY = liveState.wpos.y;
-          }
-
           if (i <= effectiveSimIndex) {
-            simToolX = targetX; simToolY = targetY;
+            simToolX = seg.to.x; simToolY = seg.to.y;
             ctx.globalAlpha = 1.0;
             drawnPath = true;
           } else {
@@ -3272,12 +3262,12 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             ctx.strokeStyle = theme.rapidLineColor || '#f43f5e';
             ctx.setLineDash([4, 4]);
             ctx.lineWidth = 1.5;
-            ctx.lineTo(toScreenX(targetX), toScreenY(targetY));
+            ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
           } else if (type === 'G1' || type === 'cut') {
             ctx.strokeStyle = theme.cutLineColor || '#10b981';
             ctx.setLineDash([]);
             ctx.lineWidth = 2.5;
-            ctx.lineTo(toScreenX(targetX), toScreenY(targetY));
+            ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
           } else if (type === 'G2' || type === 'G3' || type === 'SWIVEL_ARC' || type === 'swivel') {
              ctx.strokeStyle = '#f59e0b';
              ctx.setLineDash([]);
@@ -3285,11 +3275,11 @@ export const Workspace: React.FC<WorkspaceProps> = ({
              if (seg.center) {
                const cX = seg.center.x, cY = seg.center.y;
                const r1 = Math.hypot(seg.from.x - cX, seg.from.y - cY);
-               const r2 = Math.hypot(targetX - cX, targetY - cY);
+               const r2 = Math.hypot(seg.to.x - cX, seg.to.y - cY);
                const radius = (r1 + r2) / 2 || r1;
                if (radius > 0.001) {
                  const a1 = Math.atan2(seg.from.y - cY, seg.from.x - cX);
-                 const a2 = Math.atan2(targetY - cY, targetX - cX);
+                 const a2 = Math.atan2(seg.to.y - cY, seg.to.x - cX);
                  const isCW = seg.clockwise ?? (type === 'G2');
                  let sweep = a2 - a1;
                  if (isCW && sweep > 0) sweep -= 2 * Math.PI;
@@ -3303,19 +3293,20 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                    ctx.lineTo(toScreenX(px), toScreenY(py));
                  }
                } else {
-                 ctx.lineTo(toScreenX(targetX), toScreenY(targetY));
+                 ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
                }
              } else {
-               ctx.lineTo(toScreenX(targetX), toScreenY(targetY));
+               ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
              }
           } else {
-             ctx.lineTo(toScreenX(targetX), toScreenY(targetY));
+             ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
           }
           ctx.stroke();
         }
         ctx.globalAlpha = 1.0;
 
-        if (drawnPath) {
+        // Draw yellow dot only for manual simulation
+        if (drawnPath && !isJobStreaming) {
           ctx.fillStyle = '#eab308';
           ctx.beginPath();
           ctx.arc(toScreenX(simToolX), toScreenY(simToolY), 6, 0, Math.PI * 2);
@@ -4229,6 +4220,24 @@ export const Workspace: React.FC<WorkspaceProps> = ({
     };
     reader.readAsDataURL(file);
   };
+
+  useEffect(() => {
+    if (pendingImportFile && onPendingImportFileHandled) {
+      const isDxf = pendingImportFile.name.toLowerCase().endsWith('.dxf');
+      const isSvg = pendingImportFile.name.toLowerCase().endsWith('.svg');
+      if (isDxf || isSvg) {
+        // Trigger handleVectorFileUpload logic
+        const dummyEvent = { target: { files: [pendingImportFile] } } as unknown as React.ChangeEvent<HTMLInputElement>;
+        handleVectorFileUpload(dummyEvent);
+      } else {
+        // Trigger handleRasterImageUpload logic
+        const dummyEvent = { target: { files: [pendingImportFile] } } as unknown as React.ChangeEvent<HTMLInputElement>;
+        handleRasterImageUpload(dummyEvent);
+      }
+      onPendingImportFileHandled();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingImportFile, onPendingImportFileHandled]);
 
   const handleApplyImageCrop = () => {
     const baseImg = originalRasterImageRef.current || rasterImage;
@@ -7989,18 +7998,42 @@ export const Workspace: React.FC<WorkspaceProps> = ({
 
                <div className="grid grid-cols-3 gap-1 place-items-center">
                  <div />
-                 <button onClick={() => grbl.jog('Y', jogStep, currentProfile.travelFeedrate)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white active:bg-indigo-600 transition-colors"><ChevronUp className="w-5 h-5" /></button>
+                 <button 
+                   onPointerDown={() => grbl.startContinuousJog('Y', 1, currentProfile.travelFeedrate)} 
+                   onPointerUp={() => grbl.stopContinuousJog()} 
+                   onPointerLeave={() => grbl.stopContinuousJog()} 
+                   className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white active:bg-indigo-600 transition-colors touch-none"><ChevronUp className="w-5 h-5" /></button>
                  <div />
-                 <button onClick={() => grbl.jog('X', -jogStep, currentProfile.travelFeedrate)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white active:bg-indigo-600 transition-colors"><ChevronLeft className="w-5 h-5" /></button>
+                 <button 
+                   onPointerDown={() => grbl.startContinuousJog('X', -1, currentProfile.travelFeedrate)} 
+                   onPointerUp={() => grbl.stopContinuousJog()} 
+                   onPointerLeave={() => grbl.stopContinuousJog()} 
+                   className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white active:bg-indigo-600 transition-colors touch-none"><ChevronLeft className="w-5 h-5" /></button>
                  <button onClick={() => grbl.send('G90 G0 X0 Y0')} className="p-3 bg-indigo-900/50 hover:bg-indigo-700 rounded-xl text-indigo-200 active:bg-indigo-500 transition-colors"><Target className="w-5 h-5" /></button>
-                 <button onClick={() => grbl.jog('X', jogStep, currentProfile.travelFeedrate)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white active:bg-indigo-600 transition-colors"><ChevronRight className="w-5 h-5" /></button>
+                 <button 
+                   onPointerDown={() => grbl.startContinuousJog('X', 1, currentProfile.travelFeedrate)} 
+                   onPointerUp={() => grbl.stopContinuousJog()} 
+                   onPointerLeave={() => grbl.stopContinuousJog()} 
+                   className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white active:bg-indigo-600 transition-colors touch-none"><ChevronRight className="w-5 h-5" /></button>
                  <div />
-                 <button onClick={() => grbl.jog('Y', -jogStep, currentProfile.travelFeedrate)} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white active:bg-indigo-600 transition-colors"><ChevronDown className="w-5 h-5" /></button>
+                 <button 
+                   onPointerDown={() => grbl.startContinuousJog('Y', -1, currentProfile.travelFeedrate)} 
+                   onPointerUp={() => grbl.stopContinuousJog()} 
+                   onPointerLeave={() => grbl.stopContinuousJog()} 
+                   className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-white active:bg-indigo-600 transition-colors touch-none"><ChevronDown className="w-5 h-5" /></button>
                  <div />
                </div>
                <div className="flex gap-2 justify-center mt-2 border-t border-slate-800 pt-2">
-                 <button onClick={() => grbl.jog('Z', jogStep, currentProfile.travelFeedrate)} className="flex-1 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-white font-bold text-xs flex justify-center items-center gap-1 active:bg-indigo-600 transition-colors"><ChevronUp className="w-3 h-3"/> Z+</button>
-                 <button onClick={() => grbl.jog('Z', -jogStep, currentProfile.travelFeedrate)} className="flex-1 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-white font-bold text-xs flex justify-center items-center gap-1 active:bg-indigo-600 transition-colors"><ChevronDown className="w-3 h-3"/> Z-</button>
+                 <button 
+                   onPointerDown={() => grbl.startContinuousJog('Z', 1, currentProfile.travelFeedrate)} 
+                   onPointerUp={() => grbl.stopContinuousJog()} 
+                   onPointerLeave={() => grbl.stopContinuousJog()} 
+                   className="flex-1 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-white font-bold text-xs flex justify-center items-center gap-1 active:bg-indigo-600 transition-colors touch-none"><ChevronUp className="w-3 h-3"/> Z+</button>
+                 <button 
+                   onPointerDown={() => grbl.startContinuousJog('Z', -1, currentProfile.travelFeedrate)} 
+                   onPointerUp={() => grbl.stopContinuousJog()} 
+                   onPointerLeave={() => grbl.stopContinuousJog()} 
+                   className="flex-1 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-white font-bold text-xs flex justify-center items-center gap-1 active:bg-indigo-600 transition-colors touch-none"><ChevronDown className="w-3 h-3"/> Z-</button>
                </div>
             </div>
           )}

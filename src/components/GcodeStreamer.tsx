@@ -23,6 +23,7 @@ interface GcodeStreamerProps {
   onGcodeLoaded: (parsed: ParsedGcode) => void;
   currentProfile: MachineProfile;
   liveState: GrblState;
+  children?: React.ReactNode;
 }
 
 export const GcodeStreamer: React.FC<GcodeStreamerProps> = ({
@@ -30,6 +31,7 @@ export const GcodeStreamer: React.FC<GcodeStreamerProps> = ({
   onGcodeLoaded,
   currentProfile,
   liveState,
+  children,
 }) => {
   const [streamProgress, setStreamProgress] = useState({
     currentLine: 0,
@@ -213,39 +215,37 @@ G0 X0.000 Y0.000
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-4 shadow-lg text-slate-200">
-      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-        <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-indigo-400" />
-          <h3 className="font-semibold text-sm text-slate-100">G-Code Ausführung & Job-Streaming</h3>
-        </div>
-
-        {parsedGcode && parsedGcode.lines.length > 0 && (
-          <span className="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
-            {parsedGcode.stats.lineCount} Zeilen geladen
-          </span>
-        )}
-      </div>
-
-      {/* If no gcode loaded */}
-      {(!parsedGcode || parsedGcode.lines.length === 0) && (
-        <div className="bg-slate-950/60 rounded-lg p-3 border border-slate-800/80 space-y-2 text-xs">
-          <div className="flex items-center gap-1.5 text-slate-400 font-medium">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Kein G-Code geladen (Verwende oben &bdquo;Import / Export&ldquo; oder erstelle ein Motiv im Generator)</span>
+    <div className="flex flex-col gap-2 h-full">
+      <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 space-y-3 shadow-lg text-slate-200 shrink-0">
+        <div className="flex items-center justify-between pb-1.5 border-b border-slate-800">
+          <div className="flex items-center gap-1.5">
+            <Activity className="w-3.5 h-3.5 text-indigo-400" />
+            <h3 className="font-bold text-xs text-slate-100">G-Code Job</h3>
           </div>
-        </div>
-      )}
 
-      {/* Active Job Progress & Controls */}
-      {parsedGcode && parsedGcode.lines.length > 0 && (
-        <div className="space-y-3">
-          {/* Progress Bar & Line count */}
-          <div className="space-y-1.5 bg-slate-950/70 p-3 rounded-lg border border-slate-800">
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-slate-400">
-                Zeile: <span className="text-cyan-400 font-bold">{streamProgress.currentLine}</span> / {streamProgress.totalLines || parsedGcode.stats.lineCount}
-              </span>
+          {parsedGcode && parsedGcode.lines.length > 0 && (
+            <span className="text-[0.625rem] font-mono text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/40">
+              {parsedGcode.stats.lineCount} Zeilen
+            </span>
+          )}
+        </div>
+
+        {/* If no gcode loaded */}
+        {(!parsedGcode || parsedGcode.lines.length === 0) && (
+          <div className="text-xs text-slate-500 font-medium">
+            Kein G-Code geladen
+          </div>
+        )}
+
+        {/* Active Job Progress & Controls */}
+        {parsedGcode && parsedGcode.lines.length > 0 && (
+          <div className="space-y-2">
+            {/* Progress Bar & Line count */}
+            <div className="space-y-1 bg-slate-950/70 p-2 rounded border border-slate-800">
+              <div className="flex items-center justify-between text-[0.6875rem] font-mono">
+                <span className="text-slate-400">
+                  <span className="text-cyan-400 font-bold">{streamProgress.currentLine}</span> / {streamProgress.totalLines || parsedGcode.stats.lineCount}
+                </span>
               <span className="text-slate-200 font-bold">{streamProgress.percent}%</span>
             </div>
 
@@ -309,54 +309,16 @@ G0 X0.000 Y0.000
               <span>Abbrechen</span>
             </button>
           </div>
-
-          {/* Real-time Feed Rate Override */}
-          <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 space-y-1.5 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-slate-400 font-medium">Vorschub-Echtzeit-Override:</span>
-              <span className="text-cyan-400 font-mono font-bold">{feedOverride}%</span>
-            </div>
-            <div className="grid grid-cols-5 gap-1.5 font-mono text-[0.6875rem]">
-              <button
-                onClick={() => handleFeedOverrideChange(-10)}
-                className="py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700"
-              >
-                -10%
-              </button>
-              <button
-                onClick={() => handleFeedOverrideChange(0)}
-                className="py-1 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white rounded border border-slate-700 font-bold"
-              >
-                100%
-              </button>
-              <button
-                onClick={() => handleFeedOverrideChange(10)}
-                className="py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700"
-              >
-                +10%
-              </button>
-              <button
-                onClick={() => handleDownloadGcode('nc')}
-                className="py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 flex items-center justify-center gap-1"
-                title="Als .nc Datei exportieren"
-              >
-                <Download className="w-3 h-3 text-cyan-400" />
-                <span>.NC</span>
-              </button>
-              <button
-                onClick={() => handleDownloadGcode('gcode')}
-                className="py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 flex items-center justify-center gap-1"
-                title="Als .gcode Datei exportieren"
-              >
-                <Download className="w-3 h-3" />
-                <span>.gcode</span>
-              </button>
-            </div>
-          </div>
-
-          {/* G-Code Live Syntax Viewer */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-[0.6875rem] text-slate-400">
+        </div>
+      )}
+      </div>
+      
+      {children}
+      
+      {/* G-Code Inspektor at the bottom */}
+      {parsedGcode && parsedGcode.lines.length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 shadow-lg text-slate-200 flex-1 flex flex-col min-h-[150px] overflow-hidden">
+          <div className="flex items-center justify-between text-[0.6875rem] text-slate-400 mb-2 shrink-0">
               <span>G-Code Inspektor ({parsedGcode.lines.length} Zeilen):</span>
               <button
                 onClick={() => setAutoScrollGcode(!autoScrollGcode)}
@@ -397,7 +359,6 @@ G0 X0.000 Y0.000
                   </div>
                 );
               })}
-            </div>
           </div>
         </div>
       )}

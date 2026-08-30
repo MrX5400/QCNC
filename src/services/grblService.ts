@@ -475,7 +475,7 @@ class GrblService {
     this.isWaitingForIdle = false;
     this.streamQueue = [];
     this.currentStreamIndex = 0;
-    this.currentState.status = 'Idle';
+    this.currentState.status = 'Alarm';
     this.sendRaw('\x18'); // Soft reset
     this.notifyState();
     this.notifyProgress();
