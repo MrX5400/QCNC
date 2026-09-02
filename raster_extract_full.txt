@@ -1,0 +1,808 @@
+﻿                  onClick={handleAddCurrentToComposition}
+                  className="w-full py-2 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 hover:text-white rounded-lg border border-indigo-500/50 text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Form zur ArbeitsflÃ¤che hinzufÃ¼gen</span>
+                </button>
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* 1D: OVERHAULED RASTER / VEKTORISIEREN MENU (OUTLINE & CENTERLINE TRACING)  */}
+            {/* ========================================================================= */}
+            {sourceType === 'raster' && (
+              <div className="p-3 bg-slate-950/70 rounded-lg border border-slate-800/80 space-y-3.5">
+                {/* Upload Button */}
+                <label className="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-lg p-2.5 flex flex-col items-center justify-center cursor-pointer transition-colors text-center bg-slate-900/40">
+                  <ImageIcon className="w-5 h-5 text-indigo-400 mb-1" />
+                  <span className="font-semibold text-slate-200 text-xs">Bitmap-Grafik hochladen (PNG, JPG, WebP, BMP)</span>
+                  <span className="text-[0.625rem] text-slate-500 mt-0.5">Vektorisiert Grafiken, Logos, Skizzen &amp; Handschriften</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleRasterImageUpload}
+                    className="hidden"
+                  />
+                </label>
+
+                {/* LIVE INTERACTIVE IMAGE & VECTOR PREVIEW PANEL */}
+                {rasterImage && (
+                  <div className="space-y-2 bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+                    <div className="flex items-center justify-between text-[0.6875rem]">
+                      <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                        <Eye className="w-3.5 h-3.5 text-cyan-400" />
+                        Live Vektor- &amp; Filter-Vorschau
+                      </span>
+                      <button
+                        onClick={() => setShowImageLightbox(true)}
+                        className="px-2 py-0.5 bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/50 text-indigo-200 rounded text-[0.625rem] font-medium flex items-center gap-1 transition-colors"
+                        title="Echtbildvorschau vergrÃ¶ÃŸern & im Detail ansehen"
+                      >
+                        <Expand className="w-3 h-3 text-indigo-300" />
+                        <span>GroÃŸansicht / Lupe</span>
+                      </button>
+                    </div>
+
+                    {/* Preview Mode Tabs */}
+                    <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[0.625rem]">
+                      <button
+                        onClick={() => setTracingPreviewTab('vectors')}
+                        className={`flex-1 py-1 rounded font-medium transition-colors ${
+                          tracingPreviewTab === 'vectors' ? 'bg-cyan-600 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        âœ¨ Vektor-Overlay
+                      </button>
+                      <button
+                        onClick={() => setTracingPreviewTab('threshold')}
+                        className={`flex-1 py-1 rounded font-medium transition-colors ${
+                          tracingPreviewTab === 'threshold' ? 'bg-indigo-600 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        â¬› SW-Schwelle
+                      </button>
+                      <button
+                        onClick={() => setTracingPreviewTab('original')}
+                        className={`flex-1 py-1 rounded font-medium transition-colors ${
+                          tracingPreviewTab === 'original' ? 'bg-slate-700 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        ðŸ–¼ï¸ Original
+                      </button>
+                    </div>
+
+                    {/* Canvas / Image Display Area */}
+                    <div 
+                      className="h-32 rounded-lg overflow-hidden bg-slate-950 border border-slate-800 flex items-center justify-center relative cursor-pointer group hover:border-cyan-500/60 transition-colors"
+                      onClick={() => setShowImageLightbox(true)}
+                      title="Klicken fÃ¼r interaktive Vollbild-Vorschau mit Split-Slider"
+                    >
+                      {tracingPreviewTab === 'vectors' && (
+                        <canvas
+                          ref={vectorOverlayCanvasRef}
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      )}
+                      {tracingPreviewTab === 'threshold' && (
+                        <canvas
+                          ref={processedCanvasRef}
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      )}
+                      {tracingPreviewTab === 'original' && (
+                        <img
+                          src={rasterImage.src}
+                          alt="Original"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <Search className="w-5 h-5 text-cyan-300 drop-shadow" />
+                      </div>
+                    </div>
+
+                    {/* Background Original Image Opacity Slider in Vector Tab */}
+                    {tracingPreviewTab === 'vectors' && (
+                      <div className="flex items-center justify-between text-[0.5625rem] font-mono text-slate-400 bg-slate-950/80 px-2 py-1 rounded-lg border border-slate-800">
+                        <span className="flex items-center gap-1 text-slate-300">
+                          <Layers className="w-3 h-3 text-cyan-400" />
+                          <span>Hintergrundbild:</span>
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="5"
+                            value={tracerBgOpacity}
+                            onChange={(e) => setTracerBgOpacity(Number(e.target.value))}
+                            className="w-20 accent-cyan-400 cursor-pointer"
+                            title="Deckkraft des Originalbildes im Hintergrund der Pfadansicht"
+                          />
+                          <span className="text-cyan-300 w-7 text-right font-bold">{tracerBgOpacity}%</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Vector Trace Metrics Badges & Live Status */}
+                    <div className="flex items-center justify-between pt-1">
+                      {isTracing ? (
+                        <div className="w-full bg-cyan-950/60 border border-cyan-500/50 text-cyan-200 px-2 py-1 rounded text-[0.625rem] font-bold flex items-center justify-center gap-1.5 animate-pulse shadow-sm">
+                          <Loader2 className="w-3 h-3 animate-spin text-cyan-400" />
+                          <span>Vektorisiere Konturen...</span>
+                        </div>
+                      ) : rawPolylines.length > 0 ? (
+                        <div className="w-full grid grid-cols-3 gap-1 font-mono text-[0.5625rem] text-center">
+                          <div className="bg-slate-950 px-1.5 py-1 rounded border border-slate-800">
+                            <span className="text-slate-500 block">Pfade:</span>
+                            <span className="text-cyan-300 font-bold">{rawPolylines.length}</span>
+                          </div>
+                          <div className="bg-slate-950 px-1.5 py-1 rounded border border-slate-800">
+                            <span className="text-slate-500 block">Punkte:</span>
+                            <span className="text-indigo-300 font-bold">{rawPolylines.reduce((acc, p) => acc + p.points.length, 0)}</span>
+                          </div>
+                          <div className="bg-slate-950 px-1.5 py-1 rounded border border-slate-800">
+                            <span className="text-slate-500 block">LÃ¤nge:</span>
+                            <span className="text-emerald-300 font-bold">{rawPolylines.reduce((acc, p) => acc + computePolylineLength(p.points), 0).toFixed(0)} mm</span>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
+                {/* 1. ZIELGRÃ–SSE & SEITENVERHÃ„LTNIS-SPERRE (GANZ NACH OBEN VERSCHOBEN) */}
+                <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 font-mono text-[0.625rem]">
+                  <div className="flex items-center justify-between text-slate-300 font-semibold border-b border-slate-800 pb-1">
+                    <span className="flex items-center gap-1.5 font-bold text-slate-200">
+                      <Ruler className="w-3.5 h-3.5 text-cyan-400" />
+                      Zielabmessungen &amp; Skalierung
+                    </span>
+                    <button
+                      onClick={() => setRasterLockAspect(!rasterLockAspect)}
+                      className={`px-2 py-0.5 rounded flex items-center gap-1 text-[0.625rem] font-semibold border transition-all ${
+                        rasterLockAspect
+                          ? 'bg-cyan-600/30 text-cyan-200 border-cyan-500/50'
+                          : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
+                      }`}
+                      title={rasterLockAspect ? 'SeitenverhÃ¤ltnis gesperrt (proportional)' : 'SeitenverhÃ¤ltnis frei (verzerrbar)'}
+                    >
+                      {rasterLockAspect ? <Lock className="w-3 h-3 text-cyan-400" /> : <Unlock className="w-3 h-3 text-slate-400" />}
+                      <span>{rasterLockAspect ? 'Proportional' : 'Frei'}</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-0.5">
+                    <div className="space-y-1">
+                      <span className="text-slate-400">Breite (mm):</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={2000}
+                        value={rasterSettings.targetWidth}
+                        onChange={(e) => handleRasterWidthChange(Number(e.target.value))}
+                        className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-cyan-200 font-bold"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-slate-400">HÃ¶he (mm):</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={2000}
+                        value={rasterSettings.targetHeight || Math.round(rasterSettings.targetWidth * ((rasterImage?.height || 1) / (rasterImage?.width || 1)))}
+                        onChange={(e) => handleRasterHeightChange(Number(e.target.value))}
+                        className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-cyan-200 font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. VEKTORISIERUNGS- & SCHRAFFUR-MODUS */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-300 text-[0.6875rem] font-bold flex items-center gap-1.5">
+                      <Workflow className="w-3.5 h-3.5 text-cyan-400" />
+                      Vektorisierungs-Modus:
+                    </span>
+                    <span className="text-[0.625rem] text-cyan-400/90 font-mono">
+                      {rasterSettings.mode === 'contour_trace' ? 'AuÃŸen/Innen' : rasterSettings.mode === 'centerline_trace' ? 'Mittellinie' : 'Schraffur'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { 
+                        id: 'contour_trace', 
+                        label: 'ðŸ” Outline-Kontur', 
+                        desc: 'Edge-Detection fÃ¼r Logos, Silhouetten & Schriften (AuÃŸen & Innen)',
+                        accent: 'border-cyan-500 text-cyan-200 bg-cyan-950/40' 
+                      },
+                      { 
+                        id: 'centerline_trace', 
+                        label: 'ðŸ–‹ï¸ Mittellinie (Centerline)', 
+                        desc: 'Zhang-Suen Skelettierung fÃ¼r Handschrift, Skizzen & 1-Strich Linien',
+                        accent: 'border-amber-500 text-amber-200 bg-amber-950/40' 
+                      },
+                      { 
+                        id: 'hatch_linear', 
+                        label: 'Linien-Schraffur', 
+                        desc: 'GleichmÃ¤ÃŸige parallele Linien',
+                        accent: 'border-indigo-500 text-indigo-200 bg-indigo-950/40' 
+                      },
+                      { 
+                        id: 'cross_hatch', 
+                        label: 'Kreuz-Schraffur', 
+                        desc: 'Zwei Ã¼berlagerte Schraffurlagen',
+                        accent: 'border-indigo-500 text-indigo-200 bg-indigo-950/40' 
+                      },
+                      { 
+                        id: 'stipple_dither', 
+                        label: 'Dithering / Punkte', 
+                        desc: 'Stippling-Punkte fÃ¼r FarbverlÃ¤ufe',
+                        accent: 'border-purple-500 text-purple-200 bg-purple-950/40' 
+                      },
+                      { 
+                        id: 'spiral_wave', 
+                        label: 'Wellen-Kurven', 
+                        desc: 'SinusfÃ¶rmige Wellenlinien',
+                        accent: 'border-purple-500 text-purple-200 bg-purple-950/40' 
+                      },
+                    ].map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => setRasterSettings(s => ({ ...s, mode: m.id as any }))}
+                        className={`p-2 rounded-lg border text-left text-[0.625rem] transition-all flex flex-col justify-between ${
+                          rasterSettings.mode === m.id
+                            ? `${m.accent} ring-1 font-semibold shadow-sm`
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
+                        }`}
+                        title={m.desc}
+                      >
+                        <span className="font-semibold text-slate-100">{m.label}</span>
+                        <span className="text-[0.5625rem] text-slate-500 line-clamp-1 mt-0.5">{m.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2b. MUSTERFÃœLLUNG / PATTERN FILL (Wenn Outline-Kontur aktiv) */}
+                {rasterSettings.mode === 'contour_trace' && (
+                  <div className="space-y-2 bg-gradient-to-br from-cyan-950/40 to-slate-900/90 p-2.5 rounded-lg border border-cyan-500/30 font-mono text-[0.625rem]">
+                    <div className="flex items-center justify-between border-b border-cyan-500/20 pb-1">
+                      <span className="font-bold text-cyan-300 flex items-center gap-1.5">
+                        <GridIcon className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>MusterfÃ¼llung (Infill):</span>
+                      </span>
+                      <span className="text-[0.5625rem] text-cyan-400/80 font-bold">
+                        {rasterSettings.fillPattern && rasterSettings.fillPattern !== 'none' ? 'Aktiv' : 'Keine'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1 pt-0.5">
+                      {[
+                        { id: 'none', label: 'ðŸš« Nur Kontur' },
+                        { id: 'lines', label: 'ðŸ“ Linien' },
+                        { id: 'crosshatch', label: 'âœ–ï¸ Kreuzschraffur' },
+                        { id: 'concentric', label: 'â­• Konzentrisch' },
+                        { id: 'zigzag', label: 'âš¡ Zickzack' },
+                        { id: 'dots', label: 'â–‘ Punkte / Dither' },
+                        { id: 'wave', label: 'ã€°ï¸ Wellenmuster' },
+                      ].map((pat) => (
+                        <button
+                          key={pat.id}
+                          onClick={() => setRasterSettings(s => ({ ...s, fillPattern: pat.id as any }))}
+                          className={`px-2 py-1 rounded text-[0.5625rem] font-semibold border transition-all text-left truncate ${
+                            (rasterSettings.fillPattern || 'none') === pat.id
+                              ? 'bg-cyan-600 text-white border-cyan-400 shadow-sm'
+                              : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          {pat.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {rasterSettings.fillPattern && rasterSettings.fillPattern !== 'none' && (
+                      <div className="space-y-2 pt-1 border-t border-cyan-500/20">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-300">Linienabstand:</span>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="range"
+                              min={0.5}
+                              max={8.0}
+                              step={0.25}
+                              value={rasterSettings.fillSpacing ?? 2.0}
+                              onChange={(e) => setRasterSettings(s => ({ ...s, fillSpacing: Number(e.target.value) }))}
+                              className="w-20 accent-cyan-400"
+                            />
+                            <span className="text-cyan-300 w-10 text-right font-bold">{(rasterSettings.fillSpacing ?? 2.0).toFixed(1)} mm</span>
+                          </div>
+                        </div>
+
+                        {rasterSettings.fillPattern !== 'concentric' && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-300">Schraffur-Winkel:</span>
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="range"
+                                min={0}
+                                max={180}
+                                step={5}
+                                value={rasterSettings.fillAngle ?? 45}
+                                onChange={(e) => setRasterSettings(s => ({ ...s, fillAngle: Number(e.target.value) }))}
+                                className="w-20 accent-cyan-400"
+                              />
+                              <span className="text-cyan-300 w-10 text-right font-bold">{rasterSettings.fillAngle ?? 45}Â°</span>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-1 border-t border-cyan-500/20">
+                          <span className="text-slate-300">AuÃŸenkontur behalten:</span>
+                          <button
+                            onClick={() => setRasterSettings(s => ({ ...s, fillIncludeContour: !(s.fillIncludeContour ?? true) }))}
+                            className={`px-2 py-0.5 rounded text-[0.5625rem] font-semibold border transition-all ${
+                              (rasterSettings.fillIncludeContour ?? true)
+                                ? 'bg-cyan-600 text-white border-cyan-400 shadow-sm'
+                                : 'bg-slate-900 border-slate-700 text-slate-400'
+                            }`}
+                          >
+                            {(rasterSettings.fillIncludeContour ?? true) ? 'Ja (Kontur + FÃ¼llung)' : 'Nur FÃ¼llmuster'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 2c. SPEZIFISCHE PARAMETER FÃœR SCHRAFFUR / DITHER / WELLEN */}
+                {(rasterSettings.mode === 'hatch_linear' || rasterSettings.mode === 'cross_hatch') && (
+                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-indigo-500/30 font-mono text-[0.625rem]">
+                    <div className="flex items-center justify-between border-b border-indigo-500/20 pb-1">
+                      <span className="font-bold text-indigo-300 flex items-center gap-1.5">
+                        <SlidersIcon className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Schraffur-Parameter:</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-300">Linienabstand / Dichte:</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="range"
+                          min={0.5}
+                          max={8}
+                          step={0.5}
+                          value={rasterSettings.resolution}
+                          onChange={(e) => setRasterSettings(s => ({ ...s, resolution: Number(e.target.value) }))}
+                          className="w-20 accent-indigo-400"
+                        />
+                        <span className="text-indigo-300 w-10 text-right font-bold">{rasterSettings.resolution} L/mm</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-300">Schraffur-Winkel:</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="range"
+                          min={0}
+                          max={180}
+                          step={5}
+                          value={rasterSettings.angle}
+                          onChange={(e) => setRasterSettings(s => ({ ...s, angle: Number(e.target.value) }))}
+                          className="w-20 accent-indigo-400"
+                        />
+                        <span className="text-indigo-300 w-10 text-right font-bold">{rasterSettings.angle}Â°</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {rasterSettings.mode === 'stipple_dither' && (
+                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-purple-500/30 font-mono text-[0.625rem]">
+                    <div className="flex items-center justify-between border-b border-purple-500/20 pb-1">
+                      <span className="font-bold text-purple-300 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Stippling / Dither Parameter:</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-300">Punkt-Dichte:</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="range"
+                          min={1}
+                          max={8}
+                          step={0.5}
+                          value={rasterSettings.resolution}
+                          onChange={(e) => setRasterSettings(s => ({ ...s, resolution: Number(e.target.value) }))}
+                          className="w-20 accent-purple-400"
+                        />
+                        <span className="text-purple-300 w-10 text-right font-bold">{rasterSettings.resolution} P/mm</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-300">Punkt-Brenndauer:</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="range"
+                          min={10}
+                          max={200}
+                          step={10}
+                          value={rasterSettings.stippleDotDurationMs}
+                          onChange={(e) => setRasterSettings(s => ({ ...s, stippleDotDurationMs: Number(e.target.value) }))}
+                          className="w-20 accent-purple-400"
+                        />
+                        <span className="text-purple-300 w-10 text-right font-bold">{rasterSettings.stippleDotDurationMs} ms</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {rasterSettings.mode === 'spiral_wave' && (
+                  <div className="space-y-2 bg-slate-900/80 p-2.5 rounded-lg border border-purple-500/30 font-mono text-[0.625rem]">
+                    <div className="flex items-center justify-between border-b border-purple-500/20 pb-1">
+                      <span className="font-bold text-purple-300 flex items-center gap-1.5">
+                        <Spline className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Wellen-Parameter:</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-300">Wellen-Dichte:</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="range"
+                          min={1}
+                          max={8}
+                          step={0.5}
+                          value={rasterSettings.resolution}
+                          onChange={(e) => setRasterSettings(s => ({ ...s, resolution: Number(e.target.value) }))}
+                          className="w-20 accent-purple-400"
+                        />
+                        <span className="text-purple-300 w-10 text-right font-bold">{rasterSettings.resolution} L/mm</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-300">Wellen-IntensitÃ¤t:</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="range"
+                          min={0.2}
+                          max={3.0}
+                          step={0.1}
+                          value={rasterSettings.spiralTightness}
+                          onChange={(e) => setRasterSettings(s => ({ ...s, spiralTightness: Number(e.target.value) }))}
+                          className="w-20 accent-purple-400"
+                        />
+                        <span className="text-purple-300 w-10 text-right font-bold">{rasterSettings.spiralTightness.toFixed(1)}x</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. KERN-PARAMETER: SCHWELLENWERT & KANTENGLÃ„TTUNG */}
+                <div className="space-y-2.5 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 font-mono text-[0.625rem]">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                    <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                      <SlidersIcon className="w-3.5 h-3.5 text-cyan-400" />
+                      Echtzeit-Parameter
+                    </span>
+                    <button
+                      onClick={handleAutoOtsuThreshold}
+                      className="px-2 py-0.5 bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-500/50 text-cyan-200 rounded text-[0.625rem] font-medium flex items-center gap-1 transition-colors shadow-sm"
+                      title="Berechnet automatisch die optimale Schwarz/WeiÃŸ-Trennung mittels Otsu-Algorithmus"
+                    >
+                      <Wand2 className="w-3 h-3 text-cyan-300" />
+                      <span>âš¡ Auto-Otsu</span>
+                    </button>
+                  </div>
+
+                  {/* 1. Threshold Slider */}
+                  <div className="flex items-center justify-between group">
+                    <span className="text-slate-300 font-semibold flex items-center gap-1">
+                      Schwellenwert:
+                      <button onClick={() => setRasterSettings(s => ({ ...s, threshold: 135 }))} className="p-0.5 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-cyan-400 transition-all rounded bg-slate-800/50 hover:bg-slate-800" title="Auf Standard (135) zurÃ¼cksetzen"><RotateCcw className="w-3 h-3" /></button>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={10}
+                        max={250}
+                        value={rasterSettings.threshold}
+                        onChange={(e) => setRasterSettings(s => ({ ...s, threshold: Number(e.target.value) }))}
+                        className="w-24 accent-cyan-400"
+                      />
+                      <span className="text-cyan-300 w-8 text-right font-bold">{rasterSettings.threshold}</span>
+                    </div>
+                  </div>
+
+                  {/* 2. Detailgrad / Feinschrift & Kleindetails (Airplane Text / Fine Details Slider) */}
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-800/80 group">
+                    <div className="flex flex-col">
+                      <span className="text-amber-300 font-semibold flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        <span>Detailgrad (Feinschrift):</span>
+                        <button onClick={() => setRasterSettings(s => ({ ...s, detailSensitivity: 5 }))} className="p-0.5 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-amber-400 transition-all rounded bg-slate-800/50 hover:bg-slate-800" title="Auf Standard (5) zurÃ¼cksetzen"><RotateCcw className="w-3 h-3" /></button>
+                      </span>
+                      <span className="text-[0.5625rem] text-slate-500">1: Filter | 10: Max Details</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={1}
+                        max={10}
+                        step={1}
+                        value={rasterSettings.detailSensitivity ?? 5}
+                        onChange={(e) => setRasterSettings(s => ({ ...s, detailSensitivity: Number(e.target.value) }))}
+                        className="w-24 accent-amber-400"
+                        title="ErhÃ¶ht die AuflÃ¶sung und Empfindlichkeit fÃ¼r kleine Beschriftungen, Logos und feine Details"
+                      />
+                      <span className="text-amber-300 w-12 text-right font-bold">Stufe {rasterSettings.detailSensitivity ?? 5}</span>
+                    </div>
+                  </div>
+
+                  {/* 3. Prominent Edge Smoothing (KantenglÃ¤ttung / Douglas-Peucker) */}
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-800/80 group">
+                    <div className="flex flex-col">
+                      <span className="text-emerald-300 font-semibold flex items-center gap-1">
+                        <Spline className="w-3 h-3 text-emerald-400" />
+                        <span>KantenglÃ¤ttung:</span>
+                        <button onClick={() => setRasterSettings(s => ({ ...s, simplificationTolerance: 0.25 }))} className="p-0.5 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-emerald-400 transition-all rounded bg-slate-800/50 hover:bg-slate-800" title="Auf Standard (0.25) zurÃ¼cksetzen"><RotateCcw className="w-3 h-3" /></button>
+                      </span>
+                      <span className="text-[0.5625rem] text-slate-500">Douglas-Peucker</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={0.05}
+                        max={3.0}
+                        step={0.05}
+                        value={rasterSettings.simplificationTolerance ?? 0.25}
+                        onChange={(e) => setRasterSettings(s => ({ ...s, simplificationTolerance: Number(e.target.value) }))}
+                        className="w-24 accent-emerald-400"
+                      />
+                      <span className="text-emerald-300 w-12 text-right font-bold">{(rasterSettings.simplificationTolerance ?? 0.25).toFixed(2)} mm</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. PROGRESSIVE DISCLOSURE ACCORDION: âš™ï¸ Erweiterte Einstellungen */}
+                <div className="border border-slate-800 rounded-lg overflow-hidden font-mono text-[0.625rem] bg-slate-950/40">
+                  <button
+                    onClick={() => setShowAdvancedRasterSettings(!showAdvancedRasterSettings)}
+                    className="w-full px-3 py-2 bg-slate-900/90 hover:bg-slate-800/90 flex items-center justify-between text-slate-300 font-medium transition-colors"
+                  >
+                    <span className="flex items-center gap-1.5 font-semibold text-slate-200">
+                      <span>âš™ï¸ Erweiterte Einstellungen</span>
+                    </span>
+                    {showAdvancedRasterSettings ? <ChevronUp className="w-4 h-4 text-cyan-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                  </button>
+
+                  {showAdvancedRasterSettings && (
+                    <div className="p-2.5 space-y-3 bg-slate-900/40 border-t border-slate-800/80">
+                      {/* Weichzeichner (Blur Pre-Filter) */}
+                      <div className="flex items-center justify-between group">
+                        <span className="text-slate-400 flex items-center gap-1" title="GlÃ¤ttet Pixelstufen und Rauschen vor dem Vektorisieren">
+                          Weichzeichner (Blur):
+                          <button onClick={() => setRasterSettings(s => ({ ...s, blurRadius: 1 }))} className="p-0.5 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-indigo-400 transition-all rounded bg-slate-800/50 hover:bg-slate-800" title="Auf Standard (1) zurÃ¼cksetzen"><RotateCcw className="w-3 h-3" /></button>
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min={0}
+                            max={6}
+                            step={1}
+                            value={rasterSettings.blurRadius ?? 1}
+                            onChange={(e) => setRasterSettings(s => ({ ...s, blurRadius: Number(e.target.value) }))}
+                            className="w-24 accent-indigo-500"
+                          />
+                          <span className="text-indigo-300 w-8 text-right font-mono">{(rasterSettings.blurRadius ?? 1)} px</span>
+                        </div>
+                      </div>
+
+                      {/* Kontrast & Helligkeit */}
+                      <div className="flex items-center justify-between group">
+                        <span className="text-slate-400 flex items-center gap-1">
+                          Kontrast:
+                          <button onClick={() => setRasterSettings(s => ({ ...s, contrast: 25 }))} className="p-0.5 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-indigo-400 transition-all rounded bg-slate-800/50 hover:bg-slate-800" title="Auf Standard (25) zurÃ¼cksetzen"><RotateCcw className="w-3 h-3" /></button>
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min={-100}
+                            max={100}
+                            value={rasterSettings.contrast}
+                            onChange={(e) => setRasterSettings(s => ({ ...s, contrast: Number(e.target.value) }))}
+                            className="w-24 accent-indigo-500"
+                          />
+                          <span className="text-indigo-300 w-8 text-right font-mono">{rasterSettings.contrast > 0 ? `+${rasterSettings.contrast}` : rasterSettings.contrast}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between group">
+                        <span className="text-slate-400 flex items-center gap-1">
+                          Helligkeit:
+                          <button onClick={() => setRasterSettings(s => ({ ...s, brightness: 0 }))} className="p-0.5 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-indigo-400 transition-all rounded bg-slate-800/50 hover:bg-slate-800" title="Auf Standard (0) zurÃ¼cksetzen"><RotateCcw className="w-3 h-3" /></button>
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min={-100}
+                            max={100}
+                            value={rasterSettings.brightness}
+                            onChange={(e) => setRasterSettings(s => ({ ...s, brightness: Number(e.target.value) }))}
+                            className="w-24 accent-indigo-500"
+                          />
+                          <span className="text-indigo-300 w-8 text-right font-mono">{rasterSettings.brightness > 0 ? `+${rasterSettings.brightness}` : rasterSettings.brightness}</span>
+                        </div>
+                      </div>
+
+                      {/* Gamma Curve */}
+                      <div className="flex items-center justify-between group">
+                        <span className="text-slate-400 flex items-center gap-1">
+                          Gamma:
+                          <button onClick={() => setRasterSettings(s => ({ ...s, gamma: 1.0 }))} className="p-0.5 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-indigo-400 transition-all rounded bg-slate-800/50 hover:bg-slate-800" title="Auf Standard (1.0) zurÃ¼cksetzen"><RotateCcw className="w-3 h-3" /></button>
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min={0.3}
+                            max={2.5}
+                            step={0.1}
+                            value={rasterSettings.gamma ?? 1.0}
+                            onChange={(e) => setRasterSettings(s => ({ ...s, gamma: Number(e.target.value) }))}
+                            className="w-24 accent-indigo-500"
+                          />
+                          <span className="text-indigo-300 w-8 text-right font-mono">{(rasterSettings.gamma ?? 1.0).toFixed(1)}</span>
+                        </div>
+                      </div>
+
+                      {/* Black & White levels */}
+                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+                        <div className="space-y-1">
+                          <span className="text-slate-500 text-[0.5625rem]">Schwarzwerte: {rasterSettings.blackLevel || 0}</span>
+                          <input
+                            type="range"
+                            min={0}
+                            max={150}
+                            value={rasterSettings.blackLevel || 0}
+                            onChange={(e) => setRasterSettings(s => ({ ...s, blackLevel: Number(e.target.value) }))}
+                            className="w-full accent-indigo-500"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-slate-500 text-[0.5625rem]">WeiÃŸwert: {rasterSettings.whiteLevel ?? 255}</span>
+                          <input
+                            type="range"
+                            min={100}
+                            max={255}
+                            value={rasterSettings.whiteLevel ?? 255}
+                            onChange={(e) => setRasterSettings(s => ({ ...s, whiteLevel: Number(e.target.value) }))}
+                            className="w-full accent-indigo-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Min Path Length Filter */}
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+                        <span className="text-slate-400" title="Ignoriert winzige Rausch-Punkte und Artefakte unterhalb dieser LÃ¤nge">Min. PfadlÃ¤nge:</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min={0.0}
+                            max={15.0}
+                            step={0.2}
+                            value={rasterSettings.minPathLength ?? 0.6}
+                            onChange={(e) => setRasterSettings(s => ({ ...s, minPathLength: Number(e.target.value) }))}
+                            className="w-24 accent-emerald-500"
+                          />
+                          <span className="text-emerald-300 w-12 text-right font-mono">{(rasterSettings.minPathLength ?? 0.6).toFixed(1)} mm</span>
+                        </div>
+                      </div>
+
+                      {/* Small Text / Markings High-Pass Detail Booster */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400 flex items-center gap-1" title="VerstÃ¤rkt schwache SchriftzÃ¼ge, Flugzeugkennungen und feine Linien per High-Pass Filter">
+                          <Sparkles className="w-3 h-3 text-amber-400" />
+                          <span>Schrift-Boost (High-Pass):</span>
+                        </span>
+                        <button
+                          onClick={() => setRasterSettings(s => ({ ...s, enhanceSmallText: !(s.enhanceSmallText ?? true) }))}
+                          className={`px-2 py-0.5 rounded text-[0.625rem] font-semibold border transition-all ${
+                            (rasterSettings.enhanceSmallText ?? true)
+                              ? 'bg-amber-600 text-white border-amber-400 shadow-sm'
+                              : 'bg-slate-900 border-slate-700 text-slate-400'
+                          }`}
+                        >
+                          {(rasterSettings.enhanceSmallText ?? true) ? 'Aktiv' : 'Aus'}
+                        </button>
+                      </div>
+
+                      {/* Invert Button */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Farben invertieren:</span>
+                        <button
+                          onClick={() => setRasterSettings(s => ({ ...s, invert: !s.invert }))}
+                          className={`px-2.5 py-0.5 rounded text-[0.625rem] font-semibold border transition-all ${
+                            rasterSettings.invert
+                              ? 'bg-rose-600 text-white border-rose-400 shadow-sm'
+                              : 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800'
+                          }`}
+                        >
+                          {rasterSettings.invert ? 'Invertiert' : 'Normal'}
+                        </button>
+                      </div>
+
+                      {/* Spiegeln X / Y */}
+                      <div className="flex items-center gap-2 pt-1 border-t border-slate-800/80">
+                        <button
+                          onClick={() => setRasterSettings(s => ({ ...s, mirrorX: !s.mirrorX }))}
+                          className={`flex-1 py-1 rounded flex items-center justify-center gap-1 border transition-all ${
+                            rasterSettings.mirrorX
+                              ? 'bg-indigo-600 text-white border-indigo-400 font-bold'
+                              : 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800'
+                          }`}
+                          title="Bild horizontal spiegeln"
+                        >
+                          <FlipHorizontal className="w-3 h-3" />
+                          <span>Spiegeln X</span>
+                        </button>
+
+                        <button
+                          onClick={() => setRasterSettings(s => ({ ...s, mirrorY: !s.mirrorY }))}
+                          className={`flex-1 py-1 rounded flex items-center justify-center gap-1 border transition-all ${
+                            rasterSettings.mirrorY
+                              ? 'bg-indigo-600 text-white border-indigo-400 font-bold'
+                              : 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800'
+                          }`}
+                          title="Bild vertikal spiegeln"
+                        >
+                          <FlipVertical className="w-3 h-3" />
+                          <span>Spiegeln Y</span>
+                        </button>
+                      </div>
+
+                      {/* Hatch Liniendichte fÃ¼r Raster FÃ¼llungen */}
+                      {rasterSettings.mode !== 'contour_trace' && rasterSettings.mode !== 'centerline_trace' && (
+                        <div className="space-y-1 pt-1 border-t border-slate-800/80">
+                          <span className="text-slate-400">Liniendichte (Hatch):</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={10}
+                            step={0.5}
+                            value={rasterSettings.resolution}
+                            onChange={(e) => setRasterSettings(s => ({ ...s, resolution: Number(e.target.value) }))}
+                            className="w-full bg-slate-900 px-2 py-1 rounded border border-slate-700 text-slate-100 font-mono"
+                          />
+                        </div>
+                      )}
+
+                      <div className="pt-2 border-t border-slate-800/80 flex justify-end">
+                        <button
+                          onClick={resetAllRasterSettings}
+                          className="px-2.5 py-1.5 bg-slate-900 border border-slate-700 hover:bg-slate-800 hover:border-slate-600 text-slate-300 hover:text-white rounded text-[0.625rem] font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Alle Parameter zurÃ¼cksetzen</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* ADD VECTORIZED GRAPHIC TO CANVAS BUTTON */}
+                <button
+                  onClick={handleAddCurrentToComposition}
+                  className="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-lg border border-cyan-400/50 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-cyan-500/20 active:scale-[0.99]"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Vektorisierte Konturen zur ArbeitsflÃ¤che hinzufÃ¼gen</span>
+                </button>
+              </div>
+            )}
+
+            {/* 1E: PDF IMPORT MENU */}
+            {sourceType === 'pdf' && (

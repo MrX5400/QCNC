@@ -1,0 +1,492 @@
+﻿      // Render Rapid / Travel Moves (G0 Leerfahrten / Eilgang) in 2D
+      if (showRapid) {
+        ctx.save();
+        ctx.strokeStyle = theme.rapidLineColor || '#f43f5e';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([4, 4]);
+
+        if (targetMode === 'dragknife' && dragKnifeResult && dragKnifeResult.compensatedSegments.length > 0) {
+          dragKnifeResult.compensatedSegments.forEach(seg => {
+            if (seg.type === 'G0' || (seg as any).type === 'rapid') {
+              ctx.beginPath();
+              ctx.moveTo(toScreenX(seg.from.x), toScreenY(seg.from.y));
+              ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+              ctx.stroke();
+            }
+          });
+        } else if (activeOptimizedPolylines.length > 0) {
+          // 1. Rapid from Bed Origin (0,0) to first path start
+          const firstPt = activeOptimizedPolylines[0].points[0];
+          if (firstPt) {
+            ctx.beginPath();
+            ctx.moveTo(toScreenX(0), toScreenY(0));
+            ctx.lineTo(toScreenX(firstPt.x), toScreenY(firstPt.y));
+            ctx.stroke();
+          }
+
+          // 2. Rapid between consecutive polylines
+          for (let i = 0; i < activeOptimizedPolylines.length - 1; i++) {
+            const currentPoly = activeOptimizedPolylines[i];
+            const nextPoly = activeOptimizedPolylines[i + 1];
+            if (currentPoly.points.length === 0 || nextPoly.points.length === 0) continue;
+
+            const endPt = currentPoly.closed
+              ? currentPoly.points[0]
+              : currentPoly.points[currentPoly.points.length - 1];
+            const nextStartPt = nextPoly.points[0];
+
+            ctx.beginPath();
+            ctx.moveTo(toScreenX(endPt.x), toScreenY(endPt.y));
+            ctx.lineTo(toScreenX(nextStartPt.x), toScreenY(nextStartPt.y));
+            ctx.stroke();
+          }
+
+          // 3. Rapid from last path back to origin (0,0)
+          const lastPoly = activeOptimizedPolylines[activeOptimizedPolylines.length - 1];
+          if (lastPoly && lastPoly.points.length > 0) {
+            const lastEndPt = lastPoly.closed
+              ? lastPoly.points[0]
+              : lastPoly.points[lastPoly.points.length - 1];
+            ctx.beginPath();
+            ctx.moveTo(toScreenX(lastEndPt.x), toScreenY(lastEndPt.y));
+            ctx.lineTo(toScreenX(0), toScreenY(0));
+            ctx.stroke();
+          }
+        }
+
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+      ctx.restore(); // Restore globalAlpha
+
+      // 2D LIVE DRAFT OVERLAY (Render draft live on canvas without cluttering rapid lines or badges)
+      if (compositionElements.length > 0 && showLiveDraftPreview && draftPolylines.length > 0) {
+        if (targetMode === 'dragknife' && draftDragKnifeResult && draftDragKnifeResult.compensatedSegments.length > 0) {
+          ctx.strokeStyle = 'rgba(6, 182, 212, 0.35)';
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([3, 3]);
+          draftPolylines.forEach((poly) => {
+            if (poly.points.length < 2) return;
+            ctx.beginPath();
+            ctx.moveTo(toScreenX(poly.points[0].x), toScreenY(poly.points[0].y));
+            for (let i = 1; i < poly.points.length; i++) {
+              ctx.lineTo(toScreenX(poly.points[i].x), toScreenY(poly.points[i].y));
+            }
+            if (poly.closed) ctx.closePath();
+            ctx.stroke();
+          });
+          ctx.setLineDash([]);
+
+          draftDragKnifeResult.compensatedSegments.forEach(seg => {
+            if (seg.type === 'SWIVEL_ARC' || (seg as any).type === 'swivel') {
+              ctx.strokeStyle = '#f59e0b';
+              ctx.lineWidth = 2.8;
+              ctx.beginPath();
+              ctx.moveTo(toScreenX(seg.from.x), toScreenY(seg.from.y));
+              ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+              ctx.stroke();
+
+              ctx.fillStyle = '#fbbf24';
+              ctx.beginPath();
+              ctx.arc(toScreenX(seg.to.x), toScreenY(seg.to.y), 2.5, 0, Math.PI * 2);
+              ctx.fill();
+            } else if (seg.type === 'G1' || (seg as any).type === 'cut') {
+              ctx.strokeStyle = theme.accentColor || '#06b6d4';
+              ctx.lineWidth = 2.2;
+              ctx.beginPath();
+              ctx.moveTo(toScreenX(seg.from.x), toScreenY(seg.from.y));
+              ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+              ctx.stroke();
+            }
+          });
+        } else {
+          // Draft Cut Paths in Glowing Cyan
+          ctx.lineWidth = 2.2;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.strokeStyle = theme.accentColor || '#06b6d4';
+
+          draftPolylines.forEach((poly) => {
+            if (poly.points.length < 2) return;
+            ctx.beginPath();
+            ctx.moveTo(toScreenX(poly.points[0].x), toScreenY(poly.points[0].y));
+            for (let i = 1; i < poly.points.length; i++) {
+              ctx.lineTo(toScreenX(poly.points[i].x), toScreenY(poly.points[i].y));
+            }
+            if (poly.closed) ctx.closePath();
+            ctx.stroke();
+
+            // Plunge node dot
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.arc(toScreenX(poly.points[0].x), toScreenY(poly.points[0].y), 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+
+        // Live Draft Bounding Box without text badge
+        if (draftStats && draftStats.width > 0) {
+          const dbx = toScreenX(draftStats.minX);
+          const dby = toScreenY(draftStats.maxY);
+          const dbw = draftStats.width * zoom;
+          const dbh = draftStats.height * zoom;
+
+          ctx.strokeStyle = theme.accentColor || '#06b6d4';
+          ctx.lineWidth = 1.4;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(dbx, dby, dbw, dbh);
+          ctx.setLineDash([]);
+
+          // Draft Center Crosshair
+          const dcx = toScreenX(draftStats.centerX);
+          const dcy = toScreenY(draftStats.centerY);
+          ctx.strokeStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.moveTo(dcx - 5, dcy);
+          ctx.lineTo(dcx + 5, dcy);
+          ctx.moveTo(dcx, dcy - 5);
+          ctx.lineTo(dcx, dcy + 5);
+          ctx.stroke();
+        }
+      }
+
+      // Hover Outline for unselected element or active draft
+      if (hoveredElementId && !selectedElementIds.includes(hoveredElementId)) {
+        if (hoveredElementId === 'active_draft' && draftStats && draftStats.width > 0) {
+          const hbx = toScreenX(draftStats.minX) - 3;
+          const hby = toScreenY(draftStats.maxY) - 3;
+          const hbw = draftStats.width * zoom + 6;
+          const hbh = draftStats.height * zoom + 6;
+
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(hbx, hby, hbw, hbh);
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.05)';
+          ctx.fillRect(hbx, hby, hbw, hbh);
+        } else if (hoveredElementId === 'active_single' && stats.width > 0) {
+          const hbx = toScreenX(stats.minX) - 3;
+          const hby = toScreenY(stats.maxY) - 3;
+          const hbw = stats.width * zoom + 6;
+          const hbh = stats.height * zoom + 6;
+
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(hbx, hby, hbw, hbh);
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.05)';
+          ctx.fillRect(hbx, hby, hbw, hbh);
+        } else {
+          const hoveredEl = compositionElements.find(e => e.id === hoveredElementId);
+          if (hoveredEl && hoveredEl.polylines.length > 0) {
+            let hMinX = Infinity, hMaxX = -Infinity, hMinY = Infinity, hMaxY = -Infinity;
+            hoveredEl.polylines.forEach(p => {
+              p.points.forEach(pt => {
+                const x = pt.x + hoveredEl.offsetX;
+                const y = pt.y + hoveredEl.offsetY;
+                if (x < hMinX) hMinX = x;
+                if (x > hMaxX) hMaxX = x;
+                if (y < hMinY) hMinY = y;
+                if (y > hMaxY) hMaxY = y;
+              });
+            });
+            if (hMinX !== Infinity) {
+              const hbx = toScreenX(hMinX) - 3;
+              const hby = toScreenY(hMaxY) - 3;
+              const hbw = (hMaxX - hMinX) * zoom + 6;
+              const hbh = (hMaxY - hMinY) * zoom + 6;
+
+              ctx.strokeStyle = '#38bdf8';
+              ctx.lineWidth = 1.5;
+              ctx.strokeRect(hbx, hby, hbw, hbh);
+              ctx.fillStyle = 'rgba(56, 189, 248, 0.05)';
+              ctx.fillRect(hbx, hby, hbw, hbh);
+            }
+          }
+        }
+      }
+
+      // Multi-Selected Composition Elements Highlight Box & Master Boundary
+      if (selectedElementIds.length > 0) {
+        let masterMinX = Infinity, masterMaxX = -Infinity, masterMinY = Infinity, masterMaxY = -Infinity;
+
+        selectedElementIds.forEach(id => {
+          const el = compositionElements.find(e => e.id === id);
+          if (el && el.polylines.length > 0) {
+            let sMinX = Infinity, sMaxX = -Infinity, sMinY = Infinity, sMaxY = -Infinity;
+            el.polylines.forEach(p => {
+              p.points.forEach(pt => {
+                const x = pt.x + el.offsetX;
+                const y = pt.y + el.offsetY;
+                if (x < sMinX) sMinX = x;
+                if (x > sMaxX) sMaxX = x;
+                if (y < sMinY) sMinY = y;
+                if (y > sMaxY) sMaxY = y;
+              });
+            });
+
+            if (sMinX !== Infinity) {
+              if (sMinX < masterMinX) masterMinX = sMinX;
+              if (sMaxX > masterMaxX) masterMaxX = sMaxX;
+              if (sMinY < masterMinY) masterMinY = sMinY;
+              if (sMaxY > masterMaxY) masterMaxY = sMaxY;
+
+              const sbx = toScreenX(sMinX) - 3;
+              const sby = toScreenY(sMaxY) - 3;
+              const sbw = (sMaxX - sMinX) * zoom + 6;
+              const sbh = (sMaxY - sMinY) * zoom + 6;
+
+              ctx.strokeStyle = '#a855f7';
+              ctx.lineWidth = 1.2;
+              ctx.setLineDash([4, 3]);
+              ctx.strokeRect(sbx, sby, sbw, sbh);
+              ctx.setLineDash([]);
+
+              ctx.fillStyle = '#c084fc';
+              ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px sans-serif`;
+              ctx.fillText(el.name, sbx, sby - 4);
+            }
+          }
+        });
+
+        // If multiple items selected, draw composite master bounding box with glow
+        if (selectedElementIds.length > 1 && masterMinX !== Infinity) {
+          const mbx = toScreenX(masterMinX) - 6;
+          const mby = toScreenY(masterMaxY) - 6;
+          const mbw = (masterMaxX - masterMinX) * zoom + 12;
+          const mbh = (masterMaxY - masterMinY) * zoom + 12;
+
+          ctx.strokeStyle = '#6366f1';
+          ctx.lineWidth = 1.8;
+          ctx.setLineDash([6, 4]);
+          ctx.strokeRect(mbx, mby, mbw, mbh);
+          ctx.setLineDash([]);
+
+          ctx.fillStyle = 'rgba(99, 102, 241, 0.06)';
+          ctx.fillRect(mbx, mby, mbw, mbh);
+
+          ctx.fillStyle = '#818cf8';
+          ctx.font = `bold ${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
+          ctx.fillText(`Gruppe (${selectedElementIds.length} Objekte)`, mbx, mby - 6);
+        }
+      }
+
+      // Live Marquee Selection Rectangle Overlay
+      if (selectionRect) {
+        const sx = toScreenX(Math.min(selectionRect.startX, selectionRect.currentX));
+        const sy = toScreenY(Math.max(selectionRect.startY, selectionRect.currentY));
+        const sw = Math.abs(selectionRect.currentX - selectionRect.startX) * zoom;
+        const sh = Math.abs(selectionRect.currentY - selectionRect.startY) * zoom;
+
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+        ctx.fillRect(sx, sy, sw, sh);
+
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([5, 3]);
+        ctx.strokeRect(sx, sy, sw, sh);
+        ctx.setLineDash([]);
+      }
+
+      // Total Object Bounding Box Indicator & Anchor Box (when no composition elements, or overall)
+      if (stats.width > 0 && stats.height > 0) {
+        const boxX = toScreenX(stats.minX);
+        const boxY = toScreenY(stats.maxY);
+        const boxW = stats.width * zoom;
+        const boxH = stats.height * zoom;
+
+        ctx.strokeStyle = 'rgba(99, 102, 241, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(boxX, boxY, boxW, boxH);
+        ctx.setLineDash([]);
+
+        // Center Crosshair
+        const centerScX = toScreenX(stats.centerX);
+        const centerScY = toScreenY(stats.centerY);
+        ctx.strokeStyle = '#a5b4fc';
+        ctx.beginPath();
+        ctx.moveTo(centerScX - 6, centerScY);
+        ctx.lineTo(centerScX + 6, centerScY);
+        ctx.moveTo(centerScX, centerScY - 6);
+        ctx.lineTo(centerScX, centerScY + 6);
+        ctx.stroke();
+
+        if (compositionElements.length === 0) {
+          const singleLabel = `âš¡ Live-Vorschau: ${draftTitle} (${stats.width} Ã— ${stats.height} mm)`;
+          ctx.font = `bold ${Math.round(11 * (uiScale || 100) / 100)}px monospace`;
+          const bTextW = ctx.measureText(singleLabel).width;
+          const bW = bTextW + 16;
+          const bH = 22;
+          const bX = boxX + (boxW - bW) / 2;
+          const bY = boxY - bH - 6;
+
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+          ctx.fillRect(bX, bY, bW, bH);
+          ctx.strokeStyle = '#6366f1';
+          ctx.lineWidth = 1.2;
+          ctx.strokeRect(bX, bY, bW, bH);
+
+          ctx.fillStyle = '#818cf8';
+          ctx.textAlign = 'center';
+          ctx.fillText(singleLabel, bX + bW / 2, bY + 15);
+          ctx.textAlign = 'start';
+        }
+      }
+
+      // Measurement line when active (Unified Precision Measurement Tool)
+      if (genMeasureStart && genMeasureEnd) {
+        const sx1 = toScreenX(genMeasureStart.x);
+        const sy1 = toScreenY(genMeasureStart.y);
+        const sx2 = toScreenX(genMeasureEnd.x);
+        const sy2 = toScreenY(genMeasureEnd.y);
+
+        const dxMm = genMeasureEnd.x - genMeasureStart.x;
+        const dyMm = genMeasureEnd.y - genMeasureStart.y;
+        const distMm = Math.hypot(dxMm, dyMm);
+        const angleDeg = (Math.atan2(dyMm, dxMm) * 180) / Math.PI;
+
+        ctx.strokeStyle = theme.accentColor || '#06b6d4';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.moveTo(sx1, sy1);
+        ctx.lineTo(sx2, sy2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Crosshair end caps
+        [{ sx: sx1, sy: sy1 }, { sx: sx2, sy: sy2 }].forEach((p, idx) => {
+          ctx.fillStyle = idx === 0 ? '#10b981' : '#06b6d4';
+          ctx.beginPath();
+          ctx.arc(p.sx, p.sy, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = idx === 0 ? '#10b981' : '#06b6d4';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(p.sx - 8, p.sy); ctx.lineTo(p.sx + 8, p.sy);
+          ctx.moveTo(p.sx, p.sy - 8); ctx.lineTo(p.sx, p.sy + 8);
+          ctx.stroke();
+        });
+
+        const midX = (sx1 + sx2) / 2;
+        const midY = (sy1 + sy2) / 2;
+        const label1 = `LÃ¤nge: ${distMm.toFixed(2)} mm`;
+        const label2 = `Î”X: ${dxMm.toFixed(2)} mm | Î”Y: ${dyMm.toFixed(2)} mm (${angleDeg.toFixed(1)}Â°)`;
+
+        ctx.font = `bold ${Math.round(12 * (uiScale || 100) / 100)}px monospace`;
+        const w1 = ctx.measureText(label1).width;
+        ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
+        const w2 = ctx.measureText(label2).width;
+        const badgeW = Math.max(w1, w2) + 20;
+        const badgeH = 34;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+        ctx.fillRect(midX - badgeW / 2, midY - badgeH / 2, badgeW, badgeH);
+        ctx.strokeStyle = theme.accentColor || '#06b6d4';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(midX - badgeW / 2, midY - badgeH / 2, badgeW, badgeH);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = `bold ${Math.round(12 * (uiScale || 100) / 100)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText(label1, midX, midY - 3);
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = `${Math.round(10 * (uiScale || 100) / 100)}px monospace`;
+        ctx.fillText(label2, midX, midY + 11);
+        ctx.textAlign = 'start';
+      }
+
+      // Coordinate Origin Indicator (0,0)
+      if (showOriginMarker) {
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(toScreenX(0), toScreenY(0), 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Simulation Path 2D (G-Code Preview up to simIndex)
+      if (localSimSegments.length > 0 && isSimulationActive) {
+        ctx.save();
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        let simToolX = 0, simToolY = 0;
+        let drawnPath = false;
+
+        for (let i = 0; i < localSimSegments.length; i++) {
+          const seg = localSimSegments[i];
+          const type = (seg as any).type || seg.type;
+          
+          if (i <= effectiveSimIndex) {
+            simToolX = seg.to.x; simToolY = seg.to.y;
+            ctx.globalAlpha = 1.0;
+            drawnPath = true;
+          } else {
+            ctx.globalAlpha = 0.15;
+          }
+          
+          ctx.beginPath();
+          ctx.moveTo(toScreenX(seg.from.x), toScreenY(seg.from.y));
+          if (type === 'G0' || type === 'rapid') {
+            ctx.strokeStyle = theme.rapidLineColor || '#f43f5e';
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1.5;
+            ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+          } else if (type === 'G1' || type === 'cut') {
+            ctx.strokeStyle = theme.cutLineColor || '#10b981';
+            ctx.setLineDash([]);
+            ctx.lineWidth = 2.5;
+            ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+          } else if (type === 'G2' || type === 'G3' || type === 'SWIVEL_ARC' || type === 'swivel') {
+             ctx.strokeStyle = '#f59e0b';
+             ctx.setLineDash([]);
+             ctx.lineWidth = 2.5;
+             if (seg.center) {
+               const cX = seg.center.x, cY = seg.center.y;
+               const r1 = Math.hypot(seg.from.x - cX, seg.from.y - cY);
+               const r2 = Math.hypot(seg.to.x - cX, seg.to.y - cY);
+               const radius = (r1 + r2) / 2 || r1;
+               if (radius > 0.001) {
+                 const a1 = Math.atan2(seg.from.y - cY, seg.from.x - cX);
+                 const a2 = Math.atan2(seg.to.y - cY, seg.to.x - cX);
+                 const isCW = seg.clockwise ?? (type === 'G2');
+                 let sweep = a2 - a1;
+                 if (isCW && sweep > 0) sweep -= 2 * Math.PI;
+                 if (!isCW && sweep < 0) sweep += 2 * Math.PI;
+                 const steps = Math.max(5, Math.ceil(Math.abs(sweep) * 12 / Math.PI));
+                 for (let s = 1; s <= steps; s++) {
+                   const t = s / steps;
+                   const angle = a1 + sweep * t;
+                   const px = cX + radius * Math.cos(angle);
+                   const py = cY + radius * Math.sin(angle);
+                   ctx.lineTo(toScreenX(px), toScreenY(py));
+                 }
+               } else {
+                 ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+               }
+             } else {
+               ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+             }
+          } else {
+             ctx.lineTo(toScreenX(seg.to.x), toScreenY(seg.to.y));
+          }
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1.0;
+
+        // Draw yellow dot only for manual simulation
+        if (drawnPath && !isJobStreaming) {
+          ctx.fillStyle = '#eab308';
+          ctx.beginPath();
+          ctx.arc(toScreenX(simToolX), toScreenY(simToolY), 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // Live Machine Position Crosshair

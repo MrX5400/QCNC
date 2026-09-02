@@ -158,6 +158,9 @@ export interface VectorEntity {
 }
 
 export type RasterMode = 
+  | 'potrace'
+  | 'centerline'
+  | 'hatch'
   | 'contour_trace'
   | 'centerline_trace'
   | 'hatch_linear' 
@@ -169,10 +172,13 @@ export type ContourFillPattern =
   | 'none' 
   | 'lines' 
   | 'crosshatch' 
+  | 'zigzag'
   | 'concentric' 
-  | 'zigzag' 
-  | 'dots' 
-  | 'wave';
+  | 'spiral'
+  | 'stippling'
+  | 'wave'
+  | 'honeycomb'
+  | 'trochoid';
 
 export interface RasterSettings {
   mode: RasterMode;
@@ -194,10 +200,20 @@ export interface RasterSettings {
   stippleDotDurationMs: number;
   spiralTightness: number;
   // Vector Tracing specific settings
+
+  // Potrace-equivalent Settings
+  turdsize?: number; // Speckel-Filter (Mindestgröße für Noise-Entfernung)
+  alphamax?: number; // Eckenerkennung (0.0 bis 1.33)
+  opttolerance?: number; // Kurvenoptimierung (Toleranz)
+  turnpolicy?: 'black' | 'white' | 'left' | 'right' | 'minority' | 'majority';
+  bgBlendMode?: 'white' | 'black' | 'transparent_threshold';
+
   blurRadius?: number; // 0 to 10 px smoothing before threshold
   simplificationTolerance?: number; // Douglas-Peucker tolerance in mm (e.g. 0.1 to 1.5mm)
   minPathLength?: number; // Filter speckles / noise shorter than this length in mm
   detailSensitivity?: number; // 1 to 10 (1 = coarse/clean, 5 = balanced, 10 = maximum fine details & tiny text)
+  despeckleSize?: number; // 0 to 50 px
+  cornerThreshold?: number; // Corner snapping angle
   enhanceSmallText?: boolean; // Local contrast high-pass boost for small typography and lines
   optimizeTsp?: boolean; // Reorder paths with TSP to minimize rapid moves
   // Contour Pattern Fill
@@ -206,4 +222,12 @@ export interface RasterSettings {
   fillAngle?: number; // Pattern rotation angle in degrees (0 - 180)
   fillIncludeContour?: boolean; // Retain outer/inner contour boundary path
   ignoreBorder?: boolean; // Ignore / suppress outer image border frame from being traced
+}
+
+
+export interface VectorPolyline {
+  points: { x: number; y: number }[];
+  closed: boolean;
+  color?: string;
+  toolPower?: number;
 }
