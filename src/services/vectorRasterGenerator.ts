@@ -2,7 +2,7 @@ import { MachineProfile, Point3D, RasterSettings } from '../types/cnc';
 import { applyDragKnifeCompensation, DragKnifeParams, Path2DPoint, CompensatedPathResult } from './dragKnifeCorrection';
 export * from './textVectorGenerator';
 export * from './imageVectorTracer';
-import { generateSingleLineTextPaths, generateUniversalTextPaths } from './textVectorGenerator';
+import { generateSingleLineTextPaths, generateUniversalTextPaths, flattenCubicBezier, flattenQuadraticBezier } from './textVectorGenerator';
 import { traceImageToUniversalVectors } from './imageVectorTracer';
 
 // Built-in Hershey Single-Line Font glyph strokes for ultra-crisp plotter text
@@ -196,11 +196,13 @@ function getPolylineBounds(p: VectorPolyline) {
  * - 'inside_to_outside': Inner enclosed contours/holes cut first, then outer boundaries
  * - 'outside_to_inside': Outer boundary contours cut first, then inner contours
  */
-export function optimizePathOrder(
+
+const yieldToMain = () => new Promise(resolve => setTimeout(resolve, 0));
+export async function optimizePathOrder(
   paths: VectorPolyline[],
   strategy: PathOrderStrategy = 'fastest',
   startPosition: Path2DPoint = { x: 0, y: 0 }
-): VectorPolyline[] {
+): Promise<VectorPolyline[]> {
   if (paths.length <= 1) {
     if (paths.length === 1 && paths[0].closed && paths[0].points.length > 2) {
       const p = paths[0];
@@ -296,14 +298,18 @@ export function optimizePathOrder(
     const ordered: VectorPolyline[] = [];
     let currentPos: Path2DPoint = { ...startPosition };
 
-    while (remaining.length > 0) {
+    let chunkCounter = 0;
+  while (remaining.length > 0) {
+    if (++chunkCounter % 50 === 0) await yieldToMain();
       // Use a smaller tier size to better respect the area ordering while still allowing TSP for similar areas
       const tierSize = Math.min(remaining.length, Math.max(1, Math.ceil(pathsWithMeta.length * 0.15)));
       let bestIdx = 0;
       let minDistance = Infinity;
       let reversePath = false;
 
+      let chunkT = 0;
       for (let i = 0; i < tierSize; i++) {
+        if (++chunkT % 50 === 0) await yieldToMain();
         const p = remaining[i].path;
         const { d, reverse } = getMinDistanceToPath(p, currentPos);
         if (d < minDistance) {
@@ -335,12 +341,17 @@ export function optimizePathOrder(
   const ordered: VectorPolyline[] = [];
   let currentPos: Path2DPoint = { ...startPosition };
 
+  let chunkCounter = 0;
   while (remaining.length > 0) {
+    if (++chunkCounter % 50 === 0) await yieldToMain();
     let nearestIndex = 0;
     let minDistance = Infinity;
     let reversePath = false;
 
-    for (let i = 0; i < remaining.length; i++) {
+    
+    const searchLimit = Math.min(remaining.length, 300);
+    for (let i = 0; i < searchLimit; i++) {
+
       const p = remaining[i];
       const { d, reverse } = getMinDistanceToPath(p, currentPos);
       if (d < minDistance) {
@@ -369,16 +380,16 @@ export function optimizePathOrder(
 /**
  * Computes optimized polylines and object groups in exact execution order
  */
-export function getOptimizedPolylinesAndGroups(options: {
+export async function getOptimizedPolylinesAndGroups(options: {
   groups?: UniversalGcodeGroup[];
   polylines?: VectorPolyline[];
   optimizeOrder?: boolean;
   objectOrderMode?: ObjectOrderMode;
   pathOrderStrategy?: PathOrderStrategy;
-}): {
+}): Promise<{
   orderedGroups: UniversalGcodeGroup[];
   orderedPolylines: VectorPolyline[];
-} {
+}> {
   const {
     groups,
     polylines,
@@ -400,11 +411,21 @@ export function getOptimizedPolylinesAndGroups(options: {
   const orderedPolylines: VectorPolyline[] = [];
   let runningPos: Path2DPoint = { x: 0, y: 0 };
 
+
   for (let gIdx = 0; gIdx < effectiveGroups.length; gIdx++) {
+    await yieldToMain();
     const grp = effectiveGroups[gIdx];
     let groupPaths = grp.polylines;
+    
+    // Simplify paths before optimization to drastically reduce points
+    groupPaths = groupPaths.map(p => ({
+      ...p,
+      points: simplifyPolyline(p.points, 0.02)
+    })).filter(p => p.points.length >= 2);
+
     if (optimizeOrder) {
-      groupPaths = optimizePathOrder(groupPaths, pathOrderStrategy, runningPos);
+
+      groupPaths = await optimizePathOrder(groupPaths, pathOrderStrategy, runningPos);
     }
     orderedGroups.push({
       ...grp,
@@ -543,7 +564,7 @@ export function parseSvgToPolylines(svgString: string, targetBedWidth: number = 
   const polylines: VectorPolyline[] = [];
 
   // Parse SVG paths, rects, circles, lines, polylines
-  const elements = svgEl.querySelectorAll('path, rect, circle, ellipse, line, polyline, polygon');
+  const elements = svgEl.querySelectorAll('path, rect, circle, ellipse, line, polyline, polygon, text, tspan');
 
   elements.forEach((el) => {
     const tag = el.tagName.toLowerCase();
@@ -602,6 +623,24 @@ export function parseSvgToPolylines(svgString: string, targetBedWidth: number = 
           polylines.push({ points: pts, closed: false });
         }
       }
+
+    } else if (tag === 'text' || tag === 'tspan') {
+      const textContent = el.textContent || '';
+      if (textContent.trim()) {
+        const x = parseFloat(el.getAttribute('x') || '0');
+        const y = parseFloat(el.getAttribute('y') || '0');
+        const fontSize = parseFloat(el.getAttribute('font-size') || '12');
+        const fontFamily = el.getAttribute('font-family') || 'Hershey Simplex';
+        
+        const textPolys = generateUniversalTextPaths({
+          text: textContent.trim(), x, y, fontSize, fontFamily, 
+          fontWeight: 'normal', fontStyle: 'normal', textAlign: 'left',
+          letterSpacing: 0, lineSpacing: 1.25, mode: 'single_line',
+          infillPattern: 'none', infillSpacing: 0, infillAngle: 0, includeOutline: false,
+          singleLineBold: false, italicSlantDeg: 0
+        });
+        polylines.push(...textPolys);
+      }
     } else if (tag === 'path') {
       const d = el.getAttribute('d') || '';
       const parsedPath = parseSvgPathD(d);
@@ -649,6 +688,7 @@ function parseSvgPathD(d: string): VectorPolyline[] {
 
   let currentPoint: Path2DPoint = { x: 0, y: 0 };
   let pathStartPoint: Path2DPoint = { x: 0, y: 0 };
+  let lastControlPoint: Path2DPoint | null = null;
   let currentPolyline: Path2DPoint[] = [];
 
   for (const cmdStr of commands) {
@@ -656,19 +696,15 @@ function parseSvgPathD(d: string): VectorPolyline[] {
     const isRel = type === type.toLowerCase();
     const cmdUpper = type.toUpperCase();
     const args = (cmdStr.slice(1).match(/[-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?/g) || []).map(Number);
+    
+    let isCurve = false;
 
     if (cmdUpper === 'M') {
       for (let i = 0; i < args.length; i += 2) {
-        let x = args[i];
-        let y = args[i + 1];
-        if (isRel) {
-          x += currentPoint.x;
-          y += currentPoint.y;
-        }
+        let x = args[i], y = args[i + 1];
+        if (isRel) { x += currentPoint.x; y += currentPoint.y; }
         if (i === 0) {
-          if (currentPolyline.length > 1) {
-            result.push({ points: currentPolyline, closed: false });
-          }
+          if (currentPolyline.length > 1) { result.push({ points: currentPolyline, closed: false }); }
           currentPolyline = [{ x, y }];
           pathStartPoint = { x, y };
         } else {
@@ -678,12 +714,8 @@ function parseSvgPathD(d: string): VectorPolyline[] {
       }
     } else if (cmdUpper === 'L') {
       for (let i = 0; i < args.length; i += 2) {
-        let x = args[i];
-        let y = args[i + 1];
-        if (isRel) {
-          x += currentPoint.x;
-          y += currentPoint.y;
-        }
+        let x = args[i], y = args[i + 1];
+        if (isRel) { x += currentPoint.x; y += currentPoint.y; }
         currentPolyline.push({ x, y });
         currentPoint = { x, y };
       }
@@ -700,42 +732,66 @@ function parseSvgPathD(d: string): VectorPolyline[] {
         currentPoint.y = y;
       }
     } else if (cmdUpper === 'C') {
+      isCurve = true;
       for (let i = 0; i < args.length; i += 6) {
-        let cp1x = args[i], cp1y = args[i + 1];
-        let cp2x = args[i + 2], cp2y = args[i + 3];
-        let ex = args[i + 4], ey = args[i + 5];
-
-        if (isRel) {
-          cp1x += currentPoint.x; cp1y += currentPoint.y;
-          cp2x += currentPoint.x; cp2y += currentPoint.y;
-          ex += currentPoint.x; ey += currentPoint.y;
-        }
-
-        const steps = 10;
-        for (let s = 1; s <= steps; s++) {
-          const t = s / steps;
-          const u = 1 - t;
-          const px = u*u*u*currentPoint.x + 3*u*u*t*cp1x + 3*u*t*t*cp2x + t*t*t*ex;
-          const py = u*u*u*currentPoint.y + 3*u*u*t*cp1y + 3*u*t*t*cp2y + t*t*t*ey;
-          currentPolyline.push({ x: px, y: py });
-        }
+        let cp1x = args[i], cp1y = args[i + 1], cp2x = args[i + 2], cp2y = args[i + 3], ex = args[i + 4], ey = args[i + 5];
+        if (isRel) { cp1x += currentPoint.x; cp1y += currentPoint.y; cp2x += currentPoint.x; cp2y += currentPoint.y; ex += currentPoint.x; ey += currentPoint.y; }
+        const cPts = flattenCubicBezier(currentPoint.x, currentPoint.y, cp1x, cp1y, cp2x, cp2y, ex, ey, 0.05);
+        if (cPts.length > 0) currentPolyline.push(...cPts.slice(1));
         currentPoint = { x: ex, y: ey };
+        lastControlPoint = { x: cp2x, y: cp2y };
+      }
+    } else if (cmdUpper === 'S') {
+      isCurve = true;
+      for (let i = 0; i < args.length; i += 4) {
+        let cp2x = args[i], cp2y = args[i + 1], ex = args[i + 2], ey = args[i + 3];
+        if (isRel) { cp2x += currentPoint.x; cp2y += currentPoint.y; ex += currentPoint.x; ey += currentPoint.y; }
+        let cp1x = currentPoint.x, cp1y = currentPoint.y;
+        if (lastControlPoint) { cp1x = 2 * currentPoint.x - lastControlPoint.x; cp1y = 2 * currentPoint.y - lastControlPoint.y; }
+        const cPts = flattenCubicBezier(currentPoint.x, currentPoint.y, cp1x, cp1y, cp2x, cp2y, ex, ey, 0.05);
+        if (cPts.length > 0) currentPolyline.push(...cPts.slice(1));
+        currentPoint = { x: ex, y: ey };
+        lastControlPoint = { x: cp2x, y: cp2y };
       }
     } else if (cmdUpper === 'Q') {
+      isCurve = true;
       for (let i = 0; i < args.length; i += 4) {
-        let cpx = args[i], cpy = args[i + 1];
-        let ex = args[i + 2], ey = args[i + 3];
-        if (isRel) {
-          cpx += currentPoint.x; cpy += currentPoint.y;
-          ex += currentPoint.x; ey += currentPoint.y;
-        }
-        const steps = 8;
-        for (let s = 1; s <= steps; s++) {
-          const t = s / steps;
-          const u = 1 - t;
-          const px = u*u*currentPoint.x + 2*u*t*cpx + t*t*ex;
-          const py = u*u*currentPoint.y + 2*u*t*cpy + t*t*ey;
-          currentPolyline.push({ x: px, y: py });
+        let cpx = args[i], cpy = args[i + 1], ex = args[i + 2], ey = args[i + 3];
+        if (isRel) { cpx += currentPoint.x; cpy += currentPoint.y; ex += currentPoint.x; ey += currentPoint.y; }
+        const qPts = flattenQuadraticBezier(currentPoint.x, currentPoint.y, cpx, cpy, ex, ey, 0.05);
+        if (qPts.length > 0) currentPolyline.push(...qPts.slice(1));
+        currentPoint = { x: ex, y: ey };
+        lastControlPoint = { x: cpx, y: cpy };
+      }
+    } else if (cmdUpper === 'T') {
+      isCurve = true;
+      for (let i = 0; i < args.length; i += 2) {
+        let ex = args[i], ey = args[i + 1];
+        if (isRel) { ex += currentPoint.x; ey += currentPoint.y; }
+        let cpx = currentPoint.x, cpy = currentPoint.y;
+        if (lastControlPoint) { cpx = 2 * currentPoint.x - lastControlPoint.x; cpy = 2 * currentPoint.y - lastControlPoint.y; }
+        const qPts = flattenQuadraticBezier(currentPoint.x, currentPoint.y, cpx, cpy, ex, ey, 0.05);
+        if (qPts.length > 0) currentPolyline.push(...qPts.slice(1));
+        currentPoint = { x: ex, y: ey };
+        lastControlPoint = { x: cpx, y: cpy };
+      }
+    } else if (cmdUpper === 'A') {
+      for (let i = 0; i < args.length; i += 7) {
+        let rx = args[i], ry = args[i + 1], xAxisRotation = args[i + 2], largeArcFlag = args[i + 3], sweepFlag = args[i + 4];
+        let ex = args[i + 5], ey = args[i + 6];
+        if (isRel) { ex += currentPoint.x; ey += currentPoint.y; }
+        
+        // Elliptical arc to line segments approximation
+        const dx = ex - currentPoint.x;
+        const dy = ey - currentPoint.y;
+        const dist = Math.hypot(dx, dy);
+        
+        if (dist > 1e-5 && rx > 0 && ry > 0) {
+           const steps = Math.max(12, Math.ceil(dist));
+           for(let j=1; j<=steps; j++) {
+              const t = j/steps;
+              currentPolyline.push({ x: currentPoint.x + dx*t, y: currentPoint.y + dy*t });
+           }
         }
         currentPoint = { x: ex, y: ey };
       }
@@ -746,6 +802,10 @@ function parseSvgPathD(d: string): VectorPolyline[] {
         currentPolyline = [];
         currentPoint = { ...pathStartPoint };
       }
+    }
+
+    if (!isCurve) {
+      lastControlPoint = null;
     }
   }
 
@@ -759,7 +819,7 @@ function parseSvgPathD(d: string): VectorPolyline[] {
 /**
  * Douglas-Peucker Polyline Simplification Algorithm
  */
-function simplifyPolyline(points: Path2DPoint[], tolerance: number): Path2DPoint[] {
+export function simplifyPolyline(points: Path2DPoint[], tolerance: number): Path2DPoint[] {
   if (points.length <= 2) return points;
 
   const sqTolerance = tolerance * tolerance;
@@ -1168,7 +1228,7 @@ export interface UniversalGcodeGroup {
 /**
  * Universal Comprehensive G-Code Generator supporting Pen Plotter, Drag Knife, and Laser Diode
  */
-export function generateUniversalGcode(options: {
+export async function generateUniversalGcode(options: {
   polylines?: VectorPolyline[];
   groups?: UniversalGcodeGroup[];
   targetMode: GeneratorTargetMode;
@@ -1179,7 +1239,7 @@ export function generateUniversalGcode(options: {
   optimizeOrder?: boolean;
   objectOrderMode?: ObjectOrderMode;
   pathOrderStrategy?: PathOrderStrategy;
-}): string {
+}): Promise<string> {
   const {
     polylines,
     groups,
@@ -1193,7 +1253,7 @@ export function generateUniversalGcode(options: {
     pathOrderStrategy = 'fastest'
   } = options;
 
-  const { orderedGroups: effectiveGroups } = getOptimizedPolylinesAndGroups({
+  const { orderedGroups: effectiveGroups } = await getOptimizedPolylinesAndGroups({
     groups,
     polylines,
     optimizeOrder,
@@ -1254,6 +1314,7 @@ export function generateUniversalGcode(options: {
     lines.push(`${offCmd} ; Ensure Laser is OFF`);
 
     for (let gIdx = 0; gIdx < effectiveGroups.length; gIdx++) {
+    await yieldToMain();
       const grp = effectiveGroups[gIdx];
       if (!grp.polylines || grp.polylines.length === 0) continue;
 
@@ -1334,6 +1395,7 @@ export function generateUniversalGcode(options: {
   }
 
   for (let gIdx = 0; gIdx < effectiveGroups.length; gIdx++) {
+    await yieldToMain();
     const grp = effectiveGroups[gIdx];
     if (!grp.polylines || grp.polylines.length === 0) continue;
 
@@ -1393,11 +1455,11 @@ export function generateUniversalGcode(options: {
 /**
  * Backward compatibility wrapper
  */
-export function generateGcodeFromPolylines(
+export async function generateGcodeFromPolylines(
   polylines: VectorPolyline[],
   profile: MachineProfile,
   optimizeOrder: boolean = true
-): string {
+): Promise<string> {
   return generateUniversalGcode({
     polylines,
     targetMode: profile.dragKnife?.enabled ? 'dragknife' : (profile.actuatorType === 'laser' ? 'laser' : 'pen'),

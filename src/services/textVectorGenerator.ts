@@ -34,7 +34,7 @@ export async function preloadFont(fontFamily: string) {
   }
 }
 
-function flattenQuadraticBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, tol: number): Path2DPoint[] {
+export function flattenQuadraticBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, tol: number): Path2DPoint[] {
   const pts: Path2DPoint[] = [{ x: x0, y: y0 }];
   
   function recurse(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, depth: number) {
@@ -63,7 +63,7 @@ function flattenQuadraticBezier(x0: number, y0: number, x1: number, y1: number, 
   return pts;
 }
 
-function flattenCubicBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, tol: number): Path2DPoint[] {
+export function flattenCubicBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, tol: number): Path2DPoint[] {
   const pts: Path2DPoint[] = [{ x: x0, y: y0 }];
   
   function recurse(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, depth: number) {

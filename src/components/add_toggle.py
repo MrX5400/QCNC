@@ -1,0 +1,40 @@
+import sys
+
+with open('Workspace.tsx', 'r', encoding='utf-8') as f:
+    code = f.read()
+
+target = """              </button>
+            </div>
+          </div>
+        </div>"""
+
+replacement = """              </button>
+            </div>
+            
+            {/* Auto-Generate Toggle */}
+            <div className="mt-3 flex items-center justify-between bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/50">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${autoGenerateGcode ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-600'}`}></div>
+                <span className="text-sm font-medium text-slate-300">Live-Generierung (Auto)</span>
+              </div>
+              <button
+                onClick={() => setAutoGenerateGcode(!autoGenerateGcode)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+                  autoGenerateGcode ? 'bg-emerald-500' : 'bg-slate-700'
+                }`}
+              >
+                <span className="sr-only">Auto-Generate Toggle</span>
+                <span
+                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                    autoGenerateGcode ? 'translate-x-5' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </div>"""
+
+code = code.replace(target, replacement)
+
+with open('Workspace.tsx', 'w', encoding='utf-8') as f:
+    f.write(code)

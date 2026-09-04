@@ -1,4 +1,14 @@
-import { VectorPolyline } from './vectorRasterGenerator';
+import re
+import sys
+
+file_path = 'dxfParser.ts'
+with open(file_path, 'r', encoding='utf-8') as f:
+    content = f.read()
+
+# I will replace the entire dxfParser.ts because it's small and it's easier to write it cleanly
+# than to do targeted replacements for all the new features.
+
+new_content = """import { VectorPolyline } from './vectorRasterGenerator';
 import { generateUniversalTextPaths } from './textVectorGenerator';
 
 export interface Point2D {
@@ -134,7 +144,7 @@ function evaluateBSpline(points: Point2D[], degree: number, isClosed: boolean): 
  * Parses ASCII DXF content into Polylines
  */
 export function parseDxf(dxfContent: string): { polylines: Polyline[]; bounds: { minX: number; minY: number; maxX: number; maxY: number } } {
-  const lines = dxfContent.split(/\r\n|\r|\n/);
+  const lines = dxfContent.split(/\\r\\n|\\r|\\n/);
   const polylines: Polyline[] = [];
 
   let inEntities = false;
@@ -290,8 +300,8 @@ export function parseDxf(dxfContent: string): { polylines: Polyline[]; bounds: {
       }
     } else if (currentEntity === 'TEXT' || currentEntity === 'MTEXT') {
       if (textValue) {
-        // Clean MTEXT formatting tags e.g. \P, \A, \f
-        let cleanText = textValue.replace(/\\P/g, '\n').replace(/\\[A-Za-z][^;]*;/g, '');
+        // Clean MTEXT formatting tags e.g. \\P, \\A, \\f
+        let cleanText = textValue.replace(/\\\\P/g, '\\n').replace(/\\\\[A-Za-z][^;]*;/g, '');
         cleanText = cleanText.replace(/[{}]/g, ''); // Remove curly braces from formatting
 
         const textPolylines = generateUniversalTextPaths({
@@ -485,3 +495,7 @@ export function parseDxf(dxfContent: string): { polylines: Polyline[]; bounds: {
     bounds: { minX, minY, maxX, maxY },
   };
 }
+"""
+
+with open(file_path, 'w', encoding='utf-8') as f:
+    f.write(new_content)
