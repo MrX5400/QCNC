@@ -1,5 +1,145 @@
 import { Path2DPoint } from './dragKnifeCorrection';
 import { VectorPolyline } from './vectorRasterGenerator';
+import * as opentype from 'opentype.js';
+
+export const OPENTYPE_FONT_CACHE: Record<string, opentype.Font | null> = {};
+const FONT_LOADING: Record<string, boolean> = {};
+
+export async function preloadFont(fontFamily: string) {
+  if (OPENTYPE_FONT_CACHE[fontFamily] !== undefined || FONT_LOADING[fontFamily]) return;
+  
+  let fontId = fontFamily.toLowerCase().replace(/ /g, '-');
+  if (fontId === 'arial') fontId = 'arimo';
+  if (fontId === 'times-new-roman') fontId = 'tinos';
+  if (fontId === 'courier-new') fontId = 'cousine';
+  if (fontId === 'impact') fontId = 'anton';
+  if (fontId === 'stencil') fontId = 'allerta-stencil';
+  
+  FONT_LOADING[fontFamily] = true;
+  try {
+    const url = `https://unpkg.com/@fontsource/${fontId}/files/${fontId}-latin-400-normal.woff`;
+    const response = await fetch(url);
+    if (response.ok) {
+      const buffer = await response.arrayBuffer();
+      OPENTYPE_FONT_CACHE[fontFamily] = opentype.parse(buffer);
+      window.dispatchEvent(new CustomEvent('fontLoaded'));
+    } else {
+      OPENTYPE_FONT_CACHE[fontFamily] = null;
+    }
+  } catch (err) {
+    console.warn('Failed to load font', fontId, err);
+    OPENTYPE_FONT_CACHE[fontFamily] = null;
+  } finally {
+    FONT_LOADING[fontFamily] = false;
+  }
+}
+
+function flattenQuadraticBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, tol: number): Path2DPoint[] {
+  const pts: Path2DPoint[] = [{ x: x0, y: y0 }];
+  
+  function recurse(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, depth: number) {
+    if (depth > 8) {
+      pts.push({ x: x2, y: y2 });
+      return;
+    }
+    const dx = x2 - x0;
+    const dy = y2 - y0;
+    const dist = Math.abs((x1 - x0) * dy - (y1 - y0) * dx) / Math.hypot(dx, dy);
+    
+    if (dist * 0.25 <= tol || isNaN(dist)) {
+      pts.push({ x: x2, y: y2 });
+      return;
+    }
+    
+    const x01 = (x0 + x1) / 2, y01 = (y0 + y1) / 2;
+    const x12 = (x1 + x2) / 2, y12 = (y1 + y2) / 2;
+    const x012 = (x01 + x12) / 2, y012 = (y01 + y12) / 2;
+    
+    recurse(x0, y0, x01, y01, x012, y012, depth + 1);
+    recurse(x012, y012, x12, y12, x2, y2, depth + 1);
+  }
+  
+  recurse(x0, y0, x1, y1, x2, y2, 0);
+  return pts;
+}
+
+function flattenCubicBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, tol: number): Path2DPoint[] {
+  const pts: Path2DPoint[] = [{ x: x0, y: y0 }];
+  
+  function recurse(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, depth: number) {
+    if (depth > 8) {
+      pts.push({ x: x3, y: y3 });
+      return;
+    }
+    
+    const dx = x3 - x0;
+    const dy = y3 - y0;
+    const len = Math.hypot(dx, dy);
+    
+    let d1 = 0, d2 = 0;
+    if (len > 1e-5) {
+      d1 = Math.abs((x1 - x0) * dy - (y1 - y0) * dx) / len;
+      d2 = Math.abs((x2 - x0) * dy - (y2 - y0) * dx) / len;
+    } else {
+      d1 = Math.hypot(x1 - x0, y1 - y0);
+      d2 = Math.hypot(x2 - x0, y2 - y0);
+    }
+    
+    if ((d1 + d2) * 0.75 <= tol) { 
+      pts.push({ x: x3, y: y3 });
+      return;
+    }
+    
+    const x01 = (x0 + x1) / 2, y01 = (y0 + y1) / 2;
+    const x12 = (x1 + x2) / 2, y12 = (y1 + y2) / 2;
+    const x23 = (x2 + x3) / 2, y23 = (y2 + y3) / 2;
+    
+    const x012 = (x01 + x12) / 2, y012 = (y01 + y12) / 2;
+    const x123 = (x12 + x23) / 2, y123 = (y12 + y23) / 2;
+    
+    const x0123 = (x012 + x123) / 2, y0123 = (y012 + y123) / 2;
+    
+    recurse(x0, y0, x01, y01, x012, y012, x0123, y0123, depth + 1);
+    recurse(x0123, y0123, x123, y123, x23, y23, x3, y3, depth + 1);
+  }
+  
+  recurse(x0, y0, x1, y1, x2, y2, x3, y3, 0);
+  return pts;
+}
+
+function flattenOpentypePath(path: opentype.Path, tolerance: number = 0.05): VectorPolyline[] {
+  const polylines: VectorPolyline[] = [];
+  let currentPoly: Path2DPoint[] = [];
+  let startPt = { x: 0, y: 0 };
+  let curPt = { x: 0, y: 0 };
+
+  for (const cmd of path.commands) {
+    if (cmd.type === 'M') {
+      if (currentPoly.length > 1) polylines.push({ points: currentPoly, closed: false });
+      currentPoly = [{ x: cmd.x, y: cmd.y }];
+      startPt = { x: cmd.x, y: cmd.y };
+      curPt = { x: cmd.x, y: cmd.y };
+    } else if (cmd.type === 'L') {
+      currentPoly.push({ x: cmd.x, y: cmd.y });
+      curPt = { x: cmd.x, y: cmd.y };
+    } else if (cmd.type === 'Q') {
+      const qPts = flattenQuadraticBezier(curPt.x, curPt.y, cmd.x1, cmd.y1, cmd.x, cmd.y, tolerance);
+      for (let i = 1; i < qPts.length; i++) currentPoly.push(qPts[i]);
+      curPt = { x: cmd.x, y: cmd.y };
+    } else if (cmd.type === 'C') {
+      const cPts = flattenCubicBezier(curPt.x, curPt.y, cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y, tolerance);
+      for (let i = 1; i < cPts.length; i++) currentPoly.push(cPts[i]);
+      curPt = { x: cmd.x, y: cmd.y };
+    } else if (cmd.type === 'Z') {
+      currentPoly.push({ x: startPt.x, y: startPt.y });
+      if (currentPoly.length > 1) polylines.push({ points: currentPoly, closed: true });
+      currentPoly = [];
+      curPt = { ...startPt };
+    }
+  }
+  if (currentPoly.length > 1) polylines.push({ points: currentPoly, closed: false });
+  return polylines;
+}
 
 export type TextMode = 'single_line' | 'outline';
 export type TextInfillPattern = 'none' | 'hatch_linear' | 'cross_hatch' | 'zigzag' | 'concentric' | 'dots';
@@ -294,6 +434,40 @@ export function generateOutlineTextPaths(options: TextGeneratorOptions): VectorP
   } = options;
 
   if (!text || text.trim().length === 0) return [];
+  
+  const font = OPENTYPE_FONT_CACHE[fontFamily];
+  if (font && (infillPattern === 'none' || includeOutline)) {
+    const lines = text.split('\n');
+    const polylines: VectorPolyline[] = [];
+    let currentYOffset = 0;
+    
+    lines.forEach((lineStr) => {
+      const advanceWidth = font.getAdvanceWidth(lineStr, fontSize);
+      let lineXOffset = 0;
+      if (textAlign === 'center') lineXOffset = -advanceWidth / 2;
+      else if (textAlign === 'right') lineXOffset = -advanceWidth;
+      
+      const path = font.getPath(lineStr, lineXOffset, currentYOffset, fontSize);
+      const linePolys = flattenOpentypePath(path, 0.05); // CNC scale tolerance 0.05mm
+      
+      for (const poly of linePolys) {
+        for (const pt of poly.points) {
+          const finalX = x + pt.x;
+          const finalY = y - pt.y; // invert Y for CNC Cartesian coordinates
+          pt.x = Number(finalX.toFixed(3));
+          pt.y = Number(finalY.toFixed(3));
+        }
+      }
+      
+      polylines.push(...linePolys);
+      currentYOffset += fontSize * lineSpacing;
+    });
+    
+    if (infillPattern === 'none') {
+      return polylines;
+    }
+    // If infill is needed, we let it fall through to canvas logic for infill!
+  }
 
   // Resolution in pixels per mm - 28 px/mm provides ultra-fine ~0.035 mm sub-pixel grid baseline
   const ppmm = 28;

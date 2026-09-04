@@ -96,6 +96,7 @@ import {
   RasterSettings,
   GrblState
 } from '../types/cnc';
+import { preloadFont } from '../services/textVectorGenerator';
 import { 
   generateHersheyText, 
   generateRasterToVectorPaths, 
@@ -974,8 +975,25 @@ export const Workspace: React.FC<WorkspaceProps> = ({
     return () => cancelAnimationFrame(rafId);
   }, [showImageLightbox, lightboxView, rasterPolylines, rasterImage, tracerBgOpacity, renderTracedPolylinesToCanvas]);
 
+  const [fontLoadedTrigger, setFontLoadedTrigger] = useState(0);
+
+  useEffect(() => {
+    if (sourceType !== 'text') return;
+    const effectiveFont = textFontFamily === 'custom' && customFontFamily.trim() ? customFontFamily.trim() : textFontFamily;
+    preloadFont(effectiveFont);
+  }, [sourceType, textFontFamily, customFontFamily]);
+
+  useEffect(() => {
+    const handler = () => setFontLoadedTrigger(prev => prev + 1);
+    window.addEventListener('fontLoaded', handler);
+    return () => window.removeEventListener('fontLoaded', handler);
+  }, []);
+
   // --- Compute Raw Polylines from Source (before universal transform) ---
   const rawPolylines = useMemo<VectorPolyline[]>(() => {
+    // Add fontLoadedTrigger so the useMemo re-runs when font finishes loading
+    const _trigger = fontLoadedTrigger;
+
     if (sourceType === 'file' || sourceType === 'pdf') {
       return rawFilePolylines;
     }
@@ -1549,6 +1567,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             }
 
             return {
+              ...p,
               x: Number((x + cX + el.offsetX).toFixed(3)),
               y: Number((y + cY + el.offsetY).toFixed(3)),
             };
@@ -1609,6 +1628,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             }
 
             return {
+              ...p,
               x: Number((x + cX + el.offsetX).toFixed(3)),
               y: Number((y + cY + el.offsetY).toFixed(3)),
             };
@@ -1687,13 +1707,23 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   const generatedGcode = useMemo<string>(() => {
     if (activePolylines.length === 0) return '; Kein Motiv geladen';
 
+    let actualTargetMode = targetMode;
+    let actualLaserOptions = { ...laserOptions };
+
+    // Automatische Anpassung für M4 Scanline (dyn. Power an Punkten oder ToolPower)
+    const hasDynamicPower = activePolylines.some(p => p.toolPower !== undefined || p.points.some((pt: any) => pt.s !== undefined));
+    if (hasDynamicPower) {
+      actualTargetMode = 'laser';
+      actualLaserOptions.laserMode = 'M4';
+    }
+
     return generateUniversalGcode({
       groups: activeOptimizedGroups,
-      targetMode,
+      targetMode: actualTargetMode,
       profile: currentProfile,
       penOptions,
       dragKnifeOptions,
-      laserOptions,
+      laserOptions: actualLaserOptions,
       optimizeOrder: false, // Already pre-optimized in activeOptimizedGroups
       objectOrderMode,
       pathOrderStrategy,
@@ -4587,47 +4617,39 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                   >
                     {textMode === 'single_line' ? (
                       <>
-                        <optgroup label="Single-Line Plotterschriften">
-                          <option value="Hershey Simplex">Hershey Simplex (Standard 1-Linie)</option>
-                          <option value="Hershey Sans">Hershey Sans-Serif (Modern Schlicht)</option>
-                          <option value="Hershey Serif">Hershey Serif (Römisch / Elegant)</option>
-                          <option value="Hershey Script">Hershey Script (Handschrift / Kursiv)</option>
+                        <optgroup label="Single-Line / Engraving">
+                          <option value="Hershey Simplex">Hershey Simplex (Standard 1-Stroke)</option>
+                          <option value="Hershey Sans">Hershey Sans 1-Stroke / Light</option>
+                          <option value="Hershey Serif">Hershey Serif (Roman Simplex / Complex)</option>
+                          <option value="Hershey Script">Hershey Script (Simplex / Italic)</option>
+                          <option value="Hershey Technical">Technical / DIN (Engraving)</option>
                         </optgroup>
                       </>
                     ) : (
                       <>
-                        <optgroup label="Sans-Serif (Moderne Schriften)">
-                          <option value="Arial">Arial (Standard)</option>
-                          <option value="Inter">Inter (Präzise)</option>
-                          <option value="Roboto">Roboto (Klar)</option>
-                          <option value="Helvetica">Helvetica</option>
-                          <option value="Segoe UI">Segoe UI</option>
-                          <option value="Trebuchet MS">Trebuchet MS</option>
-                          <option value="Verdana">Verdana</option>
+                        <optgroup label="Outline / Milling (Sans-Serif)">
+                          <option value="Roboto">Roboto</option>
+                          <option value="Inter">Inter</option>
                           <option value="Montserrat">Montserrat</option>
-                          <option value="Impact">Impact (Kräftig / Bold)</option>
+                          <option value="Arial">Arial</option>
+                          <option value="Open Sans">Open Sans</option>
                         </optgroup>
-                        <optgroup label="Serif (Klassische Schriften)">
-                          <option value="Times New Roman">Times New Roman</option>
-                          <option value="Georgia">Georgia</option>
-                          <option value="Garamond">Garamond</option>
+                        <optgroup label="Outline / Milling (Serif)">
+                          <option value="Merriweather">Merriweather</option>
                           <option value="Playfair Display">Playfair Display</option>
-                          <option value="Palatino Linotype">Palatino Linotype</option>
+                          <option value="Times New Roman">Times New Roman</option>
                         </optgroup>
-                        <optgroup label="Monospace (Festbreite)">
-                          <option value="Courier New">Courier New (Schreibmaschine)</option>
-                          <option value="Consolas">Consolas (Code)</option>
+                        <optgroup label="Outline / Milling (Monospace)">
+                          <option value="JetBrains Mono">JetBrains Mono</option>
                           <option value="Fira Code">Fira Code</option>
-                          <option value="Monaco">Monaco</option>
+                          <option value="Courier New">Courier New</option>
                         </optgroup>
-                        <optgroup label="Handschrift & Display">
-                          <option value="Pacifico">Pacifico (Kalligraphie)</option>
-                          <option value="Dancing Script">Dancing Script (Schwungvoll)</option>
-                          <option value="Brush Script MT">Brush Script MT (Pinsel)</option>
-                          <option value="Comic Sans MS">Comic Sans MS</option>
-                          <option value="Oswald">Oswald (Kompakt)</option>
-                          <option value="Anton">Anton (Plakat)</option>
+                        <optgroup label="Outline / Milling (Display / Cursive / Stencil)">
+                          <option value="Impact">Impact</option>
+                          <option value="Pacifico">Pacifico</option>
+                          <option value="Stencil">Stencil</option>
                         </optgroup>
+
                         <optgroup label="Benutzerdefiniert">
                           <option value="custom">Eigene Systemschriftart eingeben...</option>
                         </optgroup>
@@ -6122,208 +6144,277 @@ export const Workspace: React.FC<WorkspaceProps> = ({
               </div>
             )}
 
-            {/* LASER OPTIONEN (USER REQUEST: Alle G-Code Einstellungen aus den Profilen) */}
+            {/* LASER OPTIONEN */}
             {targetMode === 'laser' && (
               <div className="p-3.5 bg-slate-950/80 rounded-lg border border-rose-800/40 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                  <div className="flex items-center gap-1.5">
-                    <Database className="w-3.5 h-3.5 text-rose-400" />
-                    <span className="font-semibold text-[0.6875rem] text-slate-200">Material-Vorgaben &amp; G-Code Setup:</span>
-                  </div>
-                  <button
-                    onClick={() => { if (onOpenLaserDbModal) onOpenLaserDbModal(); }}
-                    className="px-2.5 py-1 bg-rose-950/60 hover:bg-rose-900 border border-rose-800/60 text-rose-300 rounded text-[0.625rem] font-medium flex items-center gap-1 transition-colors"
-                  >
-                    <SlidersHorizontal className="w-3 h-3" />
-                    <span>Material-Datenbank</span>
-                  </button>
-                </div>
+                {sourceType === 'image' && (rasterSettings.traceStrategy === 'scanline' || rasterSettings.traceStrategy === 'pattern') ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-rose-900/50">
+                      <div className="bg-rose-500 text-white px-2 py-0.5 rounded text-[0.625rem] font-bold">M4 DYNAMISCH</div>
+                      <span className="font-semibold text-[0.6875rem] text-rose-200">Laser M4 Graustufen-Modulation</span>
+                    </div>
+                    
+                    <p className="text-[0.625rem] text-slate-400 leading-relaxed bg-slate-900 p-2 rounded border border-slate-800">
+                      Zwischenwerte für Graustufen werden automatisch berechnet und als variable S-Werte in den G-Code eingebettet.
+                    </p>
 
-                {activeMaterialName && (
-                  <div className="flex items-center justify-between bg-rose-950/30 px-2.5 py-1 rounded border border-rose-800/30 text-[0.625rem] text-rose-300">
-                    <span>Aktiv: <strong>{activeMaterialName}</strong></span>
-                    <button
-                      onClick={() => setActiveMaterialName(null)}
-                      className="text-slate-400 hover:text-rose-200"
-                      title="Zurücksetzen"
-                    >
-                      ✕
-                    </button>
+                    <div className="grid grid-cols-3 gap-3 font-mono pt-1">
+                      <div className="space-y-1">
+                        <span className="text-slate-400 text-[0.625rem] whitespace-nowrap">Min. Power (Helle Bereiche)</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={10000}
+                          value={laserOptions.powerMin ?? 0}
+                          onChange={(e) => setLaserOptions(p => ({ ...p, powerMin: Number(e.target.value) }))}
+                          className="w-full bg-slate-900 px-2 py-1.5 rounded border border-slate-700 text-rose-300 text-xs text-center focus:border-rose-500 outline-none transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-rose-300 text-[0.625rem] font-semibold whitespace-nowrap">Max. Power (Dunkle Bereiche)</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={10000}
+                          value={laserOptions.powerMax}
+                          onChange={(e) => setLaserOptions(p => ({ ...p, powerMax: Number(e.target.value) }))}
+                          className="w-full bg-slate-900 px-2 py-1.5 rounded border border-rose-700/60 text-rose-200 text-xs text-center focus:border-rose-500 outline-none transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-slate-400 text-[0.625rem] whitespace-nowrap">Vorschub (mm/min)</span>
+                        <input
+                          type="number"
+                          step={50}
+                          value={laserOptions.feedrate}
+                          onChange={(e) => setLaserOptions(p => ({ ...p, feedrate: Number(e.target.value) }))}
+                          className="w-full bg-slate-900 px-2 py-1.5 rounded border border-slate-700 text-slate-100 text-xs text-center focus:border-rose-500 outline-none transition-colors"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                      <label className="flex items-center gap-2 cursor-pointer bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+                        <input
+                          type="checkbox"
+                          checked={laserOptions.airAssist || false}
+                          onChange={(e) => setLaserOptions(p => ({ ...p, airAssist: e.target.checked }))}
+                          className="rounded border-slate-700 text-rose-600 focus:ring-rose-500"
+                        />
+                        <span className="text-[0.625rem] text-slate-300 font-sans">Air Assist (M8/M9)</span>
+                      </label>
+                      
+                      <div className="flex items-center justify-between bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+                        <span className="text-slate-400 text-[0.625rem]">Laser-Modus:</span>
+                        <span className="text-rose-400 text-[0.6875rem] font-bold font-mono">M4 S{"{S}"}</span>
+                      </div>
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                      <div className="flex items-center gap-1.5">
+                        <Database className="w-3.5 h-3.5 text-rose-400" />
+                        <span className="font-semibold text-[0.6875rem] text-slate-200">Material-Vorgaben &amp; G-Code Setup:</span>
+                      </div>
+                      <button
+                        onClick={() => { if (onOpenLaserDbModal) onOpenLaserDbModal(); }}
+                        className="px-2.5 py-1 bg-rose-950/60 hover:bg-rose-900 border border-rose-800/60 text-rose-300 rounded text-[0.625rem] font-medium flex items-center gap-1 transition-colors"
+                      >
+                        <SlidersHorizontal className="w-3 h-3" />
+                        <span>Material-Datenbank</span>
+                      </button>
+                    </div>
+
+                    {activeMaterialName && (
+                      <div className="flex items-center justify-between bg-rose-950/30 px-2.5 py-1 rounded border border-rose-800/30 text-[0.625rem] text-rose-300">
+                        <span>Aktiv: <strong>{activeMaterialName}</strong></span>
+                        <button
+                          onClick={() => setActiveMaterialName(null)}
+                          className="text-slate-400 hover:text-rose-200"
+                          title="Zurücksetzen"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Laser Mode Switch: M4 Dynamic vs M3 Constant */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[0.625rem] font-bold text-rose-400 uppercase tracking-wider">Laser-Modus (G-Code):</span>
+                        <span className="text-[0.625rem] text-slate-400 font-mono">
+                          {laserOptions.laserMode === 'M4' ? 'M4 (Dynamische Leistung)' : 'M3 (Konstante Leistung)'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[0.6875rem]">
+                        <button
+                          type="button"
+                          onClick={() => setLaserOptions(p => ({ ...p, laserMode: 'M4', laserOnCommand: 'M4 S{S}' }))}
+                          className={`py-1.5 px-2 rounded-md font-medium text-center transition-all ${
+                            laserOptions.laserMode === 'M4' || !laserOptions.laserMode
+                              ? 'bg-rose-600 text-white shadow-sm font-semibold'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          M4 Dynamisch (GRBL Laser)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLaserOptions(p => ({ ...p, laserMode: 'M3', laserOnCommand: 'M3 S{S}' }))}
+                          className={`py-1.5 px-2 rounded-md font-medium text-center transition-all ${
+                            laserOptions.laserMode === 'M3'
+                              ? 'bg-rose-600 text-white shadow-sm font-semibold'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          M3 Konstant (Standard)
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Power Min / Max (S-Value) & Feedrates */}
+                    <div className="grid grid-cols-3 gap-2 font-mono">
+                      <div className="space-y-1">
+                        <span className="text-slate-400 text-[0.625rem]">Min. Power (S):</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={10000}
+                          value={laserOptions.powerMin ?? 0}
+                          onChange={(e) => setLaserOptions(p => ({ ...p, powerMin: Number(e.target.value) }))}
+                          className="w-full bg-slate-900 px-2 py-1 rounded border border-slate-700 text-rose-300 text-xs text-center"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-rose-300 text-[0.625rem] font-semibold">Max. Power (S):</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={10000}
+                          value={laserOptions.powerMax}
+                          onChange={(e) => setLaserOptions(p => ({ ...p, powerMax: Number(e.target.value) }))}
+                          className="w-full bg-slate-900 px-2 py-1 rounded border border-rose-700/60 text-rose-200 text-xs text-center"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-slate-400 text-[0.625rem]">Schnitt-F:</span>
+                        <input
+                          type="number"
+                          step={50}
+                          value={laserOptions.feedrate}
+                          onChange={(e) => setLaserOptions(p => ({ ...p, feedrate: Number(e.target.value) }))}
+                          className="w-full bg-slate-900 px-2 py-1 rounded border border-slate-700 text-slate-100 text-xs text-center"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Passes & Z-Stepdown */}
+                    <div className="grid grid-cols-3 gap-2 font-mono bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+                      <div className="space-y-1">
+                        <span className="text-slate-400 text-[0.625rem]">Durchgänge:</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={50}
+                          value={laserOptions.passes || 1}
+                          onChange={(e) => setLaserOptions(p => ({ ...p, passes: Math.max(1, Number(e.target.value)) }))}
+                          className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-slate-200 text-xs text-center"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-slate-400 text-[0.625rem]">Z-Zustellung:</span>
+                        <div className="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded border border-slate-700">
+                          <input
+                            type="number"
+                            step={0.1}
+                            min={0}
+                            value={laserOptions.zStepdown || 0}
+                            onChange={(e) => setLaserOptions(p => ({ ...p, zStepdown: Number(e.target.value) }))}
+                            className="w-full bg-transparent text-rose-300 text-xs focus:outline-none text-right"
+                          />
+                          <span className="text-[0.5625rem] text-slate-500">mm</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-slate-400 text-[0.625rem]">Eilgang-F:</span>
+                        <input
+                          type="number"
+                          step={200}
+                          value={laserOptions.travelFeedrate || 4000}
+                          onChange={(e) => setLaserOptions(p => ({ ...p, travelFeedrate: Number(e.target.value) }))}
+                          className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-slate-200 text-xs text-center"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Air Assist & Custom Commands */}
+                    <div className="space-y-2 font-mono bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 text-[0.6875rem]">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={laserOptions.airAssist || false}
+                          onChange={(e) => setLaserOptions(p => ({ ...p, airAssist: e.target.checked }))}
+                          className="rounded border-slate-700 text-rose-600 focus:ring-rose-500"
+                        />
+                        <span className="text-slate-300 font-sans">Air Assist aktivieren (M8 vor Start / M9 bei Ende)</span>
+                      </label>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div className="space-y-1">
+                          <span className="text-slate-400 text-[0.625rem]">Laser EIN Befehl:</span>
+                          <input
+                            type="text"
+                            value={laserOptions.laserOnCommand || `${laserOptions.laserMode} S{S}`}
+                            onChange={(e) => setLaserOptions(p => ({ ...p, laserOnCommand: e.target.value }))}
+                            className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-rose-300 text-xs"
+                            placeholder="M4 S{S}"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-slate-400 text-[0.625rem]">Laser AUS Befehl:</span>
+                          <input
+                            type="text"
+                            value={laserOptions.laserOffCommand || 'M5'}
+                            onChange={(e) => setLaserOptions(p => ({ ...p, laserOffCommand: e.target.value }))}
+                            className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-slate-200 text-xs"
+                            placeholder="M5"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Start & End G-Code */}
+                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+                        <div className="space-y-1">
+                          <span className="text-slate-400 text-[0.625rem]">Start-G-Code:</span>
+                          <input
+                            type="text"
+                            value={laserOptions.startGcode || ''}
+                            onChange={(e) => setLaserOptions(p => ({ ...p, startGcode: e.target.value }))}
+                            className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-slate-200 text-xs"
+                            placeholder="G90 G21"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-slate-400 text-[0.625rem]">End-G-Code:</span>
+                          <input
+                            type="text"
+                            value={laserOptions.endGcode || ''}
+                            onChange={(e) => setLaserOptions(p => ({ ...p, endGcode: e.target.value }))}
+                            className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-slate-200 text-xs"
+                            placeholder="M5 G0 X0 Y0 M2"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
-
-                {/* Laser Mode Switch: M4 Dynamic vs M3 Constant */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[0.625rem] font-bold text-rose-400 uppercase tracking-wider">Laser-Modus (G-Code):</span>
-                    <span className="text-[0.625rem] text-slate-400 font-mono">
-                      {laserOptions.laserMode === 'M4' ? 'M4 (Dynamische Leistung)' : 'M3 (Konstante Leistung)'}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[0.6875rem]">
-                    <button
-                      type="button"
-                      onClick={() => setLaserOptions(p => ({ ...p, laserMode: 'M4', laserOnCommand: 'M4 S{S}' }))}
-                      className={`py-1.5 px-2 rounded-md font-medium text-center transition-all ${
-                        laserOptions.laserMode === 'M4' || !laserOptions.laserMode
-                          ? 'bg-rose-600 text-white shadow-sm font-semibold'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      M4 Dynamisch (GRBL Laser)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLaserOptions(p => ({ ...p, laserMode: 'M3', laserOnCommand: 'M3 S{S}' }))}
-                      className={`py-1.5 px-2 rounded-md font-medium text-center transition-all ${
-                        laserOptions.laserMode === 'M3'
-                          ? 'bg-rose-600 text-white shadow-sm font-semibold'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      M3 Konstant (Standard)
-                    </button>
-                  </div>
-                </div>
-
-                {/* Power Min / Max (S-Value) & Feedrates */}
-                <div className="grid grid-cols-3 gap-2 font-mono">
-                  <div className="space-y-1">
-                    <span className="text-slate-400 text-[0.625rem]">Min. Power (S):</span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={10000}
-                      value={laserOptions.powerMin ?? 0}
-                      onChange={(e) => setLaserOptions(p => ({ ...p, powerMin: Number(e.target.value) }))}
-                      className="w-full bg-slate-900 px-2 py-1 rounded border border-slate-700 text-rose-300 text-xs text-center"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="text-rose-300 text-[0.625rem] font-semibold">Max. Power (S):</span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={10000}
-                      value={laserOptions.powerMax}
-                      onChange={(e) => setLaserOptions(p => ({ ...p, powerMax: Number(e.target.value) }))}
-                      className="w-full bg-slate-900 px-2 py-1 rounded border border-rose-700/60 text-rose-200 text-xs text-center"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="text-slate-400 text-[0.625rem]">Schnitt-F:</span>
-                    <input
-                      type="number"
-                      step={50}
-                      value={laserOptions.feedrate}
-                      onChange={(e) => setLaserOptions(p => ({ ...p, feedrate: Number(e.target.value) }))}
-                      className="w-full bg-slate-900 px-2 py-1 rounded border border-slate-700 text-slate-100 text-xs text-center"
-                    />
-                  </div>
-                </div>
-
-                {/* Passes & Z-Stepdown */}
-                <div className="grid grid-cols-3 gap-2 font-mono bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                  <div className="space-y-1">
-                    <span className="text-slate-400 text-[0.625rem]">Durchgänge:</span>
-                    <input
-                      type="number"
-                      min={1}
-                      max={50}
-                      value={laserOptions.passes || 1}
-                      onChange={(e) => setLaserOptions(p => ({ ...p, passes: Math.max(1, Number(e.target.value)) }))}
-                      className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-slate-200 text-xs text-center"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="text-slate-400 text-[0.625rem]">Z-Zustellung:</span>
-                    <div className="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded border border-slate-700">
-                      <input
-                        type="number"
-                        step={0.1}
-                        min={0}
-                        value={laserOptions.zStepdown || 0}
-                        onChange={(e) => setLaserOptions(p => ({ ...p, zStepdown: Number(e.target.value) }))}
-                        className="w-full bg-transparent text-rose-300 text-xs focus:outline-none text-right"
-                      />
-                      <span className="text-[0.5625rem] text-slate-500">mm</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="text-slate-400 text-[0.625rem]">Eilgang-F:</span>
-                    <input
-                      type="number"
-                      step={200}
-                      value={laserOptions.travelFeedrate || 4000}
-                      onChange={(e) => setLaserOptions(p => ({ ...p, travelFeedrate: Number(e.target.value) }))}
-                      className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-slate-200 text-xs text-center"
-                    />
-                  </div>
-                </div>
-
-                {/* Air Assist & Custom Commands */}
-                <div className="space-y-2 font-mono bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 text-[0.6875rem]">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={laserOptions.airAssist || false}
-                      onChange={(e) => setLaserOptions(p => ({ ...p, airAssist: e.target.checked }))}
-                      className="rounded border-slate-700 text-rose-600 focus:ring-rose-500"
-                    />
-                    <span className="text-slate-300 font-sans">Air Assist aktivieren (M8 vor Start / M9 bei Ende)</span>
-                  </label>
-
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <div className="space-y-1">
-                      <span className="text-slate-400 text-[0.625rem]">Laser EIN Befehl:</span>
-                      <input
-                        type="text"
-                        value={laserOptions.laserOnCommand || `${laserOptions.laserMode} S{S}`}
-                        onChange={(e) => setLaserOptions(p => ({ ...p, laserOnCommand: e.target.value }))}
-                        className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-rose-300 text-xs"
-                        placeholder="M4 S{S}"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-slate-400 text-[0.625rem]">Laser AUS Befehl:</span>
-                      <input
-                        type="text"
-                        value={laserOptions.laserOffCommand || 'M5'}
-                        onChange={(e) => setLaserOptions(p => ({ ...p, laserOffCommand: e.target.value }))}
-                        className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-slate-200 text-xs"
-                        placeholder="M5"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Start & End G-Code */}
-                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
-                    <div className="space-y-1">
-                      <span className="text-slate-400 text-[0.625rem]">Start-G-Code:</span>
-                      <input
-                        type="text"
-                        value={laserOptions.startGcode || ''}
-                        onChange={(e) => setLaserOptions(p => ({ ...p, startGcode: e.target.value }))}
-                        className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-slate-200 text-xs"
-                        placeholder="G90 G21"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-slate-400 text-[0.625rem]">End-G-Code:</span>
-                      <input
-                        type="text"
-                        value={laserOptions.endGcode || ''}
-                        onChange={(e) => setLaserOptions(p => ({ ...p, endGcode: e.target.value }))}
-                        className="w-full bg-slate-950 px-2 py-1 rounded border border-slate-700 text-slate-200 text-xs"
-                        placeholder="M5 G0 X0 Y0 M2"
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 

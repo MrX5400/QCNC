@@ -177,6 +177,8 @@ export type ContourFillPattern =
   | 'spiral'
   | 'stippling'
   | 'wave'
+  | 'dots_grid'
+  | 'dithered_hatch'
   | 'honeycomb'
   | 'trochoid';
 
@@ -221,12 +223,24 @@ export interface RasterSettings {
   fillSpacing?: number; // Line / dot spacing in mm (e.g. 0.5 - 10 mm)
   fillAngle?: number; // Pattern rotation angle in degrees (0 - 180)
   fillIncludeContour?: boolean; // Retain outer/inner contour boundary path
+  curveSmoothness?: number; // 0 bis 100, Standard: 65
+  fillMode?: 'none' | 'hatch_linear' | 'lines' | 'crosshatch' | 'stippling' | 'spiral' | 'laser_m4_scanline' | 'concentric' | 'wave' | 'dots_grid' | 'dithered_hatch';
+  traceStrategy?: TraceStrategy;
+  scanlineAngle?: number; // 0, 45, 90
+  scanlineType?: 'parallel' | 'zigzag';
+  contourMode?: 'contour_only' | 'contour_fill' | 'fill_only';
+  hatchAngle?: number; // 0 bis 180 Grad
+  stippleDensity?: number; // 1 bis 100
+  laserPowerMin?: number;
+  laserPowerMax?: number;
+  laserM4Speed?: number;
   ignoreBorder?: boolean; // Ignore / suppress outer image border frame from being traced
 }
 
+export type TraceStrategy = 'contour' | 'centerline' | 'scanline' | 'pattern';
 
 export interface VectorPolyline {
-  points: { x: number; y: number }[];
+  points: { x: number; y: number; s?: number }[];
   closed: boolean;
   color?: string;
   toolPower?: number;

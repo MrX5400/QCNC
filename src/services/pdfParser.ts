@@ -244,13 +244,19 @@ export async function parsePdfToVectors(
     for (const item of textContent.items) {
       if ('str' in item && item.str.trim() !== '') {
         const tx = item.transform; // [a, b, c, d, tx, ty]
+        const a = tx[0], b = tx[1], c = tx[2], d = tx[3];
+        const scaleX = Math.hypot(a, b);
+        const scaleY = Math.hypot(c, d);
         
         // Compute position in mm, scaling
         // No Y-flip, because PDF and CNC Canvas share bottom-left origin!
         const textX = tx[4] * mmScale * options.scale;
         const textY = tx[5] * mmScale * options.scale;
         
-        const fontSize = Math.sqrt(tx[0]*tx[0] + tx[1]*tx[1]) * mmScale * options.scale;
+        // Use Y-scale for actual font height
+        const fontSize = (scaleY || 1) * mmScale * options.scale;
+        
+        const angle = Math.atan2(b, a);
 
         let fontFamily = item.fontName || 'sans-serif';
         if (options.textMode === 'single_line') {
@@ -270,6 +276,23 @@ export async function parsePdfToVectors(
           mode: options.textMode === 'single_line' ? 'single_line' : 'outline',
           textAlign: 'left'
         });
+
+        // Apply rotation (and potential X-stretch) to generated polygons
+        const stretchX = (scaleY > 0 && scaleX > 0) ? scaleX / scaleY : 1;
+        const cosA = Math.cos(angle);
+        const sinA = Math.sin(angle);
+
+        if (angle !== 0 || stretchX !== 1) {
+          for (const poly of textPolys) {
+            for (const pt of poly.points) {
+              const dx = (pt.x - textX) * stretchX;
+              const dy = pt.y - textY;
+              
+              pt.x = textX + dx * cosA - dy * sinA;
+              pt.y = textY + dx * sinA + dy * cosA;
+            }
+          }
+        }
 
         polylines.push(...textPolys);
       }

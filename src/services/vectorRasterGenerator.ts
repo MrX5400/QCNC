@@ -1273,30 +1273,37 @@ export function generateUniversalGcode(options: {
 
         for (const path of groupPaths) {
           if (!path.points || path.points.length < 2) continue;
-          const startPt = path.points[0];
+          const startPt = path.points[0] as any;
 
-          // Rapid to start
-          lines.push(`G0 X${startPt.x.toFixed(3)} Y${startPt.y.toFixed(3)} F${laserOptions.travelFeedrate}`);
+          // Rapid to start (S0 ensures laser is off during rapid)
+          lines.push(`G0 X${startPt.x.toFixed(3)} Y${startPt.y.toFixed(3)} S0 F${laserOptions.travelFeedrate}`);
 
-          // Laser ON
-          const pwr = path.toolPower !== undefined ? path.toolPower : laserOptions.powerMax;
-          const roundedPwr = Math.round(pwr);
+          // Laser ON – use first point's s-value if available, else path.toolPower, else powerMax
+          const initialPwr = startPt.s !== undefined ? startPt.s
+            : (path.toolPower !== undefined ? path.toolPower : laserOptions.powerMax);
+          const roundedPwr = Math.round(initialPwr);
           const onCmd = laserOptions.laserOnCommand && laserOptions.laserOnCommand.trim()
             ? laserOptions.laserOnCommand.replace(/\{S\}/gi, String(roundedPwr)).replace(/\{POWER\}/gi, String(roundedPwr))
             : `${laserOptions.laserMode} S${roundedPwr}`;
           lines.push(`${onCmd} ; Laser ON`);
 
-          // Laser Cut Moves
+          // Laser Cut Moves – pt.s is already in final [powerMin, powerMax] range from the worker
           for (let i = 1; i < path.points.length; i++) {
-            const pt = path.points[i];
-            lines.push(`G1 X${pt.x.toFixed(3)} Y${pt.y.toFixed(3)} F${laserOptions.feedrate}`);
+            const pt = path.points[i] as any;
+            let moveCmd = `G1 X${pt.x.toFixed(3)} Y${pt.y.toFixed(3)}`;
+            if (pt.s !== undefined) {
+              moveCmd += ` S${Math.round(pt.s)}`;
+            }
+            moveCmd += ` F${laserOptions.feedrate}`;
+            lines.push(moveCmd);
           }
 
           // Close loop if closed path and not already at start
           if (path.closed) {
             const lastPt = path.points[path.points.length - 1];
             if (Math.hypot(lastPt.x - startPt.x, lastPt.y - startPt.y) > 0.001) {
-              lines.push(`G1 X${startPt.x.toFixed(3)} Y${startPt.y.toFixed(3)} F${laserOptions.feedrate}`);
+              const closePwr = startPt.s !== undefined ? ` S${Math.round(startPt.s)}` : '';
+              lines.push(`G1 X${startPt.x.toFixed(3)} Y${startPt.y.toFixed(3)}${closePwr} F${laserOptions.feedrate}`);
             }
           }
 

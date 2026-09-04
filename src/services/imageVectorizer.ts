@@ -67,3 +67,68 @@ export async function vectorizeImageAsync(
     } as VectorizeRequest);
   });
 }
+
+export function autoDetectImageSettings(imageData: ImageData): Partial<RasterSettings> {
+  const data = imageData.data;
+  let min = 255, max = 0;
+  const hist = new Array(256).fill(0);
+  let noiseScore = 0;
+  
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i+1];
+    const b = data[i+2];
+    const gray = Math.round(r * 0.299 + g * 0.587 + b * 0.114);
+    if (gray < min) min = gray;
+    if (gray > max) max = gray;
+    hist[gray]++;
+    
+    // check noise (simple high frequency changes)
+    if (i > 4 && data.length > i + 4) {
+      const prevGray = Math.round(data[i-4] * 0.299 + data[i-3] * 0.587 + data[i-2] * 0.114);
+      if (Math.abs(gray - prevGray) > 50) {
+        noiseScore++;
+      }
+    }
+  }
+  
+  const totalPixels = data.length / 4;
+  let sumB = 0;
+  let wB = 0;
+  let maximum = 0;
+  let threshold1 = 0;
+  let threshold2 = 0;
+  
+  let totalSum = 0;
+  for (let i = 0; i < 256; i++) totalSum += i * hist[i];
+  
+  for (let i = 0; i < 256; i++) {
+    wB += hist[i];
+    if (wB === 0) continue;
+    const wF = totalPixels - wB;
+    if (wF === 0) break;
+    
+    sumB += (i * hist[i]);
+    const mB = sumB / wB;
+    const mF = (totalSum - sumB) / wF;
+    const varBetween = wB * wF * (mB - mF) * (mB - mF);
+    
+    if (varBetween > maximum) {
+      maximum = varBetween;
+      threshold1 = i;
+      threshold2 = i;
+    } else if (varBetween === maximum) {
+      threshold2 = i;
+    }
+  }
+  
+  const threshold = Math.round((threshold1 + threshold2) / 2);
+  const contrast = (max - min < 100) ? 30 : 0;
+  
+  return {
+    threshold,
+    contrast,
+    brightness: 0,
+    gamma: 1.0,
+  };
+}

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Settings2, Sliders, Image as ImageIcon, Check, MousePointer2, Layers, Search, Maximize2, Minimize2, X, Plus, Minus, Move } from 'lucide-react';
 import { RasterSettings, VectorPolyline } from '../types/cnc';
 import { RasterSettingsPanel } from './RasterSettingsPanel';
@@ -33,7 +33,7 @@ export function ImageTracerLightbox({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div 
         className={`bg-slate-900 border border-slate-700/60 shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${
           isMaximized ? 'fixed inset-0 rounded-none' : 'w-[90vw] h-[90vh] rounded-2xl max-w-7xl'
